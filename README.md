@@ -1,14 +1,37 @@
 # Project
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+# TaskWeaver
 
-As the maintainer of this project, please make a few updates:
+A framework that make it easy to craft AI copilots capable of understanding 
+and executing complex tasks based on Python code interpretation and plugin orchestration. 
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+**Highlighted Features**
+
+- [x] **Rich data structure** - TaskWeaver allows you to work with rich data 
+    structures in Python, such as DataFrames, instead of having to work with 
+    text strings.
+- [x] **Customized algorithms** - TaskWeaver allows you to encapsulate your 
+    own algorithms into plugins (in the form of Python functions), 
+    and orchestrate them to achieve complex tasks.
+- [x] **Incorporating domain-specific knowledge** - TaskWeaver is designed to 
+    be easily incorporating domain-specific knowledge, such as the knowledge 
+    of execution flow, to improve the reliability of the AI copilot.
+- [x] **Easy extension** - TaskWeaver is designed to be easily extended to accomplish 
+    more complex tasks. You can create multiple AI copilots to
+    act in different roles, and orchestrate them to achieve complex tasks.
+- [x] **Robust code execution** - TaskWeaver is designed to be robust in running the generated code.
+    It can handle unexpected situations, such as the failure of during code 
+    execution, and recover from them.
+- [x] **Easy to use** - TaskWeaver is designed to be easy to use. 
+    We provide a set of sample plugins and a tutorial to help you get started.
+    Users can easily create their own plugins based on the sample plugins.
+    TaskWeaver offers an open-box experience, allowing users to run a service immediately after installation.
+- [x] **Easy to debug** - TaskWeaver is designed to be easy to debug. 
+    We have detailed logs to help you understand what is going on during calling the LLM, 
+    the code generation, and execution process.
+- [x] **Security consideration** - TaskWeaver supports a basic session management to keep
+    different users' data separate. The code execution is separated into different processes
+    in order not to interfere with each other.
 
 ## Contributing
 
