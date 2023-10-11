@@ -1,5 +1,3 @@
-# Project
-
 # TaskWeaver
 
 A framework that make it easy to craft AI copilots capable of understanding 
