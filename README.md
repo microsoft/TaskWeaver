@@ -156,7 +156,7 @@ pip install yfinance
 pip install statsmodels
 ```
 
-For more examples, please refer to our [paper](). 
+For more examples, please refer to our [paper](http://export.arxiv.org/abs/2311.17541). 
 
 ## Customizing TaskWeaver
 
