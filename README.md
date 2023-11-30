@@ -186,7 +186,7 @@ Code generation examples are used to demonstrate how to generate code or orchest
 
 Refer to the [example documentation](docs/example.md) for more details.
 
-## Citation
+## [Citation](http://export.arxiv.org/abs/2311.17541)
 ```
 @article{taskweaver,
   title={TaskWeaver: ACode-First Agent Framework},
