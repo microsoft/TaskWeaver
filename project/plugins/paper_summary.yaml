@@ -1,0 +1,28 @@
+name: paper_summary
+enabled: true
+required: false
+description: >-
+  summarize_paper function iteratively summarizes a given paper page by page,
+  highlighting the key points, including the problem, main idea, contributions,
+  experiments, results, and conclusions.
+
+parameters:
+  - name: paper_file_path
+    type: str
+    required: true
+    description: The file path of the paper to be summarized.
+
+returns:
+  - name: summary
+    type: str
+    description: The final summary of the paper after processing all pages.
+  - name: description
+    type: str
+    description: A string describing the summarization process and the final summary.
+
+configurations:
+  api_type: "azure or openai"
+  api_base: "place your base url here"
+  api_key: "place your key here"
+  api_version: "place your version here"
+  deployment_name: "place your deployment name here"

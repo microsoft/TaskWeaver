@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://aka.ms/taskweaver.plugin-v1.schema",
+  "title": "Task Weaver Plugin Specification",
+  "$defs": {
+    "fieldType": {
+      "title": "Field data type",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "The name of the parameter",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "The description of the parameter. It will be used in prompt to instruct the model on how to use the parameter",
+          "type": "string",
+          "minLength": 10
+        },
+        "required": {
+          "description": "Whether the parameter is required or not",
+          "type": "boolean"
+        },
+        "default": {
+          "description": "The default value of the parameter",
+          "type": "string"
+        },
+        "type": {
+          "description": "The type of the parameter",
+          "type": "string"
+        }
+      },
+      "required": ["name", "description", "type"]
+    }
+  },
+  "properties": {
+    "name": {
+      "title": "Plugin name",
+      "description": "The name of the plugin",
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_]+$",
+      "minLength": 1
+    },
+    "code": {
+      "title": "Plugin implementation",
+      "description": "The Python implementation of the plugin",
+      "type": "string",
+      "minLength": 1
+    },
+    "enabled": {
+      "description": "whether the plugin is enabled",
+      "type": "boolean",
+      "default": true
+    },
+    "required": {
+      "description": "whether the plugin is the must-have one in auto selection mode",
+      "type": "boolean",
+      "default": false
+    },
+    "description": {
+      "description": "The description of the plugin. It will be used in prompt to instruct the model on how to use the plugin",
+      "type": "string",
+      "minLength": 10
+    },
+    "parameters": {
+      "description": "The parameters of the plugin",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fieldType"
+      }
+    },
+    "returns": {
+      "title": "Plugin return values",
+      "description": "The parameters of the plugin",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fieldType"
+      }
+    },
+    "configurations": {
+      "title": "Plugin configurations",
+      "description": "The parameters of the plugin",
+      "type": "object"
+    }
+  },
+  "type": "object",
+  "required": ["name", "description", "parameters", "returns", "enabled"],
+  "description": "Task Weaver Plugin Specification"
+}

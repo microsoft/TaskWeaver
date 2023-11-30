@@ -1,0 +1,32 @@
+name: anomaly_detection
+enabled: true
+required: false
+description: >-
+  anomaly_detection function identifies anomalies from an input DataFrame of
+  time series. It will add a new column "Is_Anomaly", where each entry will be marked with "True" if the value is an anomaly or "False" otherwise.
+
+parameters:
+  - name: df
+    type: DataFrame
+    required: true
+    description: >-
+      the input data from which we can identify the anomalies with the 3-sigma
+      algorithm.
+  - name: time_col_name
+    type: str
+    required: true
+    description: name of the column that contains the datetime
+  - name: value_col_name
+    type: str
+    required: true
+    description: name of the column that contains the numeric values.
+
+returns:
+  - name: df
+    type: DataFrame
+    description: >-
+      This DataFrame extends the input DataFrame with a newly-added column
+      "Is_Anomaly" containing the anomaly detection result.
+  - name: description
+    type: str
+    description: This is a string describing the anomaly detection results.

@@ -1,0 +1,13 @@
+version: 0.1
+content: |-
+    ## On conversation structure:
+    - A Conversation starts with '=============================\n## Conversation-N'.
+    - A Conversation consists of one or more rounds, each round starts with '-----------------------------'.
+    - Each round consists of two parts: the User query and the replies from {ROLE_NAME} and {EXECUTOR_NAME}.
+
+    ## Instructions for the Python code
+    {PLUGIN}
+
+requirements: |-
+    {ROLE_NAME} should not refer to any information from previous Conversations.
+

@@ -1,0 +1,78 @@
+enabled: True
+rounds:
+  - user_query: hello
+    state: finished
+    post_list:
+      - message: hello
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: Greetings! {ROLE_NAME} can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: text
+            content: Greetings! {ROLE_NAME} can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
+          - type: verification
+            content: NONE
+          - type: code_error
+            content: No code is generated.
+          - type: execution_status
+            content: NONE
+          - type: execution_result
+            content: No code is executed.
+  - user_query: show me some sample code
+    state: finished
+    post_list:
+      - message: show me some sample code
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: |- 
+          This is the sample code:
+          ```python
+          print("This is the sample code")
+          ```
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: sample
+            content: |-
+              This is the sample code:
+              ```python
+              print("This is the sample code")
+              ```
+          - type: verification
+            content: NONE
+          - type: code_error
+            content: No code is generated.
+          - type: execution_status
+            content: NONE
+          - type: execution_result
+            content: No code is executed.
+  - user_query: generate 10 random numbers
+    state: finished
+    post_list:
+      - message: generate 10 random numbers
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: The random numbers are 0.2, 0.4, 0.6, 0.8, 0.1, 0.3, 0.5, 0.7, 0.9, 0.0
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: thought
+            content: "{ROLE_NAME} will generate a code snippet to create an array of 10 random numbers using np.random.rand() again."
+          - type: python
+            content: |-
+              import numpy as np
+              random_numbers = np.random.rand(10)
+              random_numbers
+          - type: verification
+            content: CORRECT
+          - type: code_error
+            content: No error is detected.
+          - type: execution_status
+            content: SUCCESS
+          - type: execution_result
+            content: The random numbers are 0.2, 0.4, 0.6, 0.8, 0.1, 0.3, 0.5, 0.7, 0.9, 0.0

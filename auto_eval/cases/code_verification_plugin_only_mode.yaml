@@ -1,0 +1,10 @@
+version: 0.1
+config_var:
+  code_verification.plugin_only: true
+app_dir: ../project/
+eval_query:
+  - user_query: generate 10 random numbers
+    scoring_points:
+      - score_point: "This task cannot be finished due to the restriction because the related library is not allowed to be imported"
+        weight: 1
+    post_index: null

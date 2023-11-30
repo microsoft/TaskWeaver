@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://aka.ms/taskweaver.conversation-v1.schema",
+  "title": "Task Weaver Conversation Specification",
+  "$defs": {
+    "ConversationRound": {
+      "title": "Conversation Round",
+      "type": "object",
+      "properties": {
+        "query": {
+          "title": "Query",
+          "description": "The query to be sent to the model",
+          "type": "string"
+        },
+        "weight": {
+          "title": "Weight",
+          "description": "The weight of the query",
+          "type": "number",
+          "default": 1
+        },
+        "thought": {
+          "title": "Thought",
+          "description": "The thought to be sent to the model",
+          "type": "array",
+          "minLength": 1,
+          "items": {
+            "type": "object",
+            "required": ["text", "type"],
+            "properties": {
+              "text": {
+                "title": "Text",
+                "description": "The text of the thought",
+                "type": "string"
+              },
+              "type": {
+                "title": "Thought type",
+                "description": "The type of the thought",
+                "type": "string",
+                "enum": ["code", "thought", "reply"]
+              }
+            }
+          }
+        },
+        "execution": {
+          "title": "Execution",
+          "description": "The execution status of the query",
+          "type": "object",
+          "properties": {
+            "status": {
+              "title": "Status",
+              "description": "The status of the execution",
+              "type": "string",
+              "enum": ["success", "failure", "none"],
+              "default": "failure"
+            }
+          }
+        },
+        "response": {
+          "title": "Response",
+          "description": "The response of the model",
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "title": "Text",
+              "description": "The text of the response",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["query", "thought", "response"]
+    }
+  },
+  "properties": {
+    "name": {
+      "title": "Name",
+      "description": "The name of the model",
+      "type": "string"
+    },
+    "enabled": {
+      "description": "whether the example is enabled",
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "title": "Tags",
+      "description": "The tags of the model",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plugins": {
+      "title": "Plugins",
+      "description": "The plugins referred in the model",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rounds": {
+      "title": "Rounds",
+      "description": "The rounds of the model",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ConversationRound"
+      }
+    }
+  },
+  "type": "object",
+  "required": ["name", "tags", "plugins", "rounds"],
+  "description": "Task Weaver Plugin Specification"
+}

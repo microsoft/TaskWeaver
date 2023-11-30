@@ -1,0 +1,19 @@
+version: 0.1
+config_var: null
+app_dir: ../project/
+eval_query:
+  - user_query: show the column names of ../../../sample_data/demo_data.csv
+    scoring_points:
+      - score_point: "The column names are TimeBucket and Count"
+        weight: 1
+    post_index: -1
+  - user_query: generate 10 random numbers
+    scoring_points:
+      - score_point: "Agent should generate 10 random numbers and reply to user"
+        weight: 1
+    post_index: -1
+  - user_query: get the mean value of 'Count' column in the loaded data
+    scoring_points:
+      - score_point: "The correct mean value is 78172.75"
+        weight: 1
+    post_index: -1
