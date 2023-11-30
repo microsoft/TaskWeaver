@@ -84,7 +84,7 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 ```json
 {
 "llm.api_base": "https://xxx.openai.azure.com/",
-"llm.api_key": "the api key",
+"llm.api_key": "your_api_key",
 "llm.api_type": "azure",
 "llm.api_version": "the api version",
 "llm.model": "the model name, e.g., gpt-4"
