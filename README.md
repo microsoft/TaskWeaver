@@ -42,7 +42,7 @@ data analytics tasks
 
 - Python 3.10 or above
 - OpenAI (or Azure OpenAI) access with GPT-3.5 above models. However, it is strongly recommended to use the GPT-4, which is more stable.
-- Other requirements can be found in the `requirements.txt` file. You can install them by running `pip install -r requirements.txt`.
+- Other requirements can be found in the `requirements.txt` file. 
 
 
 ## Quick Start
@@ -129,7 +129,7 @@ Human: ___
 #### Example 1: Pull data from a database and apply an anomaly detection algorithm
 In this example, we will show you how to use TaskWeaver to pull data from a database and apply an anomaly detection algorithm.
 
-[video 1]()
+[Anomaly Detection](https://github.com/microsoft/TaskWeaver/assets/7489260/9f854acf-f2bf-4566-9d16-f84e915d0f4e)
 
 If you want to follow this example, you need to configure the `sql_pull_data` plugin in the `project/plugins/sql_pull_data.yaml` file.
 You need to provide the following information:
@@ -148,7 +148,7 @@ This plugin is implemented based on [Langchain](https://www.langchain.com/).
 #### Example 2: Forecast QQQ's price in the next week
 In this example, we will show you how to use TaskWeaver to forecast QQQ's price in the next week using the ARIMA algorithm. 
 
-[video 2]()
+[Nasdaq 100 Index Price Forecasting](https://github.com/microsoft/TaskWeaver/assets/7489260/c2b09615-52d8-491f-bbbf-e86ba282e59a)
 
 If you want to follow this example, you need to you have two requirements installed:
 ```bash
