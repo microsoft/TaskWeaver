@@ -144,6 +144,11 @@ sqlite_db_path: sqlite:///../../../sample_data/anomaly_detection.db
 The `sql_pull_data` plugin is a plugin that pulls data from a database. It takes a natural language request as input and returns a DataFrame as output.
 
 This plugin is implemented based on [Langchain](https://www.langchain.com/).
+If you want to follow this example, you need to install the Langchain package:
+```bash
+pip install langchain
+pip install tabulate
+```
 
 #### Example 2: Forecast QQQ's price in the next week
 In this example, we will show you how to use TaskWeaver to forecast QQQ's price in the next week using the ARIMA algorithm. 
@@ -187,6 +192,8 @@ Code generation examples are used to demonstrate how to generate code or orchest
 Refer to the [example documentation](docs/example.md) for more details.
 
 ## Citation
+Our paper could be found [here](http://export.arxiv.org/abs/2311.17541). 
+If you use TaskWeaver in your research, please cite our paper:
 ```
 @article{taskweaver,
   title={TaskWeaver: ACode-First Agent Framework},

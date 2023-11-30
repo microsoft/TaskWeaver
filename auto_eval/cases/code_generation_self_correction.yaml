@@ -1,7 +1,7 @@
 version: 0.1
 app_dir: ../project/
 eval_query:
-  - user_query: calculate mean value of ../../../sample_data/demo_data.csv
+  - user_query: calculate mean value of ../../../../sample_data/demo_data.csv
     scoring_points:
       - score_point: "The correct mean value is 78172.75"
         weight: 1

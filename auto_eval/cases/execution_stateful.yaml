@@ -2,7 +2,7 @@ version: 0.1
 config_var: null
 app_dir: ../project/
 eval_query:
-  - user_query: show the column names of ../../../sample_data/demo_data.csv
+  - user_query: show the column names of ../../../../sample_data/demo_data.csv
     scoring_points:
       - score_point: "The column names are TimeBucket and Count"
         weight: 1

@@ -28,4 +28,4 @@ configurations:
   api_key:
   api_version:
   deployment_name:
-  sqlite_db_path: sqlite:///../../../sample_data/anomaly_detection.db
+  sqlite_db_path: sqlite:///../../../../sample_data/anomaly_detection.db

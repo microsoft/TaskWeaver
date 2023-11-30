@@ -1,7 +1,7 @@
 version: 0.1
 app_dir: ../project/
 eval_query:
-  - user_query: calculate the mean and std of 'Count' column in ../../../sample_data/demo_data.csv then check is there any value are larger than 3 std from the mean
+  - user_query: calculate the mean and std of 'Count' column in ../../../../sample_data/demo_data.csv then check is there any value are larger than 3 std from the mean
     scoring_points:
       - score_point: "The correct mean value is 78172.75 and the correct std value is about 16233.131258"
         weight: 1
