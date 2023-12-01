@@ -185,9 +185,9 @@ class CodeExecutor:
             if result.error is not None:
                 lines.append(result.error[:TRUNCATE_CHAR_LENGTH])
             if len(result.stdout) > 0:
-                lines.extend(result.stdout[:TRUNCATE_CHAR_LENGTH])
+                lines.append("\n".join(result.stdout)[:TRUNCATE_CHAR_LENGTH])
             if len(result.stderr) > 0:
-                lines.extend(result.stderr[:TRUNCATE_CHAR_LENGTH])
+                lines.append("\n".join(result.stderr)[:TRUNCATE_CHAR_LENGTH])
             lines.append("")
 
         # artifacts
