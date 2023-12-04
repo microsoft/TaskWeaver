@@ -50,7 +50,7 @@ class AnomalyDetectionPlugin(Plugin):
         :param time_col_name: name of the column that contains the datetime
         :param value_col_name: name of the column that contains the numeric values.
         :return df: a new df that adds an additional "Is_Anomaly" column based on the input df.
-        :return desciption: the description about the anomaly detection results.
+        :return description: the description about the anomaly detection results.
         """
         try:
             df[time_col_name] = pd.to_datetime(df[time_col_name])
