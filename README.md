@@ -44,6 +44,9 @@ data analytics tasks
 - OpenAI (or Azure OpenAI) access with GPT-3.5 above models. However, it is strongly recommended to use the GPT-4, which is more stable.
 - Other requirements can be found in the `requirements.txt` file. 
 
+> OpenAI API had a major [update](https://github.com/openai/openai-python) from 0.xx to 1.xx in November 2023. 
+> Please make sure you are not using an old version because the API is not backward compatible.
+
 
 ## Quick Start
 
@@ -51,7 +54,7 @@ data analytics tasks
 You can install TaskWeaver by running the following command:
 ```bash
 git clone https://github.com/microsoft/TaskWeaver.git
-cd taskweaver
+cd TaskWeaver
 # install the requirements
 pip install -r requirements.txt
 ```
@@ -94,7 +97,6 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 #### OpenAI
 ```json
 {
-"llm.api_base": "https://api.openai.com/",
 "llm.api_key": "the api key",
 "llm.model": "the model name, e.g., gpt-4"
 }

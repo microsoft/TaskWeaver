@@ -1,0 +1,58 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+repos:
+- repo: https://github.com/myint/autoflake
+  rev: v2.2.1
+  hooks:
+    - id: autoflake
+      args:
+        - --in-place
+        - --remove-unused-variables
+        - --remove-all-unused-imports
+      exclude: .*/__init__\.py|setup\.py
+- repo: https://github.com/pycqa/isort
+  rev: 5.12.0
+  hooks:
+    - id: isort
+      args:
+        - --settings-path=.linters/pyproject.toml
+- repo: https://github.com/asottile/add-trailing-comma
+  rev: v3.1.0
+  hooks:
+    - id: add-trailing-comma
+      name: add-trailing-comma (1st round)
+      args:
+        - --py36-plus
+- repo: https://github.com/psf/black
+  rev: 23.11.0
+  hooks:
+    - id: black
+      name: black (1st round)
+      args:
+        - --config=.linters/pyproject.toml
+- repo: https://github.com/asottile/add-trailing-comma
+  rev: v3.1.0
+  hooks:
+    - id: add-trailing-comma
+      name: add-trailing-comma (2nd round)
+      args:
+        - --py36-plus
+- repo: https://github.com/psf/black
+  rev: 23.11.0
+  hooks:
+    - id: black
+      name: black (2nd round)
+      args:
+        - --config=.linters/pyproject.toml
+- repo: https://github.com/pycqa/flake8
+  rev: 6.1.0
+  hooks:
+    - id: flake8
+      args:
+        - --config=.linters/tox.ini
+      exclude: \.git|__pycache__|docs|build|dist|.*\.egg-info|docker_files|\.vscode|\.github|scripts|tests|maro\/backends\/.*.cp|setup.py
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.18.1
+  hooks:
+    - id: gitleaks

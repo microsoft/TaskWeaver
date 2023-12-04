@@ -15,152 +15,6 @@ DEFAULT_STOP_TOKEN: List[str] = ["<EOS>"]
 _FuncType = TypeVar("_FuncType", bound=Callable[..., Any])
 
 
-def _cassette_mode_check(f: _FuncType) -> _FuncType:
-    try:
-        from vcr import VCR, record_mode
-    except ImportError:
-        # no decoration when no cassette available
-        return f
-
-    AZURE_OPEN_AI_HOST = "azure-open-ai-host"
-
-    def normalize_openai_uri(original_uri: str) -> str:
-        import re
-
-        uri = original_uri
-
-        host = uri.split("//")[1].split("/")[0]
-        if host.lower().endswith("openai.azure.com") or host.lower().endswith(
-            "openai.azure-api.net",
-        ):
-            host = AZURE_OPEN_AI_HOST
-        if not host == AZURE_OPEN_AI_HOST:
-            return original_uri
-
-        deployment: str = "Unknown"
-        if "deployments" in uri:
-            deployment_match = re.match(r".*?/deployments/([^/]+)/.*", uri)
-            if deployment_match is not None:
-                deployment = deployment_match.group(1)
-
-        if re.match(r"gpt[\-_]?3[\-_\.]?5[\-_]?turbo.*", deployment, re.IGNORECASE) is not None:
-            deployment = "gpt-35-turbo"
-        elif re.match(r"gpt[\-_]?4[\-_\.]?32k.*", deployment, re.IGNORECASE) is not None:
-            deployment = "gpt-4-32k"
-        elif re.match(r"gpt[\-_]?4.*", deployment, re.IGNORECASE) is not None:
-            deployment = "gpt-4"
-
-        # check whether chat/completions or completions
-        endpoint = "chat/completions" if "chat/completions" in uri else "completions"
-
-        return f"https://{host}/openai/deployments/{deployment}/{endpoint}"
-
-    def response_scrubber(response):
-        response["headers"] = {
-            k: v
-            for k, v in response["headers"].items()
-            if k.lower() in ["content-type", "transfer-encoding", "content-length"]
-        }
-        return response
-
-    def request_scrubber(request):
-        request.headers = {
-            k: v
-            for k, v in request.headers.items()
-            if k.lower() in ["content-type", "accept", "accept-encoding", "content-length"]
-        }
-        request.uri = normalize_openai_uri(request.uri)
-        return request
-
-    def should_record_host(request):
-        return AZURE_OPEN_AI_HOST in request.uri or "openai.azure.com" in request.uri
-
-    def before_record_request(request):
-        request = request_scrubber(request)
-        if should_record_host(request):
-            return request
-        else:
-            return None
-
-    def openai_uri_matcher(r1, r2):
-        return normalize_openai_uri(r1.uri) == normalize_openai_uri(r2.uri)
-
-    def openai_body_matcher(r1, r2):
-        def parse_body(r):
-            import json
-
-            try:
-                body = r.body.decode("utf-8")
-                assert len(body) > 0
-                body = json.loads(body)
-                return True, body
-            except Exception:
-                return False, r.body
-
-        return parse_body(r1) == parse_body(r2)
-
-    def decorator_path_generator(func):
-        import inspect
-        from pathlib import Path
-
-        # func = openai_uri_matcher
-        path = Path(inspect.getabsfile(func))
-        path = path.parent / (path.stem + func.__name__ + ".yaml")
-        return str(path)
-
-    def init_vcr(cassette_mode: record_mode.RecordMode):
-        vcr = VCR(
-            before_record_request=before_record_request,
-            before_record_response=response_scrubber,
-            record_mode=cassette_mode,
-            path_transformer=VCR.ensure_suffix(".yaml"),
-            func_path_generator=decorator_path_generator,
-            match_on=["openai_uri", "method", "openai_body", "query"],
-        )
-        vcr.register_matcher("openai_uri", openai_uri_matcher)
-        vcr.register_matcher("openai_body", openai_body_matcher)
-        return vcr
-
-    from functools import wraps
-
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        has_cassette_mode = False
-        try:
-            import os
-
-            cassette_mode = os.environ.get(
-                "__TASK_WEAVER_LLM_CASSETTE_MODE__",
-                None,
-            )
-            cassette_path = os.environ.get(
-                "__TASK_WEAVER_LLM_CASSETTE_PATH__",
-                None,
-            )
-
-            if cassette_mode is not None or cassette_path is not None:
-                has_cassette_mode = True
-
-            if cassette_mode is None or cassette_path is None:
-                raise Exception("cassette_mode or cassette_path is not set")
-
-            # convert string to enum
-            cassette_mode = record_mode.RecordMode(cassette_mode)
-
-            vcr = init_vcr(cassette_mode)
-            with vcr.use_cassette(cassette_path):
-                print(
-                    f"Using cassette: {cassette_path} for LLM API call in mode {cassette_mode}",
-                )
-                return f(*args, **kwargs)
-        except Exception as e:
-            if has_cassette_mode:
-                print(f"Error: {e}")
-            return f(*args, **kwargs)
-
-    return wrapper
-
-
 class LLMModuleConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("llm")
@@ -373,7 +227,6 @@ class LLMApi(object):
     ) -> Generator[ChatMessageType, None, None]:
         ...
 
-    @_cassette_mode_check
     def chat_completion(
         self,
         messages: List[ChatMessageType],
@@ -403,6 +256,7 @@ class LLMApi(object):
             )
         elif api_type == "openai":
             client = OpenAI(
+                base_url=self.config.api_base,
                 api_key=self.config.api_key,
             )
 
