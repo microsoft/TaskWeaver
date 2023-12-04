@@ -23,7 +23,7 @@ class LLMModuleConfig(ModuleConfig):
             ["openai", "azure", "azure_ad"],
             "openai",
         )
-        self.api_base = self._get_str("api_base", "https://api.openai.com")
+        self.api_base = self._get_str("api_base", "https://api.openai.com/v1")
         self.api_key = self._get_str(
             "api_key",
             None if self.api_type != "azure_ad" else "",
