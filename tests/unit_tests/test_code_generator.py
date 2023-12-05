@@ -15,6 +15,7 @@ def test_compose_prompt():
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
             "llm.api_key": "test_key",
+            "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
