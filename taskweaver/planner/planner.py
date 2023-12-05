@@ -7,7 +7,7 @@ from injector import inject
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Conversation, Memory, Post, Round
+from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -34,6 +34,14 @@ class PlannerConfig(ModuleConfig):
                 "planner_examples",
             ),
         )
+        self.prompt_compression = self._get_bool("prompt_compression", False)
+        self.compression_prompt_path = self._get_path(
+            "compression_prompt_path",
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "compression_prompt.yaml",
+            ),
+        )
 
 
 class Planner(Role):
@@ -47,6 +55,7 @@ class Planner(Role):
         logger: TelemetryLogger,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
+        round_compressor: Optional[RoundCompressor] = None,
     ):
         self.config = config
         self.logger = logger
@@ -79,82 +88,90 @@ class Planner(Role):
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
+        self.round_compressor = round_compressor
+        self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
+
         self.logger.info("Planner initialized successfully")
 
-    def compose_example_for_prompt(self) -> List[ChatMessageType]:
-        assert len(self.examples) != 0, "No examples found."
-        example_chat_history: List[ChatMessageType] = []
+    def compose_conversation_for_prompt(
+        self,
+        conv_rounds: List[Round],
+        summary: Optional[str] = None,
+    ) -> List[ChatMessageType]:
+        conversation: List[ChatMessageType] = []
 
-        for _, conversation in enumerate(self.examples):
-            for rnd_idx, chat_round in enumerate(conversation.rounds):
-                if rnd_idx == 0:
-                    example_chat_history.append(
-                        format_chat_message(
-                            role="user",
-                            message=Planner.conversation_delimiter_message,
-                        ),
+        for rnd_idx, chat_round in enumerate(conv_rounds):
+            if rnd_idx == 0:
+                conv_init_message = Planner.conversation_delimiter_message
+                if summary is not None:
+                    self.logger.debug(f"Summary: {summary}")
+                    user_message = (
+                        f"\nThe context summary of the Planner's previous rounds" f" can refer to:\n{summary}\n\n"
                     )
-                for post in chat_round.post_list:
-                    if post.send_from == "Planner":
-                        message = self.planner_post_translator.post_to_raw_text(
-                            post=post,
-                        )  # add planner tags here
-                        example_chat_history.append(
-                            format_chat_message(role="assistant", message=message),
-                        )
-                    else:
-                        message = post.send_from + ": " + post.message
-                        example_chat_history.append(
-                            format_chat_message(role="user", message=message),
-                        )
+                    conv_init_message += "\n" + user_message
+                conversation.append(
+                    format_chat_message(
+                        role="user",
+                        message=conv_init_message,
+                    ),
+                )
 
-        example_chat_history.append(
-            format_chat_message(role="user", message=Planner.conversation_delimiter_message),
-        )
-
-        return example_chat_history
-
-    def compose_prompt(self, rounds: List[Round]) -> List[ChatMessageType]:
-        chat_history = [format_chat_message(role="system", message=self.instruction)]
-
-        if self.config.use_example and len(self.examples) != 0:
-            example_chat_history = self.compose_example_for_prompt()
-            chat_history += example_chat_history
-
-        for round in rounds:
-            for post in round.post_list:
-                if post.send_from == "User":
-                    chat_history.append(
-                        format_chat_message(
-                            role="user",
-                            message="User: " + post.message,
-                        ),
-                    )
-                elif post.send_from == "CodeInterpreter":
-                    chat_history.append(
-                        format_chat_message(
-                            role="user",
-                            message="CodeInterpreter: " + post.message,
-                        ),
-                    )
-                elif post.send_from == "Planner":
+            for post in chat_round.post_list:
+                if post.send_from == "Planner":
                     if post.send_to == "User" or post.send_to == "CodeInterpreter":
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
-                        )  # add planner tags here
-                        chat_history.append(
+                        )
+                        conversation.append(
                             format_chat_message(
                                 role="assistant",
                                 message=planner_message,
                             ),
                         )
-                    elif post.send_to == "Planner":
-                        chat_history.append(
+                    elif post.send_to == "Planner":  # self correction for planner response, e.g., format error
+                        conversation.append(
                             format_chat_message(
                                 role="user",
-                                message="Planner: " + post.message,
+                                message=post.message,
                             ),
                         )
+                        message = self.planner_post_translator.post_to_raw_text(
+                            post=post,
+                        )
+                        conversation.append(
+                            format_chat_message(role="assistant", message=message),
+                        )
+                else:
+                    message = post.send_from + ": " + post.message
+                    conversation.append(
+                        format_chat_message(role="user", message=message),
+                    )
+
+        return conversation
+
+    def compose_prompt(self, rounds: List[Round]) -> List[ChatMessageType]:
+        chat_history = [format_chat_message(role="system", message=self.instruction)]
+
+        if self.config.use_example and len(self.examples) != 0:
+            for conv_example in self.examples:
+                conv_example_in_prompt = self.compose_conversation_for_prompt(conv_example.rounds)
+                chat_history += conv_example_in_prompt
+
+        summary = None
+        if self.config.prompt_compression and self.round_compressor is not None:
+            summary, rounds = self.round_compressor.compress_rounds(
+                rounds,
+                rounds_formatter=lambda _rounds: str(self.compose_conversation_for_prompt(_rounds)),
+                use_back_up_engine=True,
+                prompt_template=self.compression_template,
+            )
+
+        chat_history.extend(
+            self.compose_conversation_for_prompt(
+                rounds,
+                summary=summary,
+            ),
+        )
 
         return chat_history
 

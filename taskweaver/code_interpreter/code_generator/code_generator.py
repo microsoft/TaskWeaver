@@ -7,7 +7,7 @@ from taskweaver.code_interpreter.code_generator.code_verification import CodeVer
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Conversation, Memory, Post, Round
+from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -36,6 +36,14 @@ class CodeGeneratorConfig(ModuleConfig):
                 "codeinterpreter_examples",
             ),
         )
+        self.prompt_compression = self._get_bool("prompt_compression", False)
+        self.compression_prompt_path = self._get_path(
+            "compression_prompt_path",
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "compression_prompt.yaml",
+            ),
+        )
 
 
 class CodeGenerator(Role):
@@ -47,6 +55,7 @@ class CodeGenerator(Role):
         logger: TelemetryLogger,
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
+        round_compressor: RoundCompressor,
     ):
         self.config = config
         self.plugin_registry = plugin_registry
@@ -74,6 +83,9 @@ class CodeGenerator(Role):
             PLUGIN=self.plugin_spec,
         )
 
+        self.round_compressor = round_compressor
+        self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
+
     def compose_plugin_only_requirements(self):
         requirements = []
         if not self.code_verification_config.code_verification_on:
@@ -98,12 +110,22 @@ class CodeGenerator(Role):
     def compose_prompt(self, rounds: List[Round]) -> List[ChatMessageType]:
         chat_history = [format_chat_message(role="system", message=self.instruction)]
         for i, example in enumerate(self.examples):
-            chat_history.extend(self.compose_conversation(example.rounds, i + 1))
+            chat_history.extend(self.compose_conversation(example.rounds))
+
+        summary = None
+        if self.config.prompt_compression and self.round_compressor is not None:
+            summary, rounds = self.round_compressor.compress_rounds(
+                rounds,
+                rounds_formatter=lambda _rounds: str(self.compose_conversation(_rounds)),
+                use_back_up_engine=True,
+                prompt_template=self.compression_template,
+            )
+
         chat_history.extend(
             self.compose_conversation(
                 rounds,
-                len(self.examples) + 1,
                 add_requirements=True,
+                summary=summary,
             ),
         )
         return chat_history
@@ -111,8 +133,8 @@ class CodeGenerator(Role):
     def compose_conversation(
         self,
         rounds: List[Round],
-        index: int,
         add_requirements: bool = False,
+        summary: Optional[str] = None,
     ) -> List[ChatMessageType]:
         def format_attachment(attachment: Attachment):
             if attachment.type == "thought":
@@ -129,7 +151,14 @@ class CodeGenerator(Role):
                 assistant_message = ""
 
                 if is_first_post:
-                    user_message = f"==============================\n" f"## Conversation-{index}\n"
+                    user_message = "==============================\n## Conversation Start\n"
+                    if summary is not None:
+                        self.logger.debug(f"Summary: {summary}")
+                        user_message += (
+                            f"\nThe context summary of the previous rounds and a list of variables that "
+                            f"{self.role_name} can refer to:\n{summary}\n\n"
+                        )
+
                     is_first_post = False
 
                 if post.send_from == "Planner" and post.send_to == "CodeInterpreter":

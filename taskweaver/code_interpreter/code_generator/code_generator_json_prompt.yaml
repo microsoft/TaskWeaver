@@ -1,7 +1,7 @@
 version: 0.1
 content: |-
     ## On conversations:
-    - Each conversation starts with "==============================\n## Conversation-ID"
+    - Each conversation starts with "==============================\n## Conversation Start"
     - Each conversation has multiple rounds, each round starts with "-----------------------------"
     
     ## On {ROLE_NAME}'s profile and general capabilities:
@@ -42,7 +42,8 @@ content: |-
 
 requirements: |-
     Please follow the instructions below to complete the task:
-    - {ROLE_NAME} can refer to intermediate results (variables, functions, or classes) in the generated code from previous successful rounds in the current Conversation, but should not refer to any information from failed rounds, rounds that have not been executed, or previous Conversations.
+    - {ROLE_NAME} can refer to intermediate variables in the generated code from previous successful rounds and the context summary in the current Conversation, 
+    - {ROLE_NAME} should not refer to any information from failed rounds, rounds that have not been executed, or previous Conversations.
     - {ROLE_NAME} put all the result variables in the last line of the code.
     - {ROLE_NAME} should leave "verification", "code_error", "execution_status", and "execution_result" empty in the response. 
     {PLUGIN_ONLY_PROMPT}

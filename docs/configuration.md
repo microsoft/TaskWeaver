@@ -11,7 +11,7 @@ The following table lists the parameters in the configuration file:
 
 | Parameter                                | Description                                                                      | Default Value                                                                          |
 |------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| `llm.model`                                | The model name used by the language model.                                       | gpt-4                                                                                  |
+| `llm.model`                              | The model name used by the language model.                                       | gpt-4                                                                                  |
 | `llm.backup_model`                       | The model name used for self-correction purposes.                                | `null`                                                                                 |
 | `llm.api_base`                           | The base URL of the OpenAI API.                                                  | `https://api.openai.com`                                                               |
 | `llm.api_key`                            | The API key of the OpenAI API.                                                   | `null`                                                                                 |
@@ -21,12 +21,13 @@ The following table lists the parameters in the configuration file:
 | `code_verification.code_verification_on` | Whether to enable code verification.                                             | `false`                                                                                |
 | `code_verification.plugin_only`          | Whether to turn on the plugin only mode.                                         | `false`                                                                                |
  | `code_verification.allowed_modules`      | The list of allowed modules to import in code generation.                        | `"pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"` |
-| `logging.log_file`                       | The name of the log file.                                                        | `taskweaver.log`                                                                  |
+| `logging.log_file`                       | The name of the log file.                                                        | `taskweaver.log`                                                                       |
 | `logging.log_folder`                     | The folder to store the log file.                                                | `logs`                                                                                 |
-| `plugin.base_path`                       | The folder to store plugins.                                                     | `${AppBaseDir}/plugins`                                                                              |
-| `planner.example_base_path`             | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                                    |
-| `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                                            |
-
+| `plugin.base_path`                       | The folder to store plugins.                                                     | `${AppBaseDir}/plugins`                                                                |
+| `planner.example_base_path`              | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                       |
+| `planner.prompt_compression`             | Whether to compress the chat history for planner                                 | `false`                                                                                | 
+| `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                               |
+ | `code_generator.prompt_compression`      | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
 
 > 💡 ${AppBaseDir} is the project directory.
 

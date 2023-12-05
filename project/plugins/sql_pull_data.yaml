@@ -4,6 +4,7 @@ required: false
 description: >-
   Pull data from a SQL database. This plugin takes user requests when obtaining data from database is explicitly mentioned.
   Otherwise, it is not sure if the user wants to pull data from database or not.
+  The data from this database can only used for anomaly detection.
 
 parameters:
   - name: query
