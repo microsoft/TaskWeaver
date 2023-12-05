@@ -13,7 +13,7 @@ df, data_description = sql_pull_data(query="pull data from time_series table")
 anomaly_df, anomaly_description = anomaly_detection(df, time_col_name="ts", value_col_name="val") 
 ```
 
-## What a plugin have?
+## Plugin Structure
 
 A plugin has two files:
 
