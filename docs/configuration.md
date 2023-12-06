@@ -28,7 +28,8 @@ The following table lists the parameters in the configuration file:
 | `planner.prompt_compression`             | Whether to compress the chat history for planner                                 | `false`                                                                                | 
 | `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                               |
  | `code_generator.prompt_compression`      | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
-
+| `session.max_internal_chat_round_num`    | The maximum number of internal chat rounds between Planner and Code Interpreter  | `10`                                                                                   |
+| `session.use_planner`              | Use Planner or only use Code Interpreter                                         | `true`                                                                                 |
 > 💡 ${AppBaseDir} is the project directory.
 
 > 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format` to `null`.
