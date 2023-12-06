@@ -3,14 +3,13 @@ from typing import List
 from injector import inject
 
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
-from taskweaver.utils.embedding import EmbeddingGenerator
 
 
 class PluginSelector:
     @inject
-    def __init__(self, plugin_registry: PluginRegistry, embedding_generator: EmbeddingGenerator):
+    def __init__(self, plugin_registry: PluginRegistry):
         self.plugin_registry = plugin_registry
-        self.embedding_generator = embedding_generator
+        self.embedding_generator = self.plugin_registry.embedding_generator
         self.selected_plugins_pool = []
 
     @staticmethod

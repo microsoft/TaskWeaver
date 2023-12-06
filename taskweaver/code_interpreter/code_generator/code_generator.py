@@ -46,9 +46,6 @@ class CodeGeneratorConfig(ModuleConfig):
             ),
         )
 
-        self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
-        self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
-
 
 class CodeGenerator(Role):
     @inject
@@ -60,7 +57,7 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
-        plugin_selector: PluginSelector,
+        # plugin_selector: PluginSelector,
     ):
         self.config = config
         self.plugin_registry = plugin_registry
@@ -91,14 +88,8 @@ class CodeGenerator(Role):
         self.round_compressor = round_compressor
         self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        self.plugin_selector = plugin_selector
-        if self.config.enable_auto_plugin_selection:
-            self.logger.info("Auto plugin selection is enabled.")
-            for plugin in self.plugin_registry.get_list():
-                plugin.spec.embedding = self.plugin_selector.embedding_generator.get_embedding(
-                    plugin.spec.name + ": " + plugin.spec.description,
-                )
-            logger.info("Plugin embedding is generated successfully.")
+        if self.plugin_registry.enable_auto_plugin_selection:
+            self.plugin_selector = PluginSelector(self.plugin_registry)
 
     def compose_plugin_only_requirements(self, plugin_list: List[PluginEntry]) -> str:
         requirements = []
@@ -232,7 +223,7 @@ class CodeGenerator(Role):
         """
         overwrite query_requirements and instruction based on the selected plugins
         """
-        _ = self.plugin_selector.plugin_select(user_query, self.config.auto_plugin_selection_topk)
+        _ = self.plugin_selector.plugin_select(user_query, self.plugin_registry.auto_plugin_selection_topk)
 
         self.query_requirements = self.prompt_data["requirements"].format(
             PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.plugin_selector.selected_plugins_pool),
@@ -257,7 +248,7 @@ class CodeGenerator(Role):
         )
 
         user_query = rounds[-1].user_query
-        if self.config.enable_auto_plugin_selection:
+        if self.plugin_registry.enable_auto_plugin_selection:
             self.select_plugins_for_prompt(user_query)
 
         prompt = self.compose_prompt(rounds)
