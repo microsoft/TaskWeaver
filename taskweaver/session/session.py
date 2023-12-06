@@ -18,6 +18,7 @@ class AppSessionConfig(ModuleConfig):
         self._set_name("session")
 
         self.use_planner = self._get_bool("use_planner", True)
+        self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
 
 
 class Session:
@@ -61,7 +62,7 @@ class Session:
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
         self.code_interpreter = self.session_injector.get(CodeInterpreter)
 
-        self.max_internal_chat_round_num = 10
+        self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
 
         self.init()
