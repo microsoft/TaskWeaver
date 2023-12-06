@@ -1,16 +1,7 @@
 version: 0.1
 app_dir: ../project/
 config_var:
-  code_verification.allowed_modules:
-    - pandas
-    - matplotlib
-    - numpy
-    - sklearn
-    - scipy
-    - seaborn
-    - datetime
-    - yfinance
-    - statsmodels
+  code_verification.code_verification_on: false
 eval_query:
   - user_query: use ARIMA model to forecast QQQ in next 7 days
     scoring_points:

@@ -1,6 +1,6 @@
 
 # Configuration file
-The configuration file is located at `config/taskweaver_config.json`. 
+The configuration file is located at `project/taskweaver_config.json`. 
 You can edit this file to configure TaskWeaver.
 The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`. 
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
@@ -11,9 +11,9 @@ The following table lists the parameters in the configuration file:
 
 | Parameter                                | Description                                                                      | Default Value                                                                          |
 |------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| `llm.model`                                | The model name used by the language model.                                       | gpt-4                                                                                  |
+| `llm.model`                              | The model name used by the language model.                                       | gpt-4                                                                                  |
 | `llm.backup_model`                       | The model name used for self-correction purposes.                                | `null`                                                                                 |
-| `llm.api_base`                           | The base URL of the OpenAI API.                                                  | `https://api.openai.com`                                                               |
+| `llm.api_base`                           | The base URL of the OpenAI API.                                                  | `https://api.openai.com/v1`                                                               |
 | `llm.api_key`                            | The API key of the OpenAI API.                                                   | `null`                                                                                 |
 | `llm.api_type`                           | The type of the OpenAI API, could be `openai` or `azure`.                        | `openai`                                                                               |
 | `llm.api_version`                        | The version of the OpenAI API.                                                   | `2023-07-01-preview`                                                                   |
@@ -21,12 +21,13 @@ The following table lists the parameters in the configuration file:
 | `code_verification.code_verification_on` | Whether to enable code verification.                                             | `false`                                                                                |
 | `code_verification.plugin_only`          | Whether to turn on the plugin only mode.                                         | `false`                                                                                |
  | `code_verification.allowed_modules`      | The list of allowed modules to import in code generation.                        | `"pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"` |
-| `logging.log_file`                       | The name of the log file.                                                        | `taskweaver.log`                                                                  |
+| `logging.log_file`                       | The name of the log file.                                                        | `taskweaver.log`                                                                       |
 | `logging.log_folder`                     | The folder to store the log file.                                                | `logs`                                                                                 |
-| `plugin.base_path`                       | The folder to store plugins.                                                     | `${AppBaseDir}/plugins`                                                                              |
-| `planner.example_base_path`             | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                                    |
-| `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                                            |
-
+| `plugin.base_path`                       | The folder to store plugins.                                                     | `${AppBaseDir}/plugins`                                                                |
+| `planner.example_base_path`              | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                       |
+| `planner.prompt_compression`             | Whether to compress the chat history for planner                                 | `false`                                                                                | 
+| `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                               |
+ | `code_generator.prompt_compression`      | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
 
 > 💡 ${AppBaseDir} is the project directory.
 

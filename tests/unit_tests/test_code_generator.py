@@ -15,6 +15,7 @@ def test_compose_prompt():
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
             "llm.api_key": "test_key",
+            "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
@@ -139,7 +140,12 @@ def test_compose_prompt():
     assert messages[1]["role"] == "user"
     assert messages[1]["content"] == (
         "==============================\n"
-        "## Conversation-1\n"
+        "## Conversation Start\n"
+        "\n"
+        "The context summary of the previous rounds and a list of variables that "
+        "ProgramApe can refer to:\n"
+        "NONE\n"
+        "\n"
         "-----------------------------\n"
         "- User: create a dataframe"
     )

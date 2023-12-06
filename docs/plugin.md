@@ -13,7 +13,7 @@ df, data_description = sql_pull_data(query="pull data from time_series table")
 anomaly_df, anomaly_description = anomaly_detection(df, time_col_name="ts", value_col_name="val") 
 ```
 
-## What a plugin have?
+## Plugin Structure
 
 A plugin has two files:
 
@@ -50,7 +50,7 @@ class AnomalyDetectionPlugin(Plugin):
         :param time_col_name: name of the column that contains the datetime
         :param value_col_name: name of the column that contains the numeric values.
         :return df: a new df that adds an additional "Is_Anomaly" column based on the input df.
-        :return desciption: the description about the anomaly detection results.
+        :return description: the description about the anomaly detection results.
         """
         try:
             df[time_col_name] = pd.to_datetime(df[time_col_name])

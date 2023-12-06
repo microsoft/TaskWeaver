@@ -8,7 +8,6 @@ from taskweaver.memory.plugin import PluginModule
 
 
 def test_compose_prompt():
-
     from taskweaver.memory import Attachment, Memory, Post, Round
     from taskweaver.planner import Planner
 
@@ -109,27 +108,28 @@ def test_compose_prompt():
         "You are the Planner who can coordinate CodeInterpreter to finish the user task.",
     )
     assert messages[1]["role"] == "user"
-    assert messages[1]["content"] == "User: count the rows of ./data.csv"
-    assert messages[2]["role"] == "assistant"
-    assert messages[2]["content"] == (
+    assert messages[1]["content"] == "Let's start the new conversation!"
+    assert messages[2]["role"] == "user"
+    assert messages[2]["content"] == "User: count the rows of ./data.csv"
+    assert messages[3]["role"] == "assistant"
+    assert messages[3]["content"] == (
         '{"response": [{"type": "init_plan", "content": "1. load the data file\\n2. count the rows of the loaded data <narrow depend on 1>\\n3. report the result to the user <wide depend on 2>"}, {"type": "plan", "content": "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data\\n2. report the result to the user"}, {"type": "current_plan_step", "content": "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data"}, {"type": "send_to", "content": "CodeInterpreter"}, {"type": "message", "content": "Please load the data file /home/data.csv and count the rows of the loaded data"}]}'
     )
-    assert messages[3]["role"] == "user"
-    assert (
-        messages[3]["content"]
-        == "CodeInterpreter: Load the data file /home/data.csv successfully and there are 100 rows in the data file"
-    )
-    assert messages[4]["role"] == "assistant"
+    assert messages[4]["role"] == "user"
     assert (
         messages[4]["content"]
+        == "CodeInterpreter: Load the data file /home/data.csv successfully and there are 100 rows in the data file"
+    )
+    assert messages[5]["role"] == "assistant"
+    assert (
+        messages[5]["content"]
         == '{"response": [{"type": "init_plan", "content": "1. load the data file\\n2. count the rows of the loaded data <narrow depend on 1>\\n3. report the result to the user <wide depend on 2>"}, {"type": "plan", "content": "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data\\n2. report the result to the user"}, {"type": "current_plan_step", "content": "2. report the result to the user"}, {"type": "send_to", "content": "User"}, {"type": "message", "content": "The data file /home/data.csv is loaded and there are 100 rows in the data file"}]}'
     )
-    assert messages[5]["role"] == "user"
-    assert messages[5]["content"] == "User: hello"
+    assert messages[6]["role"] == "user"
+    assert messages[6]["content"] == "User: hello"
 
 
 def test_compose_example_for_prompt():
-
     from taskweaver.memory import Memory, Post, Round
     from taskweaver.planner import Planner
 

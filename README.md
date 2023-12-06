@@ -34,7 +34,11 @@ data analytics tasks
 - [x] **Easy extension** - TaskWeaver is designed to be easily extended to accomplish 
     more complex tasks. You can create multiple AI copilots to
     act in different roles, and orchestrate them to achieve complex tasks.
-    
+
+# News
+
+- [2023-11-30] TaskWeaver is released on GitHub🎈. 
+
 
 # Getting started
 
@@ -44,6 +48,9 @@ data analytics tasks
 - OpenAI (or Azure OpenAI) access with GPT-3.5 above models. However, it is strongly recommended to use the GPT-4, which is more stable.
 - Other requirements can be found in the `requirements.txt` file. 
 
+> OpenAI API had a major [update](https://github.com/openai/openai-python) from 0.xx to 1.xx in November 2023. 
+> Please make sure you are not using an old version because the API is not backward compatible.
+
 
 ## Quick Start
 
@@ -51,7 +58,7 @@ data analytics tasks
 You can install TaskWeaver by running the following command:
 ```bash
 git clone https://github.com/microsoft/TaskWeaver.git
-cd taskweaver
+cd TaskWeaver
 # install the requirements
 pip install -r requirements.txt
 ```
@@ -84,7 +91,7 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 ```json
 {
 "llm.api_base": "https://xxx.openai.azure.com/",
-"llm.api_key": "the api key",
+"llm.api_key": "your_api_key",
 "llm.api_type": "azure",
 "llm.api_version": "the api version",
 "llm.model": "the model name, e.g., gpt-4"
@@ -94,7 +101,6 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 #### OpenAI
 ```json
 {
-"llm.api_base": "https://api.openai.com/",
 "llm.api_key": "the api key",
 "llm.model": "the model name, e.g., gpt-4"
 }
@@ -126,6 +132,8 @@ Human: ___
 ```
 
 ### Two Walkthrough Examples
+
+
 
 #### Example 1: Pull data from a database and apply an anomaly detection algorithm
 In this example, we will show you how to use TaskWeaver to pull data from a database and apply an anomaly detection algorithm.
@@ -164,6 +172,7 @@ pip install statsmodels
 
 For more examples, please refer to our [paper](http://export.arxiv.org/abs/2311.17541). 
 
+<<<<<<< HEAD
 # Use TaskWeaver as a library
 
 If you want to use TaskWeaver as a library, you can refer to the following code example:
@@ -226,6 +235,24 @@ Note:
 ```
 
 
+=======
+> 💡 The planning of TaskWeaver are based on the LLM model. Therefore, if you want to repeat the examples, the execution process may be different
+> from what you see in the videos. Typically, more concrete prompts will help the model to generate better plans and code.
+
+## How to use TaskWeaver in your project
+
+### Using TaskWeaver as a library
+After cloning the TaskWeaver repository, you can install TaskWeaver as a library by running the following command:
+```bash
+# clone the repository
+cd TaskWeaver
+pip install -e .
+```
+Then, you can follow the [documentation](docs/taskweaver_as_a_lib.md) to use TaskWeaver in your code.
+
+### Using TaskWeaver as a service
+TaskWeaver can be used as a service that can be called by other programs. More details are TBD.
+>>>>>>> aa0685899bdafed41273730e10c67a82f9227732
 
 ## Customizing TaskWeaver
 
@@ -260,7 +287,7 @@ Our paper could be found [here](http://export.arxiv.org/abs/2311.17541).
 If you use TaskWeaver in your research, please cite our paper:
 ```
 @article{taskweaver,
-  title={TaskWeaver: ACode-First Agent Framework},
+  title={TaskWeaver: A Code-First Agent Framework},
   author={Bo Qiao, Liqun Li, Xu Zhang, Shilin He, Yu Kang, Chaoyun Zhang, Fangkai Yang, Hang Dong, Jue Zhang, Lu Wang, Minghua Ma, Pu Zhao, Si Qin, Xiaoting Qin, Chao Du, Yong Xu, Qingwei Lin, Saravan Rajmohan, Dongmei Zhang},
   journal={arXiv preprint arXiv:2311.17541},
   year={2023}
