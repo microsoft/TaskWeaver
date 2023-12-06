@@ -172,6 +172,70 @@ pip install statsmodels
 
 For more examples, please refer to our [paper](http://export.arxiv.org/abs/2311.17541). 
 
+<<<<<<< HEAD
+# Use TaskWeaver as a library
+
+If you want to use TaskWeaver as a library, you can refer to the following code example:
+
+```python
+from taskweaver.app.app import TaskWeaverApp
+
+app_dir = "/path/to/project/"
+app = TaskWeaverApp(app_dir=app_dir)
+session = app.get_session()
+
+user_query = "hello, what can you do?"
+response_round = session.send_message(user_query,
+                                      event_handler=lambda x, y: print(f"{x}:\n{y}"))
+print(response_round.to_dict())
+```
+Note:
+- event_handler: a callback function that is utilized to display the response obtained from TaskWeaver step by step.
+  It takes two arguments: the message type (e.g., `plan`) and the message content.
+- response_round: the response from TaskWeaver. which is an object of the `Round` class. 
+  An example of the `Round` object is shown below:
+```json
+{
+    "id": "round-20231201-043134-218a2681",
+    "user_query": "hello, what can you do?",
+    "state": "finished",
+    "post_list": [
+        {
+            "id": "post-20231201-043134-10eedcca",
+            "message": "hello, what can you do?",
+            "send_from": "User",
+            "send_to": "Planner",
+            "attachment_list": []
+        },
+        {
+            "id": "post-20231201-043141-86a2aaff",
+            "message": "I can help you with various tasks, such as counting rows in a data file, detecting anomalies in a dataset, searching for products on Klarna, summarizing research papers, and pulling data from a SQL database. Please provide more information about the task you want to accomplish, and I'll guide you through the process.",
+            "send_from": "Planner",
+            "send_to": "User",
+            "attachment_list": [
+                {
+                    "id": "atta-20231201-043141-6bc4da86",
+                    "type": "init_plan",
+                    "content": "1. list the available functions"
+                },
+                {
+                    "id": "atta-20231201-043141-6f29f6c9",
+                    "type": "plan",
+                    "content": "1. list the available functions"
+                },
+                {
+                    "id": "atta-20231201-043141-76186c7a",
+                    "type": "current_plan_step",
+                    "content": "1. list the available functions"
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+=======
 > 💡 The planning of TaskWeaver are based on the LLM model. Therefore, if you want to repeat the examples, the execution process may be different
 > from what you see in the videos. Typically, more concrete prompts will help the model to generate better plans and code.
 
@@ -188,6 +252,7 @@ Then, you can follow the [documentation](docs/taskweaver_as_a_lib.md) to use Tas
 
 ### Using TaskWeaver as a service
 TaskWeaver can be used as a service that can be called by other programs. More details are TBD.
+>>>>>>> aa0685899bdafed41273730e10c67a82f9227732
 
 ## Customizing TaskWeaver
 
