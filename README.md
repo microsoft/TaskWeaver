@@ -222,7 +222,7 @@ Our paper could be found [here](http://export.arxiv.org/abs/2311.17541).
 If you use TaskWeaver in your research, please cite our paper:
 ```
 @article{taskweaver,
-  title={TaskWeaver: ACode-First Agent Framework},
+  title={TaskWeaver: A Code-First Agent Framework},
   author={Bo Qiao, Liqun Li, Xu Zhang, Shilin He, Yu Kang, Chaoyun Zhang, Fangkai Yang, Hang Dong, Jue Zhang, Lu Wang, Minghua Ma, Pu Zhao, Si Qin, Xiaoting Qin, Chao Du, Yong Xu, Qingwei Lin, Saravan Rajmohan, Dongmei Zhang},
   journal={arXiv preprint arXiv:2311.17541},
   year={2023}
