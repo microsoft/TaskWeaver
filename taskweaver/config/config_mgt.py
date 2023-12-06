@@ -78,8 +78,9 @@ class AppConfigSource:
             val = self.in_memory_store.get(var_name, None)
             if val is not None:
                 return val
-        # TODO: use all caps for env var, using dot connected sections for JSON vars
-        val = os.environ.get(var_name, None)
+        # env var has the format of upper case with dot replaced by underscore
+        # e.g., llm.api_base -> LLM_API_BASE
+        val = os.environ.get(var_name.upper().replace(".", "_"), None)
         if val is not None:
             if val.lower() in AppConfigSource._null_str_set:
                 return None

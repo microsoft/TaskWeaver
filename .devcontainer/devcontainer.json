@@ -1,0 +1,17 @@
+{
+  "dockerFile": "Dockerfile",
+  "customizations": {
+    "settings": {
+      "python.linting.enabled": true,
+      "python.linting.pylintEnabled": true,
+      "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "ms-toolsai.jupyter",
+      "visualstudioexptteam.vscodeintellicode"
+    ]
+  },
+  "postCreateCommand": "pip install -r requirements.txt"
+} 
