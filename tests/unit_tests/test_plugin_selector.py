@@ -27,10 +27,8 @@ def test_plugin_selector():
     assert any([p.name == "anomaly_detection" for p in selected_plugins])
     assert len(selected_plugins) == 3
     assert selected_plugins[0].name == "anomaly_detection"
-    assert len(plugin_selector.selected_plugins_pool) == 3
 
     query2 = "summarize ./paper.pdf."
     selected_plugins = plugin_selector.plugin_select(query2, top_k=3)
 
-    assert len(plugin_selector.selected_plugins_pool) > 3
     assert any([p.name == "paper_summary" for p in selected_plugins])

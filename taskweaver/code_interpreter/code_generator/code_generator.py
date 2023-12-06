@@ -10,7 +10,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
-from taskweaver.plugin.plugin_selection import PluginSelector
+from taskweaver.plugin.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
@@ -89,6 +89,7 @@ class CodeGenerator(Role):
 
         if self.plugin_registry.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(self.plugin_registry)
+            self.selected_plugin_pool = SelectedPluginPool()
 
     def compose_plugin_only_requirements(self, plugin_list: List[PluginEntry]) -> str:
         requirements = []
@@ -222,16 +223,20 @@ class CodeGenerator(Role):
         """
         overwrite query_requirements and instruction based on the selected plugins
         """
-        _ = self.plugin_selector.plugin_select(user_query, self.plugin_registry.auto_plugin_selection_topk)
+        selected_plugins = self.plugin_selector.plugin_select(
+            user_query,
+            self.plugin_registry.auto_plugin_selection_topk,
+        )
+        self.selected_plugin_pool.extend(selected_plugins)
 
         self.query_requirements = self.prompt_data["requirements"].format(
-            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.plugin_selector.selected_plugins_pool),
+            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.selected_plugin_pool.get_plugins()),
             ROLE_NAME=self.role_name,
         )
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
             EXECUTOR_NAME=self.executor_name,
-            PLUGIN=self.load_plugins(self.plugin_selector.selected_plugins_pool),
+            PLUGIN=self.load_plugins(self.selected_plugin_pool.get_plugins()),
         )
 
     def reply(
@@ -268,6 +273,8 @@ class CodeGenerator(Role):
         for attachment in response.attachment_list:
             if attachment.type in ["sample", "text"]:
                 response.message = attachment.content
+            if self.plugin_registry.enable_auto_plugin_selection and attachment.type == "python":
+                self.selected_plugin_pool.filter_unused_plugins(code=attachment.content)
 
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
