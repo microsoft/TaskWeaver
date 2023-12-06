@@ -6,12 +6,14 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMModuleConfig
 
 
-class EmbeddingModelConfig(ModuleConfig):
+class EmbeddingModuleConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("embedding_model")
-        self.embedding_model_type = self._get_enum("embedding_model_type",
-                                                   ["sentence_transformer", "openai"],
-                                                   "sentence_transformer")
+        self.embedding_model_type = self._get_enum(
+            "embedding_model_type",
+            ["sentence_transformer", "openai"],
+            "sentence_transformer",
+        )
         self.embedding_model_candidates = {
             "sentence_transformer": [
                 "all-mpnet-base-v2",
@@ -21,24 +23,26 @@ class EmbeddingModelConfig(ModuleConfig):
                 "multi-qa-MiniLM-L6-cos-v1",
             ],
             "openai": [
-                "text-embedding-ada-002"
+                "text-embedding-ada-002",
             ],
         }
-        self.embedding_model = self._get_enum("embedding_model",
-                                              self.embedding_model_candidates[self.embedding_model_type],
-                                              self.embedding_model_candidates[self.embedding_model_type][0])
+        self.embedding_model = self._get_enum(
+            "embedding_model",
+            self.embedding_model_candidates[self.embedding_model_type],
+            self.embedding_model_candidates[self.embedding_model_type][0],
+        )
 
 
-class EmbeddingGenerator():
-
+class EmbeddingGenerator:
     @inject
-    def __init__(self, config: EmbeddingModelConfig, llm_config: LLMModuleConfig):
+    def __init__(self, config: EmbeddingModuleConfig, llm_config: LLMModuleConfig):
         self.config = config
         self.llm_config = llm_config
 
         if self.config.embedding_model_type == "sentence_transformer":
             try:
                 from sentence_transformers import SentenceTransformer
+
                 self.embedding_model = SentenceTransformer(self.config.embedding_model)
             except Exception:
                 raise Exception(
@@ -59,13 +63,11 @@ class EmbeddingGenerator():
                     api_key=self.llm_config.api_key,
                 )
 
-    def get_embedding(self, string: str):
-
+    def get_embedding(self, string: str) -> list:
         def get_openai_embedding(string: str):
             return self.client.embeddings.create(input=[string], model=self.config.embedding_model).data[0].embedding
 
         def get_ST_embedding(string: str):
-
             embedding = self.embedding_model.encode(string)
             embedding = embedding.tolist()
 
@@ -80,5 +82,5 @@ class EmbeddingGenerator():
             return embedding_vec
         else:
             raise ValueError(
-                f"No valid embedding model type provided."
+                "No valid embedding model type provided.",
             )

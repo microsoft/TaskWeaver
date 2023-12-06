@@ -9,18 +9,19 @@ from taskweaver.memory.plugin import PluginModule, PluginRegistry
 
 def test_load_plugin_yaml():
     app_injector = Injector(
-        [PluginModule, LoggingModule],
+        [LoggingModule, PluginModule],
     )
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "llm.api_key": "test_key",
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
     plugin_registry = app_injector.get(PluginRegistry)
 
-    assert len(plugin_registry.registry) == 2
+    assert len(plugin_registry.registry) == 4
     assert "anomaly_detection" in plugin_registry.registry
     assert plugin_registry.registry["anomaly_detection"].spec.name == "anomaly_detection"
     assert plugin_registry.registry["anomaly_detection"].spec.description.startswith(
@@ -54,6 +55,7 @@ def test_plugin_format_prompt():
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "llm.api_key": "test_key",
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)

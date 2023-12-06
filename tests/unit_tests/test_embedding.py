@@ -1,9 +1,7 @@
 from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
-from taskweaver.llm import LLMModuleConfig
-from taskweaver.logging import LoggingModule
-from taskweaver.utils.embedding import EmbeddingGenerator, EmbeddingModelConfig
+from taskweaver.utils.embedding import EmbeddingGenerator
 
 
 def test_sentence_transformer_embedding():

@@ -57,7 +57,6 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
-        # plugin_selector: PluginSelector,
     ):
         self.config = config
         self.plugin_registry = plugin_registry

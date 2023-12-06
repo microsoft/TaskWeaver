@@ -13,7 +13,7 @@ class PluginSelector:
         self.selected_plugins_pool = []
 
     @staticmethod
-    def merge_plugin_pool(pool1: List[PluginEntry], pool2: List[PluginEntry]):
+    def merge_plugin_pool(pool1: List[PluginEntry], pool2: List[PluginEntry]) -> List[PluginEntry]:
         merged_list = pool1 + pool2
         result = []
 

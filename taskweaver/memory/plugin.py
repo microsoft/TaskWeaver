@@ -9,7 +9,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMModuleConfig
 from taskweaver.misc.component_registry import ComponentRegistry
 from taskweaver.utils import read_yaml, validate_yaml
-from taskweaver.utils.embedding import EmbeddingModelConfig
+from taskweaver.utils.embedding import EmbeddingModuleConfig
 
 
 @dataclass
@@ -149,7 +149,7 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
     def __init__(
         self,
         file_glob: str,
-        embedding_config: EmbeddingModelConfig,
+        embedding_config: EmbeddingModuleConfig,
         llm_config: LLMModuleConfig,
         ttl: Optional[timedelta] = None,
         enable_auto_plugin_selection: bool = False,
@@ -194,7 +194,7 @@ class PluginModule(Module):
     def provide_plugin_registry(
         self,
         config: PluginModuleConfig,
-        embedding_config: EmbeddingModelConfig,
+        embedding_config: EmbeddingModuleConfig,
         llm_config: LLMModuleConfig,
     ) -> PluginRegistry:
         import os
