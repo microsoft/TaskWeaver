@@ -138,3 +138,4 @@ def load_ipython_extension(ipython: InteractiveShell):
 
     ipython.register_magics(ctx_magic)
     ipython.register_magics(plugin_magic)
+    ipython.InteractiveTB.set_mode(mode="Plain")
