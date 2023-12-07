@@ -30,7 +30,7 @@ def get_config(config: Dict[str, str], var_name: str) -> str:
     elif var_name in config.keys():
         return config.get(var_name)
     else:
-        raise ValueError(f"Config value {var_name} is not found")
+        raise ValueError(f"Config value {var_name} is not found in evaluator_config.json or environment variables.")
 
 
 def config_llm(config: Dict[str, str]) -> Union[ChatOpenAI, AzureChatOpenAI]:

@@ -104,7 +104,10 @@ class LLMApi(object):
 
     def _get_aad_token(self) -> str:
         # TODO: migrate to azure-idnetity module
-        import msal
+        try:
+            import msal
+        except ImportError:
+            raise Exception("AAD authentication requires msal module to be installed, please run `pip install msal`")
 
         config = self.config
 
