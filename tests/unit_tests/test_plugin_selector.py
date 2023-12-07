@@ -2,9 +2,9 @@ import os
 
 from injector import Injector
 
+from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginModule
-from taskweaver.plugin.plugin_selection import PluginSelector
 
 
 def test_plugin_selector():

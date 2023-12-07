@@ -4,13 +4,13 @@ from typing import List, Optional
 from injector import inject
 
 from taskweaver.code_interpreter.code_generator.code_verification import CodeVerificationConfig
+from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
-from taskweaver.plugin.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 from taskweaver.utils.embedding import EmbeddingModuleConfig
