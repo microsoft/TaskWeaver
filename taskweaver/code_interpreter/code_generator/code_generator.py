@@ -227,7 +227,7 @@ class CodeGenerator(Role):
             user_query,
             self.plugin_registry.auto_plugin_selection_topk,
         )
-        self.selected_plugin_pool.extend(selected_plugins)
+        self.selected_plugin_pool.add_selected_plugins(selected_plugins)
         self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
         self.logger.info(f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}")
 
