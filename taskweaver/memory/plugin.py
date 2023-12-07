@@ -6,10 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from injector import Module, provider
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMApi
 from taskweaver.misc.component_registry import ComponentRegistry
 from taskweaver.utils import read_yaml, validate_yaml
-from taskweaver.utils.embedding import EmbeddingModuleConfig
 
 
 @dataclass
@@ -149,19 +147,9 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
     def __init__(
         self,
         file_glob: str,
-        embedding_config: EmbeddingModuleConfig,
-        llm_api: LLMApi,
         ttl: Optional[timedelta] = None,
-        enable_auto_plugin_selection: bool = False,
-        auto_plugin_selection_topk: int = 3,
     ) -> None:
         super().__init__(file_glob, ttl)
-        self.enable_auto_plugin_selection = enable_auto_plugin_selection
-        self.auto_plugin_selection_topk = auto_plugin_selection_topk
-        if self.enable_auto_plugin_selection:
-            from taskweaver.utils.embedding import EmbeddingGenerator
-
-            self.embedding_generator = EmbeddingGenerator(embedding_config, llm_api)
 
     def _load_component(self, path: str) -> Tuple[str, PluginEntry]:
         entry: Optional[PluginEntry] = PluginEntry.from_yaml(path)
@@ -169,8 +157,6 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
             raise Exception(f"failed to loading plugin from {path}")
         if not entry.enabled:
             raise Exception(f"plugin {entry.name} is disabled")
-        if self.enable_auto_plugin_selection:
-            entry.spec.embedding = self.embedding_generator.get_embedding(entry.name + ": " + entry.spec.description)
         return entry.name, entry
 
 
@@ -185,8 +171,6 @@ class PluginModuleConfig(ModuleConfig):
                 "plugins",
             ),
         )
-        self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
-        self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
 
 class PluginModule(Module):
@@ -194,17 +178,11 @@ class PluginModule(Module):
     def provide_plugin_registry(
         self,
         config: PluginModuleConfig,
-        embedding_config: EmbeddingModuleConfig,
-        llm_api: LLMApi,
     ) -> PluginRegistry:
         import os
 
         file_glob = os.path.join(config.base_path, "*.yaml")
         return PluginRegistry(
             file_glob=file_glob,
-            embedding_config=embedding_config,
-            llm_api=llm_api,
             ttl=timedelta(minutes=10),
-            enable_auto_plugin_selection=config.enable_auto_plugin_selection,
-            auto_plugin_selection_topk=config.auto_plugin_selection_topk,
         )

@@ -4,7 +4,9 @@ import numpy as np
 from injector import inject
 from sklearn.metrics.pairwise import cosine_similarity
 
+from taskweaver.llm import LLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
+from taskweaver.utils.embedding import EmbeddingGenerator, EmbeddingModuleConfig
 
 
 class SelectedPluginPool:
@@ -56,9 +58,20 @@ class SelectedPluginPool:
 
 class PluginSelector:
     @inject
-    def __init__(self, plugin_registry: PluginRegistry):
+    def __init__(
+        self,
+        plugin_registry: PluginRegistry,
+        embedding_config: EmbeddingModuleConfig,
+        llm_api: LLMApi,
+    ):
         self.plugin_registry = plugin_registry
-        self.embedding_generator = self.plugin_registry.embedding_generator
+        self.embedding_generator = EmbeddingGenerator(embedding_config, llm_api)
+        self.plugin_embedding_dict = {}
+
+    def generate_plugin_embeddings(self):
+        for p in self.plugin_registry.get_list():
+            plugin_embedding = self.embedding_generator.get_embedding(p.name + ": " + p.spec.description)
+            self.plugin_embedding_dict[p.name] = plugin_embedding
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.embedding_generator.get_embedding(user_query))
@@ -74,7 +87,7 @@ class PluginSelector:
                     1,
                     -1,
                 ),
-                np.array(p.spec.embedding).reshape(1, -1),
+                np.array(self.plugin_embedding_dict[p.name]).reshape(1, -1),
             )
             similarities.append((p, similarity))
 

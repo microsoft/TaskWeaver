@@ -14,7 +14,6 @@ def test_load_plugin_yaml():
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
-            "llm.api_key": "test_key",
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -55,7 +54,6 @@ def test_plugin_format_prompt():
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
-            "llm.api_key": "test_key",
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)

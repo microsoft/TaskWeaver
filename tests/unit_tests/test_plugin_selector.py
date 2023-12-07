@@ -3,7 +3,7 @@ import os
 from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
-from taskweaver.memory.plugin import PluginModule, PluginRegistry
+from taskweaver.memory.plugin import PluginModule
 from taskweaver.plugin.plugin_selection import PluginSelector
 
 
@@ -15,12 +15,12 @@ def test_plugin_selector():
             "embedding_model.embedding_model_type": "sentence_transformer",
             "embedding_model.embedding_model": "all-mpnet-base-v2",
             "llm.api_key": "test_key",
-            "plugin.enable_auto_plugin_selection": True,
+            "code_generator.enable_auto_plugin_selection": True,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
-    plugin_registry = app_injector.get(PluginRegistry)
-    plugin_selector = PluginSelector(plugin_registry)
+    plugin_selector = app_injector.get(PluginSelector)
+    plugin_selector.generate_plugin_embeddings()
 
     query1 = "detect abnormal data points in ./data.csv."
     selected_plugins = plugin_selector.plugin_select(query1, top_k=3)

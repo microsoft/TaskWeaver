@@ -13,6 +13,7 @@ from taskweaver.misc.example import load_examples
 from taskweaver.plugin.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
+from taskweaver.utils.embedding import EmbeddingModuleConfig
 from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
 
 
@@ -45,6 +46,8 @@ class CodeGeneratorConfig(ModuleConfig):
                 "compression_prompt.yaml",
             ),
         )
+        self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
+        self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
 
 class CodeGenerator(Role):
@@ -57,6 +60,7 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
+        embedding_config: EmbeddingModuleConfig,
     ):
         self.config = config
         self.plugin_registry = plugin_registry
@@ -87,8 +91,10 @@ class CodeGenerator(Role):
         self.round_compressor = round_compressor
         self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        if self.plugin_registry.enable_auto_plugin_selection:
-            self.plugin_selector = PluginSelector(self.plugin_registry)
+        if self.config.enable_auto_plugin_selection:
+            self.plugin_selector = PluginSelector(self.plugin_registry, embedding_config, self.llm_api)
+            self.plugin_selector.generate_plugin_embeddings()
+            logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 
     def compose_plugin_only_requirements(self, plugin_list: List[PluginEntry]) -> str:
@@ -225,7 +231,7 @@ class CodeGenerator(Role):
         """
         selected_plugins = self.plugin_selector.plugin_select(
             user_query,
-            self.plugin_registry.auto_plugin_selection_topk,
+            self.config.auto_plugin_selection_topk,
         )
         self.selected_plugin_pool.add_selected_plugins(selected_plugins)
         self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
@@ -254,7 +260,7 @@ class CodeGenerator(Role):
         )
 
         user_query = rounds[-1].user_query
-        if self.plugin_registry.enable_auto_plugin_selection:
+        if self.config.enable_auto_plugin_selection:
             self.select_plugins_for_prompt(user_query)
 
         prompt = self.compose_prompt(rounds)
@@ -275,7 +281,7 @@ class CodeGenerator(Role):
         for attachment in response.attachment_list:
             if attachment.type in ["sample", "text"]:
                 response.message = attachment.content
-            if self.plugin_registry.enable_auto_plugin_selection and attachment.type == "python":
+            if self.config.enable_auto_plugin_selection and attachment.type == "python":
                 self.selected_plugin_pool.filter_unused_plugins(code=attachment.content)
 
         if prompt_log_path is not None:
