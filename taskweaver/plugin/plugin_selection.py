@@ -19,10 +19,6 @@ class SelectedPluginPool:
     def __len__(self):
         return len(self.selected_plugin_pool)
 
-    # def delete(self, plugins_to_delete: List[PluginEntry]):
-    #     for plugin in plugins_to_delete:
-    #         self.selected_plugin_pool.remove(plugin)
-
     def filter_unused_plugins(self, code):
         plugins_used_in_code = [p for p in self.selected_plugin_pool if p.name in code]
         self.previous_used_plugin_pool = self.merge_plugin_pool(self.previous_used_plugin_pool, plugins_used_in_code)

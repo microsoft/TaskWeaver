@@ -228,6 +228,8 @@ class CodeGenerator(Role):
             self.plugin_registry.auto_plugin_selection_topk,
         )
         self.selected_plugin_pool.extend(selected_plugins)
+        self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
+        self.logger.info(f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}")
 
         self.query_requirements = self.prompt_data["requirements"].format(
             PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.selected_plugin_pool.get_plugins()),
