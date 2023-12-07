@@ -1,9 +1,7 @@
 from injector import inject
-from openai import OpenAI
-from openai.lib.azure import AzureOpenAI
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMModuleConfig
+from taskweaver.llm import LLMApi
 
 
 class EmbeddingModuleConfig(ModuleConfig):
@@ -35,9 +33,9 @@ class EmbeddingModuleConfig(ModuleConfig):
 
 class EmbeddingGenerator:
     @inject
-    def __init__(self, config: EmbeddingModuleConfig, llm_config: LLMModuleConfig):
+    def __init__(self, config: EmbeddingModuleConfig, llm_api: LLMApi):
         self.config = config
-        self.llm_config = llm_config
+        self.llm_api = llm_api
 
         if self.config.embedding_model_type == "sentence_transformer":
             try:
@@ -50,18 +48,7 @@ class EmbeddingGenerator:
                     "Please install it using pip install sentence_transformers",
                 )
         elif self.config.embedding_model_type == "openai":
-            api_type = self.llm_config.api_type
-            if api_type == "azure":
-                self.client = AzureOpenAI(
-                    api_version=self.llm_config.api_version,
-                    azure_endpoint=self.llm_config.api_base,
-                    api_key=self.llm_config.api_key,
-                )
-            elif api_type == "openai":
-                self.client = OpenAI(
-                    base_url=self.llm_config.api_base,
-                    api_key=self.llm_config.api_key,
-                )
+            self.client = self.llm_api.get_client()
 
     def get_embedding(self, string: str) -> list:
         def get_openai_embedding(string: str):

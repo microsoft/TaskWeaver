@@ -5,7 +5,7 @@ from taskweaver.utils.embedding import EmbeddingGenerator
 
 
 def test_sentence_transformer_embedding():
-    app_injector = Injector()
+    app_injector = Injector([])
     app_config = AppConfigSource(
         config={
             "embedding_model.embedding_model_type": "sentence_transformer",

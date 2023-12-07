@@ -83,6 +83,25 @@ class LLMApi(object):
     def __init__(self, config: LLMModuleConfig):
         self.config = config
 
+        api_type = self.config.api_type
+        if api_type == "azure":
+            self.client = AzureOpenAI(
+                api_version=self.config.api_version,
+                azure_endpoint=self.config.api_base,
+                api_key=self.config.api_key,
+            )
+        elif api_type == "azure_ad":
+            self.client = AzureOpenAI(
+                api_version=self.config.api_version,
+                azure_endpoint=self.config.api_base,
+                api_key=self._get_aad_token(),
+            )
+        elif api_type == "openai":
+            self.client = OpenAI(
+                base_url=self.config.api_base,
+                api_key=self.config.api_key,
+            )
+
     def _get_aad_token(self) -> str:
         # TODO: migrate to azure-idnetity module
         import msal
@@ -241,25 +260,6 @@ class LLMApi(object):
         backup_engine: Optional[str] = None,
         use_backup_engine: bool = False,
     ) -> Union[ChatMessageType, Generator[ChatMessageType, None, None]]:
-        api_type = self.config.api_type
-        if api_type == "azure":
-            client = AzureOpenAI(
-                api_version=self.config.api_version,
-                azure_endpoint=self.config.api_base,
-                api_key=self.config.api_key,
-            )
-        elif api_type == "azure_ad":
-            client = AzureOpenAI(
-                api_version=self.config.api_version,
-                azure_endpoint=self.config.api_base,
-                api_key=self._get_aad_token(),
-            )
-        elif api_type == "openai":
-            client = OpenAI(
-                base_url=self.config.api_base,
-                api_key=self.config.api_key,
-            )
-
         engine = self.config.model if engine is None else engine
         backup_engine = self.config.backup_model if backup_engine is None else backup_engine
 
@@ -273,7 +273,7 @@ class LLMApi(object):
         try:
             if use_backup_engine:
                 engine = backup_engine
-            res: Any = client.chat.completions.create(
+            res: Any = self.client.chat.completions.create(
                 model=engine,
                 messages=messages,
                 temperature=temperature,
@@ -319,3 +319,6 @@ class LLMApi(object):
         except openai.APIError as e:
             # Handle API error, e.g. retry or log
             raise Exception(f"OpenAI API returned an API Error: {e}")
+
+    def get_client(self):
+        return self.client

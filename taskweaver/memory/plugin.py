@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from injector import Module, provider
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMModuleConfig
+from taskweaver.llm import LLMApi
 from taskweaver.misc.component_registry import ComponentRegistry
 from taskweaver.utils import read_yaml, validate_yaml
 from taskweaver.utils.embedding import EmbeddingModuleConfig
@@ -150,7 +150,7 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
         self,
         file_glob: str,
         embedding_config: EmbeddingModuleConfig,
-        llm_config: LLMModuleConfig,
+        llm_api: LLMApi,
         ttl: Optional[timedelta] = None,
         enable_auto_plugin_selection: bool = False,
         auto_plugin_selection_topk: int = 3,
@@ -161,7 +161,7 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
         if self.enable_auto_plugin_selection:
             from taskweaver.utils.embedding import EmbeddingGenerator
 
-            self.embedding_generator = EmbeddingGenerator(embedding_config, llm_config)
+            self.embedding_generator = EmbeddingGenerator(embedding_config, llm_api)
 
     def _load_component(self, path: str) -> Tuple[str, PluginEntry]:
         entry: Optional[PluginEntry] = PluginEntry.from_yaml(path)
@@ -195,7 +195,7 @@ class PluginModule(Module):
         self,
         config: PluginModuleConfig,
         embedding_config: EmbeddingModuleConfig,
-        llm_config: LLMModuleConfig,
+        llm_api: LLMApi,
     ) -> PluginRegistry:
         import os
 
@@ -203,7 +203,7 @@ class PluginModule(Module):
         return PluginRegistry(
             file_glob=file_glob,
             embedding_config=embedding_config,
-            llm_config=llm_config,
+            llm_api=llm_api,
             ttl=timedelta(minutes=10),
             enable_auto_plugin_selection=config.enable_auto_plugin_selection,
             auto_plugin_selection_topk=config.auto_plugin_selection_topk,
