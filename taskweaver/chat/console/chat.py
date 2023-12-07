@@ -79,7 +79,8 @@ def chat_taskweaver(app_dir: Optional[str] = None):
         if user_query == "":
             error_message("Empty input, please try again")
             continue
-
+        
+        exit_event = threading.Event()
         lock = threading.Lock()
         messages: List = []
         response = []
@@ -97,6 +98,7 @@ def chat_taskweaver(app_dir: Optional[str] = None):
                         event_handler=event_handler,
                     ),
                 )
+                exit_event.set()
             except Exception as e:
                 response.append("Error")
                 raise e
@@ -143,8 +145,20 @@ def chat_taskweaver(app_dir: Optional[str] = None):
         t_ui.start()
         t_ex.start()
 
-        t_ex.join()
-        t_ui.join()
+        try:
+            while True:
+                exit_event.wait(0.1)
+                if exit_event.is_set():
+                    break
+        except KeyboardInterrupt:
+            error_message("Interrupted in console, exiting...")
+            exit(0)
+
+        try:
+            t_ex.join(1)
+            t_ui.join(1)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":
