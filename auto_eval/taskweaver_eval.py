@@ -1,7 +1,10 @@
 import json
 import os
+import sys
 import warnings
 from typing import Any, Optional
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 warnings.filterwarnings("ignore")
 
@@ -121,18 +124,54 @@ def batch_auto_evaluate_for_taskweaver(
 
 
 if __name__ == "__main__":
-    # run single case
-    eval_case_file_path = "cases/complicated_task_stock_forecasting.yaml"
-    score_list = auto_evaluate_for_taskweaver(eval_case_file_path, interrupt_threshold=None)
-    for idx, score, normalized_score in score_list:
-        print(f"Round-{idx} score: {score}, normalized score: {normalized_score}")
+    import argparse
 
-    # run batch cases
-    result_file_path = "sample_case_results.csv"
-    case_file_dir = "cases"
-    batch_auto_evaluate_for_taskweaver(
-        result_file_path,
-        case_file_dir,
-        flush_result_file=False,
-        interrupt_threshold=None,
+    parser = argparse.ArgumentParser(description="Taskweaver auto evaluation script")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        choices=["single", "batch"],
+        required=True,
+        help="Evaluation mode, single for evaluating a single case, " "batch for evaluating a batch of cases",
     )
+    parser.add_argument(
+        "-f",
+        "--file",
+        type=str,
+        required=True,
+        help="Path to the evaluation case file or directory containing evaluation case files",
+    )
+    parser.add_argument(
+        "-r",
+        "--result",
+        type=str,
+        default="sample_case_results.csv",
+        help="Path to the result file for batch evaluation mode",
+    )
+    parser.add_argument(
+        "-t",
+        "--threshold",
+        type=float,
+        default=None,
+        help="Interrupt threshold for multi-round chat",
+    )
+    parser.add_argument(
+        "-flush",
+        "--flush",
+        action="store_true",
+        help="Flush the result file",
+    )
+
+    args = parser.parse_args()
+
+    if args.mode == "single":
+        score_list = auto_evaluate_for_taskweaver(args.file, interrupt_threshold=None)
+        for idx, score, normalized_score in score_list:
+            print(f"Round-{idx} score: {score}, normalized score: {normalized_score}")
+    elif args.mode == "batch":
+        batch_auto_evaluate_for_taskweaver(
+            args.result,
+            args.file,
+            flush_result_file=args.flush,
+            interrupt_threshold=None,
+        )
