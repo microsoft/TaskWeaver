@@ -155,14 +155,14 @@ class CodeExecutor:
             output = result.output
             if isinstance(output, list) and len(output) > 0:
                 lines.append(
-                    "The values of variables of the above Python code after execution are:",
+                    "The values of variables of the above Python code after execution are:\n",
                 )
                 for o in output:
                     lines.append(f"{str(o)}")
                 lines.append("")
             else:
                 lines.append(
-                    "The result of above Python code after execution is: " + str(output),
+                    "The result of above Python code after execution is:\n" + str(output),
                 )
         elif result.is_success:
             if len(result.stdout) > 0:

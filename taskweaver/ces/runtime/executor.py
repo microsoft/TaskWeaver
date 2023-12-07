@@ -169,7 +169,13 @@ class Executor:
 
     def load_lib(self, local_ns: Dict[str, Any]):
         try:
-            local_ns["pd"] = __import__("pandas")
+            pd = __import__("pandas")
+            # customize pandas display options
+            pd.set_option("display.html.table_schema", False)
+            pd.set_option("display.notebook_repr_html", False)
+            pd.set_option("display.max_rows", 4)
+            pd.set_option("display.expand_frame_repr", False)
+            local_ns["pd"] = pd
         except ImportError:
             self.log(
                 "warning",
