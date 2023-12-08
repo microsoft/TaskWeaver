@@ -5,7 +5,8 @@ If you want to use TaskWeaver as a library, you can refer to the following code 
 ```python
 from taskweaver.app.app import TaskWeaverApp
 
-app_dir = "/path/to/project/"
+# This is the folder that contains the taskweaver_config.json file and not the repo root. Defaults to "./project/"
+app_dir = "./project/"
 app = TaskWeaverApp(app_dir=app_dir)
 session = app.get_session()
 
