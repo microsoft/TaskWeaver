@@ -3,12 +3,12 @@ import sys
 import os
 
 from typing import Dict
+repo_path = os.path.join(os.path.dirname(__file__), "../../")
+sys.path.append(repo_path)
 from taskweaver.memory.round import Round
 
 from taskweaver.session.session import Session
 
-repo_path = os.path.join(os.path.dirname(__file__), "../../")
-sys.path.append(repo_path)
 from taskweaver.app.app import TaskWeaverApp
 
 project_path = os.path.join(repo_path, "project")
