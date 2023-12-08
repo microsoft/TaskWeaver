@@ -105,7 +105,7 @@ planner_response_schema: |-
       },
       {
         "type": "send_to",
-        "content": "User, CodeInterpreter, or Planner"
+        "content": "User or CodeInterpreter"
       },
       {
         "type": "message",

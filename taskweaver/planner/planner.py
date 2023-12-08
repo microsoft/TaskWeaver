@@ -128,7 +128,9 @@ class Planner(Role):
                                 message=planner_message,
                             ),
                         )
-                    elif post.send_to == "Planner":  # self correction for planner response, e.g., format error
+                    elif (
+                        post.send_to == "Planner"
+                    ):  # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
                                 role="user",
@@ -188,6 +190,7 @@ class Planner(Role):
 
         def check_post_validity(post: Post):
             assert post.send_to is not None, "Post send_to field is None"
+            assert post.send_to != "Planner", "Post send_to field should not be Planner"
             assert post.message is not None, "Post message field is None"
             assert post.attachment_list[0].type == "init_plan", "Post attachment type is not init_plan"
             assert post.attachment_list[1].type == "plan", "Post attachment type is not plan"
@@ -211,7 +214,7 @@ class Planner(Role):
                 f"{self.prompt_data['planner_response_schema']}"
                 "Please try to regenerate the Planner output.",
                 send_to="Planner",
-                send_from="Planner",
+                send_from="User",
             )
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
