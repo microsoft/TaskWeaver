@@ -7,7 +7,7 @@ from injector import inject
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -133,16 +133,14 @@ class Planner(Role):
                     ):  # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
-                                role="user",
-                                message=post.message,
+                                role="assistant",
+                                message=post.get_attachment(type="invalid_response")[0],
                             ),
-                        )
-                        message = self.planner_post_translator.post_to_raw_text(
-                            post=post,
-                        )
+                        )  # append the invalid response to chat history
                         conversation.append(
-                            format_chat_message(role="assistant", message=message),
-                        )
+                            format_chat_message(role="user", message="User: " + post.message),
+                        )  # append the self correction instruction message to chat history
+
                 else:
                     message = post.send_from + ": " + post.message
                     conversation.append(
@@ -189,12 +187,12 @@ class Planner(Role):
         chat_history = self.compose_prompt(rounds)
 
         def check_post_validity(post: Post):
-            assert post.send_to is not None, "Post send_to field is None"
-            assert post.send_to != "Planner", "Post send_to field should not be Planner"
-            assert post.message is not None, "Post message field is None"
-            assert post.attachment_list[0].type == "init_plan", "Post attachment type is not init_plan"
-            assert post.attachment_list[1].type == "plan", "Post attachment type is not plan"
-            assert post.attachment_list[2].type == "current_plan_step", "Post attachment type is not current_plan_step"
+            assert post.send_to is not None, "send_to field is None"
+            assert post.send_to != "Planner", "send_to field should not be Planner"
+            assert post.message is not None, "message field is None"
+            assert post.attachment_list[0].type == "init_plan", "attachment type is not init_plan"
+            assert post.attachment_list[1].type == "plan", "attachment type is not plan"
+            assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
         llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:
@@ -209,12 +207,13 @@ class Planner(Role):
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             response_post = Post.create(
-                message=f"The output of Planner is invalid."
+                message=f"Failed to parse Planner output due to {str(e)}."
                 f"The output format should follow the below format:"
                 f"{self.prompt_data['planner_response_schema']}"
-                "Please try to regenerate the Planner output.",
+                "Please try to regenerate the output.",
                 send_to="Planner",
-                send_from="User",
+                send_from="Planner",
+                attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
             )
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
