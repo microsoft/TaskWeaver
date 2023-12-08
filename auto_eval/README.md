@@ -41,3 +41,6 @@ A test case is a yaml file that contains the following fields:
   - ...
 - post_index: the index of the `post_list` in response `round` that should be evaluated. If it is set to `null`, then the entire `round` will be evaluated.
 
+
+Note: for the `eval_code` field, you can use the variable `agent_response` in your evaluation code snippet.
+It can be a `Round` or `Post` JSON object determined by the `post_index` field.
