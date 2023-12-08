@@ -101,3 +101,46 @@ def test_post_to_raw_text():
 
     prompt = translator.post_to_raw_text(post=post, if_format_message=True, if_format_send_to=True)
     assert prompt == response_str1
+
+
+def test_parse_json_str():
+    json_str = """{
+        "response": [
+            {
+                "type": "init_plan",
+                "content": "1. Read the d:/demo_data.csvn2. Confirm the columns to be detected anomalies <interactively depends on 1>3. Detect anomalies on the loaded data <sequentially depends on 2>n4. Report the detected anomalies to the user <interactively depends on 3>"
+            },
+            {
+                "type": "plan",
+                "content": "1. Read the d:/demo_data.csvn2. Confirm the columns to be detected anomaliesn3. Detect anomalies on the loaded datan4. Report the detected anomalies to the user"
+            },
+            {
+                "type": "current_plan_step",
+                "content": "3. Detect anomalies on the loaded data"
+            },
+            {
+                "type": "send_to",
+                "content": "CodeInterpreter"
+            },
+            {
+                "type": "message",
+                "content": {
+                    "function": "anomaly_detection",
+                    "parameters": {
+                        "data": "df",
+                        "columns": [
+                            "TimeBucket",
+                            "Count"
+                        ]
+                    }
+                }
+            }
+        ]
+    }"""
+    posts = list(translator.parse_llm_output_stream([json_str]))
+    assert posts[4]["type"] == "message"
+    assert (
+        posts[4]["content"] == '[key->"function"]:[val->"anomaly_detection"],[key->"parameters"]:['
+        'key->"data"]:[val->"df"],[key->"columns"]:[val->"TimeBucket"],'
+        '[val->"Count"]'
+    )

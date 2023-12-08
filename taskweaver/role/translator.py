@@ -114,6 +114,7 @@ class PostTranslator:
         json_data_stream = io.StringIO("".join(itertools.chain(llm_output)))
         parser = ijson.parse(json_data_stream)
         element = {}
+        content = ""
         try:
             for prefix, event, value in parser:
                 if prefix == "response.item" and event == "map_key" and value == "type":
@@ -124,6 +125,15 @@ class PostTranslator:
                     element["content"] = None
                 elif prefix == "response.item.content" and event == "string":
                     element["content"] = value
+                elif prefix == "response.item.content" and event == "start_map":
+                    content = ""
+                elif prefix.startswith("response.item.content") and event == "map_key":
+                    content += f'[key->"{value}"]:'
+                elif prefix.startswith("response.item.content") and event == "string":
+                    content += f'[val->"{value}"],'
+                elif prefix == "response.item.content" and event == "end_map":
+                    element["content"] = content[:-1]
+                    content = ""
 
                 if len(element) == 2 and None not in element.values():
                     yield element
