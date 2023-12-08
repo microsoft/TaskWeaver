@@ -57,7 +57,7 @@ async def main(message: cl.Message):
             )
         )
         await cl.Message(
-            content=f"{post.send_from}:", elements=elements, parent_id=id
+            content="---", elements=elements, parent_id=id, author=post.send_from
         ).send()
 
     if post.send_to == "User":
