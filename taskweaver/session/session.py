@@ -84,7 +84,8 @@ class Session:
     def update_session_var(self, variables: Dict[str, str]):
         self.session_var.update(variables)
 
-    def send_message(self, message: str, event_handler: callable) -> Round:
+    def send_message(self, message: str, event_handler: callable = None) -> Round:
+        event_handler = event_handler or (lambda *args: None)
         chat_round = self.memory.create_round(user_query=message)
 
         def _send_message(recipient: str, post: Post):
