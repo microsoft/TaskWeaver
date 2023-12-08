@@ -1,8 +1,8 @@
 from typing import Optional
-
+import os
 from injector import inject
 
-from taskweaver.code_interpreter.code_executor import CodeExecutor
+from taskweaver.code_interpreter.code_executor import CodeExecutor, get_artifact_uri
 from taskweaver.code_interpreter.code_generator import (
     CodeGenerator,
     code_snippet_verification,
@@ -142,6 +142,20 @@ class CodeInterpreter(Role):
                     with_code=False,
                     use_local_uri=self.config.use_local_uri,
                 ),
+            ),
+        )
+        artifact_paths = [get_artifact_uri(execution_id=exec_result.execution_id,
+                                file=(a.file_name
+                                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
+                                    else os.path.join(self.executor.execution_cwd, a.file_name)
+                                    ),
+                                    use_local_uri=self.config.use_local_uri
+                                )
+                                for a in exec_result.artifact]
+        response.add_attachment(
+            Attachment.create(
+                "artifact_paths",
+                artifact_paths
             ),
         )
         event_handler(

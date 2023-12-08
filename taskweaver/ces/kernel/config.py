@@ -14,7 +14,7 @@ c.InteractiveShell.color_info = False
 c.InteractiveShell.colors = "NoColor"
 
 # inline backend configuration
-c.InlineBackend.figure_formats = ["svg"]
+c.InlineBackend.figure_formats = ["png"]
 c.InlineBackend.rc = {
     "text.color": (0.25, 0.25, 0.25),
     "axes.titlesize": 14,
