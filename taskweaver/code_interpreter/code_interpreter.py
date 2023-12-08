@@ -37,6 +37,8 @@ class CodeInterpreter(Role):
         self.config = config
         self.retry_count = 0
 
+        self.logger.info("CodeInterpreter initialized successfully.")
+
     def reply(
         self,
         memory: Memory,

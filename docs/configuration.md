@@ -13,7 +13,7 @@ The following table lists the parameters in the configuration file:
 |------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 | `llm.model`                              | The model name used by the language model.                                       | gpt-4                                                                                  |
 | `llm.backup_model`                       | The model name used for self-correction purposes.                                | `null`                                                                                 |
-| `llm.api_base`                           | The base URL of the OpenAI API.                                                  | `https://api.openai.com/v1`                                                               |
+| `llm.api_base`                           | The base URL of the OpenAI API.                                                  | `https://api.openai.com/v1`                                                            |
 | `llm.api_key`                            | The API key of the OpenAI API.                                                   | `null`                                                                                 |
 | `llm.api_type`                           | The type of the OpenAI API, could be `openai` or `azure`.                        | `openai`                                                                               |
 | `llm.api_version`                        | The version of the OpenAI API.                                                   | `2023-07-01-preview`                                                                   |
@@ -27,7 +27,9 @@ The following table lists the parameters in the configuration file:
 | `planner.example_base_path`              | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                       |
 | `planner.prompt_compression`             | Whether to compress the chat history for planner                                 | `false`                                                                                | 
 | `code_generator.example_base_path`       | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                               |
- | `code_generator.prompt_compression`      | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
+| `code_generator.prompt_compression`      | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
+| `code_generator.enable_auto_plugin_selection`   | Whether to enable auto plugin selection                                          | `false`                                                                                |
+| `code_generator.auto_plugin_selection_topk` | The number of auto selected plugins  in each round                               | `3`                                                                                    |
 | `session.max_internal_chat_round_num`    | The maximum number of internal chat rounds between Planner and Code Interpreter  | `10`                                                                                   |
 | `session.use_planner`              | Use Planner or only use Code Interpreter                                         | `true`                                                                                 |
 > 💡 ${AppBaseDir} is the project directory.
