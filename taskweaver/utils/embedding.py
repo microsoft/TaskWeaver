@@ -1,3 +1,5 @@
+from typing import List, Union
+
 from injector import inject
 
 from taskweaver.config.module_config import ModuleConfig
@@ -50,15 +52,31 @@ class EmbeddingGenerator:
         elif self.config.embedding_model_type == "openai":
             self.client = self.llm_api.get_client()
 
-    def get_embedding(self, string: str) -> list:
-        def get_openai_embedding(string: str):
-            return self.client.embeddings.create(input=[string], model=self.config.embedding_model).data[0].embedding
+    def get_embedding(self, string: Union[str, List[str]]) -> List[List[float]]:
+        def get_openai_embedding(string: Union[str, List[str]]) -> List[List[float]]:
+            if isinstance(string, str):
+                string = [string]
 
-        def get_ST_embedding(string: str):
-            embedding = self.embedding_model.encode(string)
-            embedding = embedding.tolist()
+            embeddings = []
+            embedding_results = self.client.embeddings.create(input=string, model=self.config.embedding_model).data
+            for i in range(len(embedding_results)):
+                embeddings.append(embedding_results[i].embedding)
 
-            return embedding
+            if len(embeddings) == 1:
+                embeddings = embeddings[0]
+
+            return embeddings
+
+        def get_ST_embedding(string: Union[str, List[str]]) -> Union[List[List[float]], List[float]]:
+            if isinstance(string, str):
+                string = [string]
+            embeddings = self.embedding_model.encode(string)
+            embeddings = embeddings.tolist()
+
+            if len(embeddings) == 1:
+                embeddings = embeddings[0]
+
+            return embeddings
 
         embedding_model_type = self.config.embedding_model_type
         if embedding_model_type == "sentence_transformer":

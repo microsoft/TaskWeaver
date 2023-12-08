@@ -16,10 +16,16 @@ def test_sentence_transformer_embedding():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     embedding_generator = app_injector.create_object(EmbeddingGenerator)
 
-    text = "This is a test sentence."
-    embedding = embedding_generator.get_embedding(text)
+    text_list = ["This is a test sentence.", "This is another test sentence."]
+    embedding1 = embedding_generator.get_embedding(text_list)
 
-    assert len(embedding) == 768
+    assert len(embedding1) == 2
+    assert len(embedding1[0]) == 768
+    assert len(embedding1[1]) == 768
+
+    text = "This is a test sentence."
+    embedding2 = embedding_generator.get_embedding(text)
+    assert len(embedding2) == 768
 
 
 def test_openai_embedding():
@@ -34,7 +40,13 @@ def test_openai_embedding():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     embedding_generator = app_injector.create_object(EmbeddingGenerator)
 
-    text = "This is a test sentence."
-    embedding = embedding_generator.get_embedding(text)
+    text_list = ["This is a test sentence.", "This is another test sentence."]
+    embedding1 = embedding_generator.get_embedding(text_list)
 
-    assert len(embedding) == 1536
+    assert len(embedding1) == 2
+    assert len(embedding1[0]) == 1536
+    assert len(embedding1[1]) == 1536
+
+    text = "This is a test sentence."
+    embedding2 = embedding_generator.get_embedding(text)
+    assert len(embedding2) == 1536

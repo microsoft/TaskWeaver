@@ -69,9 +69,12 @@ class PluginSelector:
         self.plugin_embedding_dict = {}
 
     def generate_plugin_embeddings(self):
+        plugin_intro_text_list = []
         for p in self.plugin_registry.get_list():
-            plugin_embedding = self.embedding_generator.get_embedding(p.name + ": " + p.spec.description)
-            self.plugin_embedding_dict[p.name] = plugin_embedding
+            plugin_intro_text_list.append(p.name + ": " + p.spec.description)
+        plugin_embeddings = self.embedding_generator.get_embedding(plugin_intro_text_list)
+        for i, p in enumerate(self.plugin_registry.get_list()):
+            self.plugin_embedding_dict[p.name] = plugin_embeddings[i]
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.embedding_generator.get_embedding(user_query))
