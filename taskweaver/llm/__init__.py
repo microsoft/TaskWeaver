@@ -6,7 +6,8 @@ from injector import inject
 from openai import AzureOpenAI, OpenAI
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
+
+from .util import ChatMessageType, format_chat_message
 
 DEFAULT_STOP_TOKEN: List[str] = ["<EOS>"]
 

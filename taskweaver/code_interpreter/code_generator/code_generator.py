@@ -7,6 +7,7 @@ from taskweaver.code_interpreter.code_generator.code_verification import CodeVer
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
+from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
@@ -14,7 +15,6 @@ from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 from taskweaver.utils.embedding import EmbeddingModuleConfig
-from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
 
 
 class CodeGeneratorConfig(ModuleConfig):
