@@ -16,6 +16,11 @@ class LLMModuleConfig(ModuleConfig):
             ["openai", "azure", "azure_ad"],
             "openai",
         )
+        self.embedding_api_type = self._get_enum(
+            "embedding_api_type",
+            ["sentence_transformer", "openai", "azure", "azure_ad"],
+            self.api_type,
+        )
         self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
         self.api_key: Optional[str] = self._get_str(
             "api_key",
@@ -24,8 +29,16 @@ class LLMModuleConfig(ModuleConfig):
         )
 
         self.model: Optional[str] = self._get_str("model", None, required=False)
-        self.backup_model: Optional[str] = self._get_str("backup_model", None, required=False)
-        self.embedding_model: Optional[str] = self._get_str("embedding_model", None, required=False)
+        self.backup_model: Optional[str] = self._get_str(
+            "backup_model",
+            None,
+            required=False,
+        )
+        self.embedding_model: Optional[str] = self._get_str(
+            "embedding_model",
+            None,
+            required=False,
+        )
 
         self.response_format = self._get_enum(
             "response_format",
@@ -58,6 +71,7 @@ class CompletionService(abc.ABC):
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         """

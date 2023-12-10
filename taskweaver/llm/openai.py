@@ -31,9 +31,21 @@ class OpenAIServiceConfig(LLMServiceConfig):
             shared_api_key if shared_api_base is not None else "" if self.api_type == "azure_ad" else None,
         )
 
-        self.model = self.llm_module_config.model
-        self.backup_model = self.llm_module_config.backup_model
-        self.embedding_model = self.llm_module_config.embedding_model
+        shared_model = self.llm_module_config.model
+        self.model = self._get_str(
+            "model",
+            shared_model if shared_model is not None else "gpt-4",
+        )
+        shared_backup_model = self.llm_module_config.backup_model
+        self.backup_model = self._get_str(
+            "backup_model",
+            shared_backup_model if shared_backup_model is not None else self.model,
+        )
+        shared_embedding_model = self.llm_module_config.embedding_model
+        self.embedding_model = self._get_str(
+            "embedding_model",
+            shared_embedding_model if shared_embedding_model is not None else "text-embedding-ada-002",
+        )
 
         self.response_format = self.llm_module_config.response_format
 
