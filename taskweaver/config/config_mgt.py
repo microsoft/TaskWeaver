@@ -147,8 +147,8 @@ class AppConfigSource:
     ) -> str:
         val = self._get_config_value(var_name, "str", default_value, required)
 
-        if val is None and default_value is None and required:
-            raise ValueError(f"Invalid string config value {val}")
+        if val is None and default_value is None and required is False:
+            return None  # type: ignore
 
         return str(val)
 

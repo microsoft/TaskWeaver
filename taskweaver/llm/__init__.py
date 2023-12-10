@@ -4,6 +4,7 @@ from injector import Injector, inject
 
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
 from taskweaver.llm.openai import OpenAIService
+from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
 from .util import ChatMessageType, format_chat_message
 
@@ -22,6 +23,11 @@ class LLMApi(object):
         if self.config.embedding_api_type in ["openai", "azure", "azure_ad"]:
             self.embedding_service: EmbeddingService = injector.get(OpenAIService)
             injector.binder.bind(OpenAIService, to=self.embedding_service)
+        elif self.config.embedding_api_type == "sentence_transformer":
+            self.embedding_service: EmbeddingService = injector.get(
+                SentenceTransformerService,
+            )
+            injector.binder.bind(SentenceTransformerService, to=self.embedding_service)
         else:
             raise ValueError(
                 f"Embedding API type {self.config.embedding_api_type} is not supported",
