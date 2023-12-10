@@ -2,9 +2,11 @@ from typing import Any, Generator, List, Optional, Type
 
 from injector import Injector, inject
 
+from taskweaver.llm.azure_ml import AzureMLService
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
+from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
 from .util import ChatMessageType, format_chat_message
@@ -20,6 +22,8 @@ class LLMApi(object):
             self._set_completion_service(OpenAIService)
         elif self.config.api_type == "ollama":
             self._set_completion_service(OllamaService)
+        elif self.config.api_type == "azure_ml":
+            self._set_completion_service(AzureMLService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
@@ -29,6 +33,10 @@ class LLMApi(object):
             self._set_embedding_service(OllamaService)
         elif self.config.embedding_api_type == "sentence_transformer":
             self._set_embedding_service(SentenceTransformerService)
+        elif self.config.embedding_api_type == "azure_ml":
+            self.embedding_service = PlaceholderEmbeddingService(
+                "Azure ML does not support embeddings yet. Please configure a different embedding API.",
+            )
         else:
             raise ValueError(
                 f"Embedding API type {self.config.embedding_api_type} is not supported",
