@@ -11,14 +11,12 @@ from taskweaver.llm.util import ChatMessageType
 class LLMModuleConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("llm")
-        self.api_type = self._get_enum(
+        self.api_type = self._get_str(
             "api_type",
-            ["openai", "azure", "azure_ad"],
             "openai",
         )
-        self.embedding_api_type = self._get_enum(
+        self.embedding_api_type = self._get_str(
             "embedding_api_type",
-            ["sentence_transformer", "openai", "azure", "azure_ad"],
             self.api_type,
         )
         self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
@@ -40,7 +38,7 @@ class LLMModuleConfig(ModuleConfig):
             required=False,
         )
 
-        self.response_format = self._get_enum(
+        self.response_format: Optional[str] = self._get_enum(
             "response_format",
             options=["json_object", "text"],
             default="json_object",

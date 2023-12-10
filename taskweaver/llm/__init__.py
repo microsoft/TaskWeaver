@@ -1,8 +1,9 @@
-from typing import Any, Generator, List, Optional
+from typing import Any, Generator, List, Optional, Type
 
 from injector import Injector, inject
 
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
+from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
@@ -13,25 +14,33 @@ class LLMApi(object):
     @inject
     def __init__(self, config: LLMModuleConfig, injector: Injector) -> None:
         self.config = config
+        self.injector = injector
 
         if self.config.api_type in ["openai", "azure", "azure_ad"]:
-            self.completion_service: CompletionService = injector.get(OpenAIService)
-            injector.binder.bind(OpenAIService, to=self.completion_service)
+            self._set_completion_service(OpenAIService)
+        elif self.config.api_type == "ollama":
+            self._set_completion_service(OllamaService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
         if self.config.embedding_api_type in ["openai", "azure", "azure_ad"]:
-            self.embedding_service: EmbeddingService = injector.get(OpenAIService)
-            injector.binder.bind(OpenAIService, to=self.embedding_service)
+            self._set_embedding_service(OpenAIService)
+        elif self.config.embedding_api_type == "ollama":
+            self._set_embedding_service(OllamaService)
         elif self.config.embedding_api_type == "sentence_transformer":
-            self.embedding_service: EmbeddingService = injector.get(
-                SentenceTransformerService,
-            )
-            injector.binder.bind(SentenceTransformerService, to=self.embedding_service)
+            self._set_embedding_service(SentenceTransformerService)
         else:
             raise ValueError(
                 f"Embedding API type {self.config.embedding_api_type} is not supported",
             )
+
+    def _set_completion_service(self, svc: Type[CompletionService]) -> None:
+        self.completion_service: CompletionService = self.injector.get(svc)
+        self.injector.binder.bind(svc, to=self.completion_service)
+
+    def _set_embedding_service(self, svc: Type[EmbeddingService]) -> None:
+        self.embedding_service: EmbeddingService = self.injector.get(svc)
+        self.injector.binder.bind(svc, to=self.embedding_service)
 
     def chat_completion(
         self,
