@@ -101,20 +101,21 @@ class Planner(Role):
         conversation: List[ChatMessageType] = []
 
         for rnd_idx, chat_round in enumerate(conv_rounds):
+            conv_init_message = None
             if rnd_idx == 0:
                 conv_init_message = Planner.conversation_delimiter_message
                 if summary is not None:
                     self.logger.debug(f"Summary: {summary}")
-                    user_message = (
+                    summary_message = (
                         f"\nThe context summary of the Planner's previous rounds" f" can refer to:\n{summary}\n\n"
                     )
-                    conv_init_message += "\n" + user_message
-                conversation.append(
-                    format_chat_message(
-                        role="user",
-                        message=conv_init_message,
-                    ),
-                )
+                    conv_init_message += "\n" + summary_message
+                # conversation.append(
+                #     format_chat_message(
+                #         role="user",
+                #         message=conv_init_message,
+                #     ),
+                # )
 
             for post in chat_round.post_list:
                 if post.send_from == "Planner":
@@ -142,10 +143,16 @@ class Planner(Role):
                         )  # append the self correction instruction message to chat history
 
                 else:
-                    message = post.send_from + ": " + post.message
-                    conversation.append(
-                        format_chat_message(role="user", message=message),
-                    )
+                    if conv_init_message is not None:
+                        message = post.send_from + ": " + conv_init_message + "\n" + post.message
+                        conversation.append(
+                            format_chat_message(role="user", message=message),
+                        )
+                        conv_init_message = None
+                    else:
+                        conversation.append(
+                            format_chat_message(role="user", message=post.send_from + ": " + post.message),
+                        )
 
         return conversation
 
