@@ -56,3 +56,10 @@ repos:
   rev: v8.18.1
   hooks:
     - id: gitleaks
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.4.0
+  hooks:
+    - id: detect-secrets
+      args: ['--baseline', 
+          '.secrets.baseline']
+      exclude: package.lock.json
