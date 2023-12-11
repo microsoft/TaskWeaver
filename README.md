@@ -1,4 +1,6 @@
-# TaskWeaver
+<h1 align="center">
+    <img src="./.asset/logo.color.svg" style="height:1.4em; margin: -10px 10px" />TaskWeaver
+</h1>
 
 A **code-first** agent framework for seamlessly planning and executing data analytics tasks. 
 This innovative framework interprets user requests through coded snippets and efficiently 
