@@ -110,12 +110,6 @@ class Planner(Role):
                         f"\nThe context summary of the Planner's previous rounds" f" can refer to:\n{summary}\n\n"
                     )
                     conv_init_message += "\n" + summary_message
-                # conversation.append(
-                #     format_chat_message(
-                #         role="user",
-                #         message=conv_init_message,
-                #     ),
-                # )
 
             for post in chat_round.post_list:
                 if post.send_from == "Planner":
