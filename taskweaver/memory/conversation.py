@@ -4,6 +4,7 @@ import secrets
 from dataclasses import dataclass, field
 from typing import List
 
+from taskweaver.memory.plugin import PluginEntry
 from taskweaver.memory.round import Round
 from taskweaver.utils import create_id
 
@@ -24,8 +25,9 @@ class Conversation:
 
     id: str = ""
     rounds: List[Round] = field(default_factory=list)
-    plugins: List[str] = field(default_factory=list)
+    plugins: List[PluginEntry] = field(default_factory=list)
     enabled: bool = True
+    plugin_only: bool = False
 
     @staticmethod
     def init():
@@ -44,9 +46,9 @@ class Conversation:
         """Convert the conversation to a dict."""
         return {
             "id": self.id,
-            "plugins": self.plugins,
+            "plugins": [plugin.to_dict() for plugin in self.plugins],
             "enabled": self.enabled,
-            "rounds": [round.to_dict() for round in self.rounds],
+            "rounds": [_round.to_dict() for _round in self.rounds],
         }
 
     @staticmethod
@@ -59,9 +61,19 @@ class Conversation:
         if not do_validate or valid_state:
             enabled = content["enabled"]
             if "plugins" in content.keys():
-                plugins = list(content["plugins"])
+                plugins = [PluginEntry.from_yaml_content(plugin) for plugin in content["plugins"]]
             else:
                 plugins = []
             rounds = [Round.from_dict(r) for r in content["rounds"]]
-            return Conversation(id="conv-" + secrets.token_hex(6), rounds=rounds, plugins=plugins, enabled=enabled)
+            if "plugin_only" in content.keys():
+                plugin_only = content["plugin_only"]
+            else:
+                plugin_only = False
+            return Conversation(
+                id="conv-" + secrets.token_hex(6),
+                rounds=rounds,
+                plugins=plugins,
+                enabled=enabled,
+                plugin_only=plugin_only,
+            )
         raise ValueError("Yaml validation failed.")

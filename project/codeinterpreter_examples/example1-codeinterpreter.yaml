@@ -1,4 +1,5 @@
 enabled: True
+plugin_only: False
 rounds:
   - user_query: hello
     state: finished
