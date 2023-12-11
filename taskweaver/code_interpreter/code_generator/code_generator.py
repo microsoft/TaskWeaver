@@ -96,7 +96,10 @@ class CodeGenerator(Role):
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 
-    def compose_plugin_only_requirements(self, plugin_list: List[PluginEntry]) -> str:
+    def compose_plugin_only_requirements(
+        self,
+        plugin_list: List[PluginEntry],
+    ) -> str:
         requirements = []
         if not self.code_verification_config.code_verification_on:
             return ""
@@ -117,7 +120,11 @@ class CodeGenerator(Role):
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
         return "\n".join(requirements)
 
-    def compose_prompt(self, rounds: List[Round]) -> List[ChatMessageType]:
+    def compose_prompt(
+        self,
+        rounds: List[Round],
+        plugins: List[PluginEntry],
+    ) -> List[ChatMessageType]:
         chat_history = [format_chat_message(role="system", message=self.instruction)]
         for i, example in enumerate(self.examples):
             chat_history.extend(self.compose_conversation(example.rounds, example.plugins))
@@ -126,7 +133,7 @@ class CodeGenerator(Role):
         if self.config.prompt_compression and self.round_compressor is not None:
             summary, rounds = self.round_compressor.compress_rounds(
                 rounds,
-                rounds_formatter=lambda _rounds: str(self.compose_conversation(_rounds, self.plugin_pool)),
+                rounds_formatter=lambda _rounds: str(self.compose_conversation(_rounds, plugins)),
                 use_back_up_engine=True,
                 prompt_template=self.compression_template,
             )
@@ -136,7 +143,7 @@ class CodeGenerator(Role):
                 rounds,
                 add_requirements=True,
                 summary=summary,
-                plugins=self.plugin_pool,
+                plugins=plugins,
             ),
         )
         return chat_history
@@ -222,7 +229,7 @@ class CodeGenerator(Role):
                     # add requirements to the last user message
                     if add_requirements and post_index == len(conversation_round.post_list) - 1:
                         user_message += "\n" + self.query_requirements_template.format(
-                            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.plugin_pool),
+                            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(plugins),
                             ROLE_NAME=self.role_name,
                         )
                     chat_history.append(
@@ -231,10 +238,10 @@ class CodeGenerator(Role):
 
         return chat_history
 
-    def select_plugins_for_prompt(self, user_query):
-        """
-        overwrite query_requirements and instruction based on the selected plugins
-        """
+    def select_plugins_for_prompt(
+        self,
+        user_query,
+    ) -> List[PluginEntry]:
         selected_plugins = self.plugin_selector.plugin_select(
             user_query,
             self.config.auto_plugin_selection_topk,
@@ -243,7 +250,7 @@ class CodeGenerator(Role):
         self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
         self.logger.info(f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}")
 
-        return selected_plugins
+        return self.selected_plugin_pool.get_plugins()
 
     def reply(
         self,
@@ -263,10 +270,8 @@ class CodeGenerator(Role):
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
-        # overwrite the plugin pool with the selected plugins
-        memory.conversation.plugins = self.plugin_pool
 
-        prompt = self.compose_prompt(rounds)
+        prompt = self.compose_prompt(rounds, self.plugin_pool)
 
         def early_stop(_type, value):
             if _type in ["text", "python", "sample"]:
@@ -281,7 +286,7 @@ class CodeGenerator(Role):
             early_stop=early_stop,
         )
         response.send_to = "Planner"
-        generated_code = None
+        generated_code = ""
         for attachment in response.attachment_list:
             if attachment.type in ["sample", "text"]:
                 response.message = attachment.content
@@ -289,25 +294,28 @@ class CodeGenerator(Role):
                 generated_code = attachment.content
 
         if self.config.enable_auto_plugin_selection:
-            if generated_code is None:
-                # no code is generated, filter out all plugins
-                self.selected_plugin_pool.filter_unused_plugins(code="")
-            else:
-                self.selected_plugin_pool.filter_unused_plugins(code=generated_code)
+            # filter out plugins that are not used in the generated code
+            self.selected_plugin_pool.filter_unused_plugins(code=generated_code)
 
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
 
         return response
 
-    def format_plugins(self, plugin_list: List[PluginEntry]) -> str:
+    def format_plugins(
+        self,
+        plugin_list: List[PluginEntry],
+    ) -> str:
         if self.config.load_plugin:
             return "\n".join(
                 [plugin.format_prompt() for plugin in plugin_list],
             )
         return ""
 
-    def load_examples(self, plugin_only: bool) -> List[Conversation]:
+    def load_examples(
+        self,
+        plugin_only: bool,
+    ) -> List[Conversation]:
         if self.config.load_example:
             return load_examples(folder=self.config.example_base_path, plugin_only=plugin_only)
         return []

@@ -1,0 +1,56 @@
+enabled: True
+plugin_only: False
+rounds:
+  - user_query: read file /abc/def.txt
+    state: finished
+    post_list:
+      - message: read file /abc/def.txt
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: I'm sorry, I cannot find the file /abc/def.txt. An FileNotFoundException has been raised.
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: thought
+            content: "{ROLE_NAME} will generate a code snippet to read the file /abc/def.txt and present the content to the user."
+          - type: python
+            content: |-
+              file_path = "/abc/def.txt"  
+
+              with open(file_path, "r") as file:  
+                  file_contents = file.read()  
+                  print(file_contents)
+          - type: verification
+            content: CORRECT
+          - type: code_error
+            content: No code error.
+          - type: execution_status
+            content: FAILURE
+          - type: execution_result
+            content: FileNotFoundException, the file /abc/def.txt does not exist.
+  - user_query: what is the content of the file
+    state: finished
+    post_list:
+      - message: what is the content of the file
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: I cannot find the file /abc/def.txt. An FileNotFoundException has been raised in my previous attempt.
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: thought
+            content: "{ROLE_NAME} understands that the execution of the previous round has fell."
+          - type: thought
+            content: "{ROLE_NAME} understands that the file /abc/def.txt does not exist and will not attempt to read it again."
+          - type: text
+            content: I cannot find the file /abc/def.txt. An FileNotFoundException has been raised in my previous attempt.
+          - type: verification
+            content: NONE
+          - type: code_error
+            content: No code is generated.
+          - type: execution_status
+            content: NONE
+          - type: execution_result
+            content: No code is executed.
