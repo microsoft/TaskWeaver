@@ -61,7 +61,85 @@ class OllamaService(CompletionService, EmbeddingService):
         stop: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
-        chat_completion_endpoint = f"{self.config.api_base}/api/generate"
+        try:
+            return self._chat_completion(
+                messages=messages,
+                use_backup_engine=use_backup_engine,
+                stream=stream,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                stop=stop,
+                **kwargs,
+            )
+        except Exception:
+            return self._completion(
+                messages=messages,
+                use_backup_engine=use_backup_engine,
+                stream=stream,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                stop=stop,
+                **kwargs,
+            )
+
+    def _chat_completion(
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Generator[ChatMessageType, None, None]:
+        api_endpoint = "/api/chat"
+        payload = {
+            "model": self.config.model if not use_backup_engine else self.config.backup_model,
+            "messages": messages,
+            "stream": stream,
+        }
+
+        if self.config.response_format == "json":
+            payload["format"] = "json"
+
+        if stream is False:
+            with self._request_api(api_endpoint, payload) as resp:
+                if resp.status_code != 200:
+                    raise Exception(
+                        f"Failed to get completion with error code {resp.status_code}: {resp.text}",
+                    )
+                response: str = resp.json()["response"]
+            yield format_chat_message("assistant", response)
+
+        with self._request_api(api_endpoint, payload, stream=True) as resp:
+            if resp.status_code != 200:
+                raise Exception(
+                    f"Failed to get completion with error code {resp.status_code}: {resp.text}",
+                )
+            for chunk_obj in self._stream_process(resp):
+                if "error" in chunk_obj:
+                    raise Exception(
+                        f"Failed to get completion with error: {chunk_obj['error']}",
+                    )
+                if "message" in chunk_obj:
+                    message = chunk_obj["message"]
+                    yield format_chat_message("assistant", message["content"])
+
+    def _completion(
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Generator[ChatMessageType, None, None]:
+        api_endpoint = "/api/generate"
         payload = {
             "model": self.config.model if not use_backup_engine else self.config.backup_model,
             "prompt": "",
@@ -79,7 +157,7 @@ class OllamaService(CompletionService, EmbeddingService):
                 payload["prompt"] = f"{payload['prompt']}\n{content}"
 
         if stream is False:
-            with self._request_api("/api/generate", payload) as resp:
+            with self._request_api(api_endpoint, payload) as resp:
                 if resp.status_code != 200:
                     raise Exception(
                         f"Failed to get completion with error code {resp.status_code}: {resp.text}",
@@ -87,20 +165,19 @@ class OllamaService(CompletionService, EmbeddingService):
                 response: str = resp.json()["response"]
             yield format_chat_message("assistant", response)
 
-        with requests.Session() as session:
-            with session.post(chat_completion_endpoint, json=payload, stream=True) as resp:
-                if resp.status_code != 200:
+        with self._request_api(api_endpoint, payload, stream=True) as resp:
+            if resp.status_code != 200:
+                raise Exception(
+                    f"Failed to get completion with error code {resp.status_code}: {resp.text}",
+                )
+            for chunk_obj in self._stream_process(resp):
+                if "error" in chunk_obj:
                     raise Exception(
-                        f"Failed to get completion with error code {resp.status_code}: {resp.text}",
+                        f"Failed to get completion with error: {chunk_obj['error']}",
                     )
-                for chunk_obj in self._stream_process(resp):
-                    if "error" in chunk_obj:
-                        raise Exception(
-                            f"Failed to get completion with error: {chunk_obj['error']}",
-                        )
-                    if "response" in chunk_obj:
-                        response = chunk_obj["response"]
-                        yield format_chat_message("assistant", response)
+                if "response" in chunk_obj:
+                    response = chunk_obj["response"]
+                    yield format_chat_message("assistant", response)
 
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
         return [self._get_embedding(string) for string in strings]
