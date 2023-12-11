@@ -7,7 +7,7 @@ from injector import inject
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -101,20 +101,15 @@ class Planner(Role):
         conversation: List[ChatMessageType] = []
 
         for rnd_idx, chat_round in enumerate(conv_rounds):
+            conv_init_message = None
             if rnd_idx == 0:
                 conv_init_message = Planner.conversation_delimiter_message
                 if summary is not None:
                     self.logger.debug(f"Summary: {summary}")
-                    user_message = (
+                    summary_message = (
                         f"\nThe context summary of the Planner's previous rounds" f" can refer to:\n{summary}\n\n"
                     )
-                    conv_init_message += "\n" + user_message
-                conversation.append(
-                    format_chat_message(
-                        role="user",
-                        message=conv_init_message,
-                    ),
-                )
+                    conv_init_message += "\n" + summary_message
 
             for post in chat_round.post_list:
                 if post.send_from == "Planner":
@@ -128,24 +123,30 @@ class Planner(Role):
                                 message=planner_message,
                             ),
                         )
-                    elif post.send_to == "Planner":  # self correction for planner response, e.g., format error
+                    elif (
+                        post.send_to == "Planner"
+                    ):  # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
-                                role="user",
-                                message=post.message,
+                                role="assistant",
+                                message=post.get_attachment(type="invalid_response")[0],
                             ),
-                        )
-                        message = self.planner_post_translator.post_to_raw_text(
-                            post=post,
-                        )
+                        )  # append the invalid response to chat history
                         conversation.append(
-                            format_chat_message(role="assistant", message=message),
-                        )
+                            format_chat_message(role="user", message="User: " + post.message),
+                        )  # append the self correction instruction message to chat history
+
                 else:
-                    message = post.send_from + ": " + post.message
-                    conversation.append(
-                        format_chat_message(role="user", message=message),
-                    )
+                    if conv_init_message is not None:
+                        message = post.send_from + ": " + conv_init_message + "\n" + post.message
+                        conversation.append(
+                            format_chat_message(role="user", message=message),
+                        )
+                        conv_init_message = None
+                    else:
+                        conversation.append(
+                            format_chat_message(role="user", message=post.send_from + ": " + post.message),
+                        )
 
         return conversation
 
@@ -187,11 +188,12 @@ class Planner(Role):
         chat_history = self.compose_prompt(rounds)
 
         def check_post_validity(post: Post):
-            assert post.send_to is not None, "Post send_to field is None"
-            assert post.message is not None, "Post message field is None"
-            assert post.attachment_list[0].type == "init_plan", "Post attachment type is not init_plan"
-            assert post.attachment_list[1].type == "plan", "Post attachment type is not plan"
-            assert post.attachment_list[2].type == "current_plan_step", "Post attachment type is not current_plan_step"
+            assert post.send_to is not None, "send_to field is None"
+            assert post.send_to != "Planner", "send_to field should not be Planner"
+            assert post.message is not None, "message field is None"
+            assert post.attachment_list[0].type == "init_plan", "attachment type is not init_plan"
+            assert post.attachment_list[1].type == "plan", "attachment type is not plan"
+            assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
         llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:
@@ -206,12 +208,13 @@ class Planner(Role):
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             response_post = Post.create(
-                message=f"The output of Planner is invalid."
+                message=f"Failed to parse Planner output due to {str(e)}."
                 f"The output format should follow the below format:"
                 f"{self.prompt_data['planner_response_schema']}"
-                "Please try to regenerate the Planner output.",
+                "Please try to regenerate the output.",
                 send_to="Planner",
                 send_from="Planner",
+                attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
             )
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message

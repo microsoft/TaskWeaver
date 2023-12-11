@@ -127,8 +127,7 @@ class Session:
                     self.logger.info(
                         f"{post.send_from} talk to {post.send_to}: {post.message}",
                     )
-                    if post.send_to != post.send_from:  # ignore self talking in internal chat count
-                        self.internal_chat_num += 1
+                    self.internal_chat_num += 1
                     if self.internal_chat_num >= self.max_internal_chat_round_num:
                         raise Exception(
                             f"Internal chat round number exceeds the limit of {self.max_internal_chat_round_num}",
@@ -157,11 +156,9 @@ class Session:
             chat_round.change_round_state("failed")
             err_message = f"Cannot process your request due to Exception: {str(e)} \n {stack_trace_str}"
             event_handler("error", err_message)
-            self.code_interpreter.rollback(chat_round)
-            self.planner.rollback(chat_round)
-            self.internal_chat_num = 0
 
         finally:
+            self.internal_chat_num = 0
             self.logger.dump_log_file(
                 chat_round,
                 file_path=os.path.join(
