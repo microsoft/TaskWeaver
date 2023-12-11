@@ -1,0 +1,32 @@
+name: sql_pull_data
+enabled: true
+required: false
+description: >-
+  Pull data from a SQL database. This plugin takes user requests when obtaining data from database is explicitly mentioned.
+  Otherwise, it is not sure if the user wants to pull data from database or not.
+  The data from this database can only used for anomaly detection.
+
+parameters:
+  - name: query
+    type: str
+    required: true
+    description: >-
+      This is the query in natural language that the user wants to get data from database.
+      If any specific column or value is mentioned, make sure to include them in the query, 
+      exactly in the right format or form.
+
+returns:
+  - name: df
+    type: pandas.DataFrame
+    description: This is the dataframe containing the data from the database.
+  - name: description
+    type: str
+    description: This is a string describing the data pulled from the database.
+
+configurations:
+  api_type: openai
+  api_base:
+  api_key:
+  api_version:
+  deployment_name:
+  sqlite_db_path: sqlite:///../../../../sample_data/anomaly_detection.db

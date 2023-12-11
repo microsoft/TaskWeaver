@@ -5,7 +5,7 @@ from taskweaver.plugin import Plugin, register_plugin, test_plugin
 
 
 @register_plugin
-class APICaller(Plugin):
+class KlarnaSearch(Plugin):
     def __call__(self, query: str, size: int = 5, min_price: int = 0, max_price: int = 1000000):
         # Define the API endpoint and parameters
         base_url = "https://www.klarna.com/us/shopping/public/openai/v0/products"
@@ -25,7 +25,6 @@ class APICaller(Plugin):
             # Parse the JSON response
             data = response.json()
             products = data["products"]
-            print(response.content)
             # Print the products
             rows = []
             for product in products:
@@ -37,11 +36,11 @@ class APICaller(Plugin):
             )
             return pd.DataFrame(rows, columns=["name", "price", "url", "attributes"]), description
         else:
-            print(f"Error: {response.status_code}")
+            return None, str(response.status_code)
 
 
 @test_plugin(name="test KlarnaSearch", description="test")
 def test_call(api_call):
     question = "t shirts"
     result, description = api_call(query=question)
-    print(result, description)
+    assert result is not None

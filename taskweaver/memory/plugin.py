@@ -175,7 +175,10 @@ class PluginModuleConfig(ModuleConfig):
 
 class PluginModule(Module):
     @provider
-    def provide_plugin_registry(self, config: PluginModuleConfig) -> PluginRegistry:
+    def provide_plugin_registry(
+        self,
+        config: PluginModuleConfig,
+    ) -> PluginRegistry:
         import os
 
         file_glob = os.path.join(config.base_path, "*.yaml")
