@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="./.asset/logo.color.svg" style="height:1.4em; margin: -10px 10px" />TaskWeaver
+    <img src="./.asset/logo.color.svg" width="45" /> TaskWeaver
 </h1>
 
 A **code-first** agent framework for seamlessly planning and executing data analytics tasks. 
