@@ -4,14 +4,16 @@ from typing import List, Optional
 from injector import inject
 
 from taskweaver.code_interpreter.code_generator.code_verification import CodeVerificationConfig
+from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
-from taskweaver.memory.plugin import PluginRegistry
+from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
+from taskweaver.utils.embedding import EmbeddingModuleConfig
 from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
 
 
@@ -44,6 +46,8 @@ class CodeGeneratorConfig(ModuleConfig):
                 "compression_prompt.yaml",
             ),
         )
+        self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
+        self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
 
 class CodeGenerator(Role):
@@ -56,6 +60,7 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
+        embedding_config: EmbeddingModuleConfig,
     ):
         self.config = config
         self.plugin_registry = plugin_registry
@@ -71,10 +76,10 @@ class CodeGenerator(Role):
 
         self.instruction_template = self.prompt_data["content"]
         self.query_requirements = self.prompt_data["requirements"].format(
-            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(),
+            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.plugin_registry.get_list()),
             ROLE_NAME=self.role_name,
         )
-        self.plugin_spec = self.load_plugins()
+        self.plugin_spec = self.load_plugins(self.plugin_registry.get_list())
         self.examples = self.load_examples()
 
         self.instruction = self.instruction_template.format(
@@ -86,7 +91,13 @@ class CodeGenerator(Role):
         self.round_compressor = round_compressor
         self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-    def compose_plugin_only_requirements(self):
+        if self.config.enable_auto_plugin_selection:
+            self.plugin_selector = PluginSelector(self.plugin_registry, embedding_config, self.llm_api)
+            self.plugin_selector.generate_plugin_embeddings()
+            logger.info("Plugin embeddings generated")
+            self.selected_plugin_pool = SelectedPluginPool()
+
+    def compose_plugin_only_requirements(self, plugin_list: List[PluginEntry]) -> str:
         requirements = []
         if not self.code_verification_config.code_verification_on:
             return ""
@@ -94,7 +105,7 @@ class CodeGenerator(Role):
             requirements.append(
                 f"- {self.role_name} should only use the following plugins and"
                 + " Python built-in functions to complete the task: "
-                + ", ".join([f"{plugin.name}" for plugin in self.plugin_registry.get_list()]),
+                + ", ".join([f"{plugin.name}" for plugin in plugin_list]),
             )
             requirements.append(f"- {self.role_name} cannot define new functions or plugins.")
         allowed_modules = self.code_verification_config.allowed_modules
@@ -214,6 +225,28 @@ class CodeGenerator(Role):
 
         return chat_history
 
+    def select_plugins_for_prompt(self, user_query):
+        """
+        overwrite query_requirements and instruction based on the selected plugins
+        """
+        selected_plugins = self.plugin_selector.plugin_select(
+            user_query,
+            self.config.auto_plugin_selection_topk,
+        )
+        self.selected_plugin_pool.add_selected_plugins(selected_plugins)
+        self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
+        self.logger.info(f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}")
+
+        self.query_requirements = self.prompt_data["requirements"].format(
+            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(self.selected_plugin_pool.get_plugins()),
+            ROLE_NAME=self.role_name,
+        )
+        self.instruction = self.instruction_template.format(
+            ROLE_NAME=self.role_name,
+            EXECUTOR_NAME=self.executor_name,
+            PLUGIN=self.load_plugins(self.selected_plugin_pool.get_plugins()),
+        )
+
     def reply(
         self,
         memory: Memory,
@@ -225,6 +258,11 @@ class CodeGenerator(Role):
             role="CodeInterpreter",
             include_failure_rounds=False,
         )
+
+        user_query = rounds[-1].user_query
+        if self.config.enable_auto_plugin_selection:
+            self.select_plugins_for_prompt(user_query)
+
         prompt = self.compose_prompt(rounds)
 
         def early_stop(type, value):
@@ -243,16 +281,18 @@ class CodeGenerator(Role):
         for attachment in response.attachment_list:
             if attachment.type in ["sample", "text"]:
                 response.message = attachment.content
+            if self.config.enable_auto_plugin_selection and attachment.type == "python":
+                self.selected_plugin_pool.filter_unused_plugins(code=attachment.content)
 
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
 
         return response
 
-    def load_plugins(self) -> str:
+    def load_plugins(self, plugin_list: List[PluginEntry]) -> str:
         if self.config.load_plugin:
             return "\n".join(
-                [plugin.format_prompt() for plugin in self.plugin_registry.get_list()],
+                [plugin.format_prompt() for plugin in plugin_list],
             )
         return ""
 

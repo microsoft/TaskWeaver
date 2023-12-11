@@ -8,8 +8,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-tests/unit_tests/data/plugins/sql_pull_data.py
-tests/unit_tests/data/plugins/sql_pull_data.yaml
 # C extensions
 *.so
 *.ipynb
