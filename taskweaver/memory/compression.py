@@ -31,7 +31,7 @@ class RoundCompressor:
         self.processed_rounds: Set[str] = set()
         self.rounds_to_compress = self.config.rounds_to_compress
         self.rounds_to_retain = self.config.rounds_to_retain
-        self.previous_summary: str = "NONE"
+        self.previous_summary: str = "None"
         self.llm_api = llm_api
         self.logger = logger
 

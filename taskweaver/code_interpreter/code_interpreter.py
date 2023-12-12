@@ -1,5 +1,6 @@
-from typing import Optional
 import os
+from typing import Optional
+
 from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor, get_artifact_uri
@@ -68,7 +69,7 @@ class CodeInterpreter(Role):
 
         code_verify_errors = code_snippet_verification(
             code.content,
-            [plugin.name for plugin in self.generator.plugin_registry.get_list()],
+            [plugin.name for plugin in self.generator.get_plugin_pool()],
             self.generator.code_verification_config,
         )
 
@@ -144,18 +145,22 @@ class CodeInterpreter(Role):
                 ),
             ),
         )
-        artifact_paths = [get_artifact_uri(execution_id=exec_result.execution_id,
-                                file=(a.file_name
-                                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
-                                    else os.path.join(self.executor.execution_cwd, a.file_name)
-                                    ),
-                                    use_local_uri=self.config.use_local_uri
-                                )
-                                for a in exec_result.artifact]
+        artifact_paths = [
+            get_artifact_uri(
+                execution_id=exec_result.execution_id,
+                file=(
+                    a.file_name
+                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
+                    else os.path.join(self.executor.execution_cwd, a.file_name)
+                ),
+                use_local_uri=self.config.use_local_uri,
+            )
+            for a in exec_result.artifact
+        ]
         response.add_attachment(
             Attachment.create(
                 "artifact_paths",
-                artifact_paths
+                artifact_paths,
             ),
         )
         event_handler(

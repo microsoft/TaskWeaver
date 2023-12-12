@@ -121,8 +121,12 @@ class PluginEntry:
     enabled: bool = True
 
     @staticmethod
-    def from_yaml(path: str):
+    def from_yaml_file(path: str) -> Optional["PluginEntry"]:
         content = read_yaml(path)
+        return PluginEntry.from_yaml_content(content)
+
+    @staticmethod
+    def from_yaml_content(content: Dict) -> Optional["PluginEntry"]:
         do_validate = False
         valid_state = False
         if do_validate:
@@ -142,6 +146,16 @@ class PluginEntry:
     def format_prompt(self) -> str:
         return self.spec.format_prompt()
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "impl": self.impl,
+            "spec": self.spec,
+            "config": self.config,
+            "required": self.required,
+            "enabled": self.enabled,
+        }
+
 
 class PluginRegistry(ComponentRegistry[PluginEntry]):
     def __init__(
@@ -152,7 +166,7 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
         super().__init__(file_glob, ttl)
 
     def _load_component(self, path: str) -> Tuple[str, PluginEntry]:
-        entry: Optional[PluginEntry] = PluginEntry.from_yaml(path)
+        entry: Optional[PluginEntry] = PluginEntry.from_yaml_file(path)
         if entry is None:
             raise Exception(f"failed to loading plugin from {path}")
         if not entry.enabled:
