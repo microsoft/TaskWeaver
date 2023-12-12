@@ -349,7 +349,13 @@ class Environment:
         km = self.multi_kernel_manager.get_kernel(kernel_id)
         kc = km.client()
         kc.start_channels()
-        kc.wait_for_ready(10)
+        kc.wait_for_ready()
+        if kc.session.metadata is None:
+            kc.session.metadata = {}
+        if exec_type == "control":
+            kc.session.metadata["cellId"] = -1
+        else:
+            del kc.session.metadata["cellId"]
         result_msg_id = kc.execute(
             code=code,
             silent=silent,
@@ -384,8 +390,10 @@ class Environment:
                     execute_result = message["content"]["data"]
                     exec_result.result = execute_result
                 elif msg_type == "error":
+                    error_name = message["content"]["ename"]
+                    error_value = message["content"]["evalue"]
                     error_traceback_lines = message["content"]["traceback"]
-                    error_traceback = "\n".join(error_traceback_lines)
+                    error_traceback = f"{error_name}: {error_value}" + ("\n".join(error_traceback_lines))
                     exec_result.error = error_traceback
                 elif msg_type == "execute_input":
                     pass
