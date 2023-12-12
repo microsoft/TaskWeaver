@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 import numpy as np
 from injector import inject
@@ -6,7 +6,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.llm import LLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
-from taskweaver.utils.embedding import EmbeddingGenerator, EmbeddingModuleConfig
 
 
 class SelectedPluginPool:
@@ -61,23 +60,22 @@ class PluginSelector:
     def __init__(
         self,
         plugin_registry: PluginRegistry,
-        embedding_config: EmbeddingModuleConfig,
         llm_api: LLMApi,
     ):
         self.plugin_registry = plugin_registry
-        self.embedding_generator = EmbeddingGenerator(embedding_config, llm_api)
-        self.plugin_embedding_dict = {}
+        self.llm_api = llm_api
+        self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
     def generate_plugin_embeddings(self):
-        plugin_intro_text_list = []
+        plugin_intro_text_list: List[str] = []
         for p in self.plugin_registry.get_list():
             plugin_intro_text_list.append(p.name + ": " + p.spec.description)
-        plugin_embeddings = self.embedding_generator.get_embedding(plugin_intro_text_list)
+        plugin_embeddings = self.llm_api.get_embedding_list(plugin_intro_text_list)
         for i, p in enumerate(self.plugin_registry.get_list()):
             self.plugin_embedding_dict[p.name] = plugin_embeddings[i]
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
-        user_query_embedding = np.array(self.embedding_generator.get_embedding(user_query))
+        user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
 
         similarities = []
 

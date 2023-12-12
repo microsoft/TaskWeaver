@@ -1,6 +1,5 @@
 from typing import Dict, Literal, Optional
 
-# TODO: retry logic
 ChatMessageRoleType = Literal["system", "user", "assistant"]
 ChatMessageType = Dict[Literal["role", "name", "content"], str]
 

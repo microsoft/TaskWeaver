@@ -7,14 +7,13 @@ from taskweaver.code_interpreter.code_generator.code_verification import CodeVer
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
+from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
-from taskweaver.utils.embedding import EmbeddingModuleConfig
-from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
 
 
 class CodeGeneratorConfig(ModuleConfig):
@@ -60,7 +59,6 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
-        embedding_config: EmbeddingModuleConfig,
     ):
         self.config = config
         self.plugin_registry = plugin_registry
@@ -92,7 +90,7 @@ class CodeGenerator(Role):
         self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
 
         if self.config.enable_auto_plugin_selection:
-            self.plugin_selector = PluginSelector(self.plugin_registry, embedding_config, self.llm_api)
+            self.plugin_selector = PluginSelector(self.plugin_registry, self.llm_api)
             self.plugin_selector.generate_plugin_embeddings()
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
