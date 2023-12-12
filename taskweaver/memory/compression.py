@@ -4,9 +4,9 @@ from injector import inject
 
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
+from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
-from taskweaver.utils.llm_api import format_chat_message
 
 
 class RoundCompressorConfig(ModuleConfig):
