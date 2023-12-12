@@ -147,7 +147,7 @@ def format_code_correction_message() -> str:
     )
 
 
-def separate_magics_and_code(input_code: str) -> Tuple[List[str], List[str], List[str]]:
+def separate_magics_and_code(input_code: str) -> Tuple[List[str], str, List[str]]:
     line_magic_pattern = re.compile(r"^\s*%\s*[a-zA-Z_]\w*")
     cell_magic_pattern = re.compile(r"^\s*%%\s*[a-zA-Z_]\w*")
     shell_command_pattern = re.compile(r"^\s*!")
@@ -196,8 +196,7 @@ def code_snippet_verification(
         if len(magics) > 0:
             errors.append(f"Magic commands except package install are not allowed. Details: {magics}")
         tree = ast.parse(python_code)
-        # print the tree structure for debugging
-        # print(ast.dump(tree) + "\n")
+
         processed_lines = []
         for line in python_code.splitlines():
             if not line.strip() or line.strip().startswith("#"):
@@ -208,5 +207,5 @@ def code_snippet_verification(
         errors.extend(validator.errors)
         return errors
     except SyntaxError as e:
-        print(f"Syntax error: {e}")
+        # print(f"Syntax error: {e}")
         return [f"Syntax error: {e}"]

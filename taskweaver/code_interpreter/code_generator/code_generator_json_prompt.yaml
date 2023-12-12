@@ -47,6 +47,7 @@ conversation_head: |-
     {SUMMARY}
     
     ### Plugin Functions
+    The functions can be directly called without importing:
     {PLUGINS}
 
 user_message_head: |-
@@ -59,4 +60,5 @@ requirements: |-
     - {ROLE_NAME} should not refer to any information from failed rounds, rounds that have not been executed, or previous Conversations.
     - {ROLE_NAME} put all the result variables in the last line of the code.
     - {ROLE_NAME} should leave "verification", "code_error", "execution_status", and "execution_result" empty in the response. 
+    - {ROLE_NAME} must not import the plugins and otherwise the code will be failed to execute.
     {PLUGIN_ONLY_PROMPT}

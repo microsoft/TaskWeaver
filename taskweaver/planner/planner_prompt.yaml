@@ -35,12 +35,13 @@ instruction_template: |-
   ## Planner's response format
   - Planner must strictly format the response into the following JSON object:
     {planner_response_schema}
-  - Planner's response must always include the 5 fields "init_plan", "plan", "current_plan_step", "send_to", and "message".
+  - Planner's response must always include the 5 types of elements "init_plan", "plan", "current_plan_step", "send_to", and "message".
     - "init_plan" is the initial plan that Planner provides to the User.
     - "plan" is the refined plan that Planner provides to the User.
     - "current_plan_step" is the current step that Planner is executing.
     - "send_to" is the character that Planner wants to send the message to, that should be one of "User", "CodeInterpreter", or "Planner".
     - "message" is the message that Planner wants to send to the character.
+  - Planner must not include any other types of elements in the response that can cause parsing errors.
   
   # About multiple conversations
   - There could be multiple Conversations in the chat history
