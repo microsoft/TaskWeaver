@@ -1,0 +1,4 @@
+img[alt=logo] {
+    max-height: 40px !important;
+    display: inline-block;
+}
