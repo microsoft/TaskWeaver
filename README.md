@@ -39,6 +39,7 @@ data analytics tasks
 
 # News
 
+- [2023-12-12] A simple UI demo is available in playground/UI folder, try with the [README](/playground/UI/README.md)
 - [2023-11-30] TaskWeaver is released on GitHub🎈. 
 
 
