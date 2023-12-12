@@ -307,3 +307,14 @@ def format_code_revision_message() -> str:
         "please generate code and run it again.\n"
         "Otherwise, please explain the problem to me."
     )
+
+
+def format_output_revision_message() -> str:
+    return (
+        "Your previous message is not following the output format. "
+        "You must generate the output as a JSON object with the following format:\n"
+        '{"response": [{"type":"this is the type", "content": "this is the content"}, ...]}\n'
+        "You need at least have an element with type 'python' and content being the code to be executed.\n"
+        "Don't surround the JSON with ```json and ```, just send the JSON object directly.\n"
+        "Please try again."
+    )

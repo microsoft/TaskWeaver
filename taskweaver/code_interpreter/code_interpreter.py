@@ -1,5 +1,6 @@
-from typing import Optional
 import os
+from typing import Literal, Optional
+
 from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor, get_artifact_uri
@@ -9,6 +10,7 @@ from taskweaver.code_interpreter.code_generator import (
     format_code_correction_message,
     format_code_revision_message,
 )
+from taskweaver.code_interpreter.code_generator.code_generator import format_output_revision_message
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post
@@ -20,6 +22,28 @@ class CodeInterpreterConfig(ModuleConfig):
         self._set_name("code_interpreter")
         self.use_local_uri = self._get_bool("use_local_uri", False)
         self.max_retry_count = self._get_int("max_retry_count", 3)
+
+
+def update_verification(
+    response: Post,
+    status: Literal["NONE", "INCORRECT", "CORRECT"] = "NONE",
+    error: str = "No verification is done.",
+):
+    response.add_attachment(Attachment.create("verification", status))
+    response.add_attachment(
+        Attachment.create("code_error", error),
+    )
+
+
+def update_execution(
+    response: Post,
+    status: Literal["NONE", "SUCCESS", "FAILURE"] = "NONE",
+    result: str = "No code is executed.",
+):
+    response.add_attachment(Attachment.create("execution_status", status))
+    response.add_attachment(
+        Attachment.create("execution_result", result),
+    )
 
 
 class CodeInterpreter(Role):
@@ -53,19 +77,39 @@ class CodeInterpreter(Role):
             use_back_up_engine,
         )
         if response.message is not None:
-            response.add_attachment(Attachment.create("verification", "NONE"))
-            response.add_attachment(
-                Attachment.create("code_error", "No code is generated."),
-            )
-            response.add_attachment(Attachment.create("execution_status", "NONE"))
-            response.add_attachment(
-                Attachment.create("execution_result", "No code is executed."),
-            )
+            update_verification(response, "NONE", "No code verification is performed.")
+            update_execution(response, "NONE", "No code is executed.")
             event_handler("CodeInterpreter->Planner", response.message)
             return response
 
         code = next((a for a in response.attachment_list if a.type == "python"), None)
 
+        if code is None:
+            # no code is generated is usually due to the failure of parsing the llm output
+            update_verification(response, "NONE", "No code verification is performed.")
+            update_execution(response, "NONE", "No code is executed due to code generation failure.")
+            response.message = "Failed to generate code."
+            if self.retry_count < self.config.max_retry_count:
+                error_message = format_output_revision_message()
+                response.add_attachment(
+                    Attachment.create(
+                        "revise_message",
+                        error_message,
+                    ),
+                )
+                response.send_to = "CodeInterpreter"
+                event_handler(
+                    "CodeInterpreter->CodeInterpreter",
+                    error_message,
+                )
+                self.retry_count += 1
+            else:
+                self.retry_count = 0
+                event_handler("CodeInterpreter->Planner", response.message)
+
+            return response
+
+        self.logger.info(f"Code to be verified: {code.content}")
         code_verify_errors = code_snippet_verification(
             code.content,
             [plugin.name for plugin in self.generator.plugin_registry.get_list()],
@@ -74,18 +118,14 @@ class CodeInterpreter(Role):
 
         if code_verify_errors is None:
             event_handler("verification", "NONE")
-            response.add_attachment(Attachment.create("verification", "NONE"))
-            response.add_attachment(
-                Attachment.create("code_error", "No code verification is performed."),
-            )
+            update_verification(response, "NONE", "No code verification is performed.")
         elif len(code_verify_errors) > 0:
             self.logger.info(
                 f"Code verification finished with {len(code_verify_errors)} errors.",
             )
             code_error = "\n".join(code_verify_errors)
             event_handler("verification", f"INCORRECT: {code_error}")
-            response.add_attachment(Attachment.create("verification", "INCORRECT"))
-            response.add_attachment(Attachment.create("code_error", code_error))
+            update_verification(response, "INCORRECT", code_error)
             response.message = code_error
             if self.retry_count < self.config.max_retry_count:
                 response.add_attachment(
@@ -105,20 +145,11 @@ class CodeInterpreter(Role):
                 event_handler("CodeInterpreter->Planner", response.message)
 
             # add execution status and result
-            response.add_attachment(Attachment.create("execution_status", "NONE"))
-            response.add_attachment(
-                Attachment.create(
-                    "execution_result",
-                    "No code is executed due to code verification failure.",
-                ),
-            )
+            update_execution(response, "NONE", "No code is executed due to code verification failure.")
             return response
         elif len(code_verify_errors) == 0:
             event_handler("verification", "CORRECT")
-            response.add_attachment(Attachment.create("verification", "CORRECT"))
-            response.add_attachment(
-                Attachment.create("code_error", "No error is found."),
-            )
+            update_verification(response, "CORRECT", "No error is found.")
 
         self.logger.info(f"Code to be executed: {code.content}")
 
@@ -126,51 +157,44 @@ class CodeInterpreter(Role):
             exec_id=response.id,
             code=code.content,
         )
-        response.add_attachment(
-            Attachment.create(
-                "execution_status",
-                "SUCCESS" if exec_result.is_success else "FAILURE",
-            ),
-        )
         event_handler("status", "SUCCESS" if exec_result.is_success else "FAILURE")
-
-        response.add_attachment(
-            Attachment.create(
-                "execution_result",
-                self.executor.format_code_output(
-                    exec_result,
-                    with_code=False,
-                    use_local_uri=self.config.use_local_uri,
-                ),
-            ),
+        code_output = self.executor.format_code_output(
+            exec_result,
+            with_code=False,
+            use_local_uri=self.config.use_local_uri,
         )
-        artifact_paths = [get_artifact_uri(execution_id=exec_result.execution_id,
-                                file=(a.file_name
-                                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
-                                    else os.path.join(self.executor.execution_cwd, a.file_name)
-                                    ),
-                                    use_local_uri=self.config.use_local_uri
-                                )
-                                for a in exec_result.artifact]
+        event_handler("result", code_output)
+        update_execution(
+            response,
+            status="SUCCESS" if exec_result.is_success else "FAILURE",
+            result=code_output,
+        )
+
+        # add artifact paths
         response.add_attachment(
             Attachment.create(
                 "artifact_paths",
-                artifact_paths
-            ),
-        )
-        event_handler(
-            "result",
-            self.executor.format_code_output(
-                exec_result,
-                with_code=False,
-                use_local_uri=self.config.use_local_uri,
+                [
+                    get_artifact_uri(
+                        execution_id=exec_result.execution_id,
+                        file=(
+                            a.file_name
+                            if os.path.isabs(a.file_name) or not self.config.use_local_uri
+                            else os.path.join(self.executor.execution_cwd, a.file_name)
+                        ),
+                        use_local_uri=self.config.use_local_uri,
+                    )
+                    for a in exec_result.artifact
+                ],
             ),
         )
 
         response.message = self.executor.format_code_output(
             exec_result,
+            with_code=True,  # the message to be sent to the user should contain the code
             use_local_uri=self.config.use_local_uri,
         )
+
         if exec_result.is_success or self.retry_count >= self.config.max_retry_count:
             self.retry_count = 0
             event_handler("CodeInterpreter->Planner", response.message)
