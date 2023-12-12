@@ -69,7 +69,7 @@ class CodeInterpreter(Role):
 
         code_verify_errors = code_snippet_verification(
             code.content,
-            [plugin.name for plugin in self.generator.plugin_pool],
+            [plugin.name for plugin in self.generator.get_plugin_pool()],
             self.generator.code_verification_config,
         )
 

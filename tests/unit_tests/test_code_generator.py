@@ -14,7 +14,7 @@ def test_compose_prompt():
     app_config = AppConfigSource(
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
-            "llm.api_key": "test_key",
+            "llm.api_key": "this_is_not_a_real_key",  # pragma: allowlist secret
             "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -133,7 +133,10 @@ def test_compose_prompt():
     memory.conversation.add_round(round2)
     memory.conversation.add_round(round3)
 
-    messages = code_generator.compose_prompt(rounds=memory.conversation.rounds)
+    messages = code_generator.compose_prompt(
+        rounds=memory.conversation.rounds,
+        plugins=code_generator.get_plugin_pool(),
+    )
 
     assert messages[0]["role"] == "system"
     assert messages[0]["content"].startswith("## On conversations:")
@@ -189,7 +192,7 @@ def test_compose_prompt_with_plugin():
     app_config = AppConfigSource(
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
-            "llm.api_key": "test_key",
+            "llm.api_key": "test_key",  # pragma: allowlist secret
             "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -245,7 +248,10 @@ def test_compose_prompt_with_plugin():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages = code_generator.compose_prompt(rounds=memory.conversation.rounds)
+    messages = code_generator.compose_prompt(
+        rounds=memory.conversation.rounds,
+        plugins=code_generator.get_plugin_pool(),
+    )
 
     assert messages[1]["role"] == "user"
     assert "sql_pull_data" in messages[1]["content"]
@@ -261,7 +267,7 @@ def test_compose_prompt_with_plugin_only():
     app_config = AppConfigSource(
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
-            "llm.api_key": "test_key",
+            "llm.api_key": "test_key",  # pragma: allowlist secret
             "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -323,7 +329,10 @@ def test_compose_prompt_with_plugin_only():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages = code_generator.compose_prompt(rounds=memory.conversation.rounds)
+    messages = code_generator.compose_prompt(
+        rounds=memory.conversation.rounds,
+        plugins=code_generator.get_plugin_pool(),
+    )
 
     assert "read_csv" in messages[1]["content"]
     assert "write_csv" in messages[1]["content"]
@@ -341,7 +350,7 @@ def test_compose_prompt_with_not_plugin_only():
     app_config = AppConfigSource(
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
-            "llm.api_key": "test_key",
+            "llm.api_key": "test_key",  # pragma: allowlist secret
             "code_generator.prompt_compression": True,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -403,7 +412,10 @@ def test_compose_prompt_with_not_plugin_only():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages = code_generator.compose_prompt(rounds=memory.conversation.rounds)
+    messages = code_generator.compose_prompt(
+        rounds=memory.conversation.rounds,
+        plugins=code_generator.get_plugin_pool(),
+    )
 
     assert "read_csv" not in messages[1]["content"]
     assert "write_csv" not in messages[1]["content"]
@@ -425,7 +437,7 @@ def test_code_correction_prompt():
     app_config = AppConfigSource(
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
-            "llm.api_key": "test_key",
+            "llm.api_key": "test_key",  # pragma: allowlist secret
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
@@ -484,7 +496,10 @@ def test_code_correction_prompt():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages = code_generator.compose_prompt(rounds=memory.conversation.rounds)
+    messages = code_generator.compose_prompt(
+        rounds=memory.conversation.rounds,
+        plugins=code_generator.get_plugin_pool(),
+    )
 
     assert len(messages) == 4
     assert messages[3]["role"] == "user"

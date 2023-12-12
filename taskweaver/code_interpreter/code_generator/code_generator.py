@@ -290,8 +290,10 @@ class CodeGenerator(Role):
         for attachment in response.attachment_list:
             if attachment.type in ["sample", "text"]:
                 response.message = attachment.content
+                break
             elif attachment.type == "python":
                 generated_code = attachment.content
+                break
 
         if self.config.enable_auto_plugin_selection:
             # filter out plugins that are not used in the generated code
@@ -319,6 +321,9 @@ class CodeGenerator(Role):
         if self.config.load_example:
             return load_examples(folder=self.config.example_base_path, plugin_only=plugin_only)
         return []
+
+    def get_plugin_pool(self) -> List[PluginEntry]:
+        return self.plugin_pool
 
 
 def format_code_revision_message() -> str:
