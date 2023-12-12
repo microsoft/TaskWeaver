@@ -24,3 +24,7 @@ colorama>=0.4.6
 
 # UI
 chainlit==0.7.700
+
+# Plugin Selection
+sentence-transformers>=2.2.2
+
