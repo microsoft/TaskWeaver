@@ -112,7 +112,7 @@ class CodeInterpreter(Role):
         self.logger.info(f"Code to be verified: {code.content}")
         code_verify_errors = code_snippet_verification(
             code.content,
-            [plugin.name for plugin in self.generator.plugin_registry.get_list()],
+            [plugin.name for plugin in self.generator.get_plugin_pool()],
             self.generator.code_verification_config,
         )
 
@@ -163,6 +163,7 @@ class CodeInterpreter(Role):
             with_code=False,
             use_local_uri=self.config.use_local_uri,
         )
+
         event_handler("result", code_output)
         update_execution(
             response,
