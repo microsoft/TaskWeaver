@@ -1,5 +1,5 @@
-plugin_only: True
 enabled: True
+plugin_only: True
 plugins:
   - name: read_csv
     enabled: true
