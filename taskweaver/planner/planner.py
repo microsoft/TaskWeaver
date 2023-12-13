@@ -207,8 +207,8 @@ class Planner(Role):
             assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
+            self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
             llm_output = json.dumps(self.config.dummy_plan)
-            llm_output = llm_output.replace("{request}", rounds[-1].post_list[-1].message)
         else:
             llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:

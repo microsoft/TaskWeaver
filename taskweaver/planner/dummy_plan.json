@@ -2,7 +2,7 @@
   "response": [
     {
       "type": "message",
-      "content": "Please process this request: {request}"
+      "content": "Please process this request: "
     },
     {
       "type": "send_to",
