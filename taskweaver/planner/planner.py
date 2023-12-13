@@ -48,11 +48,11 @@ class PlannerConfig(ModuleConfig):
         with open(
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "default_plan.json",
+                "dummy_plan.json",
             ),
             "r",
         ) as f:
-            self.default_plan = json.load(f)
+            self.dummy_plan = json.load(f)
 
 
 class Planner(Role):
@@ -207,7 +207,7 @@ class Planner(Role):
             assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
-            llm_output = json.dumps(self.config.default_plan)
+            llm_output = json.dumps(self.config.dummy_plan)
             llm_output = llm_output.replace("{request}", rounds[-1].post_list[-1].message)
         else:
             llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
