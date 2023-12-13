@@ -1,0 +1,21 @@
+enabled: True
+rounds:
+  - user_query: Hi
+    state: created
+    post_list:
+      - message: Hi
+        send_from: User
+        send_to: Planner
+        attachment_list:
+      - message: Hello, what can I help you?
+        send_from: Planner
+        send_to: User
+        attachment_list:
+        - type: init_plan
+          content: |-
+            1. Respond to the user's greeting
+        - type: plan
+          content: |-
+            1. Respond to the user's greeting
+        - type: current_plan_step
+          content: 1. Respond to the user's greeting
