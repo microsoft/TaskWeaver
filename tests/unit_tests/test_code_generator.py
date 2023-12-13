@@ -278,8 +278,8 @@ def test_compose_prompt_with_plugin_only():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/examples/codeinterpreter_examples",
             ),
-            "code_verification.plugin_only": True,
-            "code_verification.code_verification_on": True,
+            "code_interpreter.plugin_only": True,
+            "code_interpreter.code_verification_on": True,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -287,7 +287,13 @@ def test_compose_prompt_with_plugin_only():
     from taskweaver.code_interpreter.code_generator import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
-    code_generator = app_injector.create_object(CodeGenerator)
+    code_generator = app_injector.create_object(
+        CodeGenerator,
+        additional_kwargs={
+            "plugin_only": True,
+            "code_verification_on": True,
+        },
+    )
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
