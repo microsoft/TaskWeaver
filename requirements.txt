@@ -24,3 +24,5 @@ colorama>=0.4.6
 
 # UI
 chainlit==0.7.700
+
+
