@@ -100,6 +100,16 @@ class CodeGenerator(Role):
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 
+    def configure_verification(
+        self,
+        code_verification_on: bool,
+        plugin_only: bool,
+        allowed_modules: Optional[list] = None,
+    ):
+        self.plugin_only = plugin_only
+        self.allowed_modules = allowed_modules
+        self.code_verification_on = code_verification_on
+
     def compose_verification_requirements(
         self,
         plugin_list: List[PluginEntry],

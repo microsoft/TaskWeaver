@@ -66,9 +66,11 @@ class CodeInterpreter(Role):
         self.config = config
 
         self.generator = generator
-        self.generator.code_verification_on = self.config.code_verification_on
-        self.generator.plugin_only = self.config.plugin_only
-        self.generator.allowed_modules = self.config.allowed_modules
+        self.generator.configure_verification(
+            code_verification_on=self.config.code_verification_on,
+            plugin_only=self.config.plugin_only,
+            allowed_modules=self.config.allowed_modules,
+        )
 
         self.executor = executor
         self.logger = logger
