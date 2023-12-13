@@ -1,3 +1,4 @@
+import json
 import os
 from json import JSONDecodeError
 from typing import List, Optional
@@ -44,6 +45,14 @@ class PlannerConfig(ModuleConfig):
         )
 
         self.skip_planning = self._get_bool("skip_planning", False)
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "default_plan.json",
+            ),
+            "r",
+        ) as f:
+            self.default_plan = json.load(f)
 
 
 class Planner(Role):
@@ -198,52 +207,34 @@ class Planner(Role):
             assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
-            response_post = Post.create(
-                message="Please reply to the user's request: " + rounds[-1].post_list[-1].message,
-                send_to="CodeInterpreter",
-                send_from="Planner",
-                attachment_list=[
-                    Attachment.create(
-                        type="init_plan",
-                        content="1. ask Code Interpreter to handle user's request;"
-                        "2. report the result to user <interactively depends on 1>",
-                    ),
-                    Attachment.create(
-                        type="plan",
-                        content="1. ask Code Interpreter to handle user's request; " "2. report the result to user",
-                    ),
-                    Attachment.create(
-                        type="current_plan_step",
-                        content="1. ask Code Interpreter to handle user's request",
-                    ),
-                ],
-            )
+            llm_output = json.dumps(self.config.default_plan)
+            llm_output = llm_output.replace("{request}", rounds[-1].post_list[-1].message)
         else:
             llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
-            try:
-                response_post = self.planner_post_translator.raw_text_to_post(
-                    llm_output=llm_output,
-                    send_from="Planner",
-                    event_handler=event_handler,
-                    validation_func=check_post_validity,
-                )
-                if response_post.send_to == "User":
-                    event_handler("final_reply_message", response_post.message)
-            except (JSONDecodeError, AssertionError) as e:
-                self.logger.error(f"Failed to parse LLM output due to {str(e)}")
-                response_post = Post.create(
-                    message=f"Failed to parse Planner output due to {str(e)}."
-                    f"The output format should follow the below format:"
-                    f"{self.prompt_data['planner_response_schema']}"
-                    "Please try to regenerate the output.",
-                    send_to="Planner",
-                    send_from="Planner",
-                    attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
-                )
-                self.ask_self_cnt += 1
-                if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
-                    self.ask_self_cnt = 0
-                    raise Exception(f"Planner failed to generate response because {str(e)}")
+        try:
+            response_post = self.planner_post_translator.raw_text_to_post(
+                llm_output=llm_output,
+                send_from="Planner",
+                event_handler=event_handler,
+                validation_func=check_post_validity,
+            )
+            if response_post.send_to == "User":
+                event_handler("final_reply_message", response_post.message)
+        except (JSONDecodeError, AssertionError) as e:
+            self.logger.error(f"Failed to parse LLM output due to {str(e)}")
+            response_post = Post.create(
+                message=f"Failed to parse Planner output due to {str(e)}."
+                f"The output format should follow the below format:"
+                f"{self.prompt_data['planner_response_schema']}"
+                "Please try to regenerate the output.",
+                send_to="Planner",
+                send_from="Planner",
+                attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
+            )
+            self.ask_self_cnt += 1
+            if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
+                self.ask_self_cnt = 0
+                raise Exception(f"Planner failed to generate response because {str(e)}")
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
 
