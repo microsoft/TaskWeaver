@@ -57,13 +57,7 @@ class CodeGenerator(Role):
         logger: TelemetryLogger,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
-        plugin_only: bool = False,
-        code_verification_on: bool = False,
-        allowed_modules: Optional[list] = None,
     ):
-        if allowed_modules is None:
-            allowed_modules = []
-
         self.config = config
         self.logger = logger
         self.llm_api = llm_api
@@ -81,10 +75,10 @@ class CodeGenerator(Role):
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
 
-        self.plugin_only = plugin_only
-        self.code_verification_on = code_verification_on
-        self.allowed_modules = allowed_modules
         self.examples = None
+        self.code_verification_on = None
+        self.allowed_modules = None
+        self.plugin_only = None
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
@@ -107,7 +101,7 @@ class CodeGenerator(Role):
         allowed_modules: Optional[list] = None,
     ):
         self.plugin_only = plugin_only
-        self.allowed_modules = allowed_modules
+        self.allowed_modules = allowed_modules if allowed_modules is not None else []
         self.code_verification_on = code_verification_on
 
     def compose_verification_requirements(
