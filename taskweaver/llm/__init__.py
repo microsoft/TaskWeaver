@@ -4,6 +4,7 @@ from injector import Injector, inject
 
 from taskweaver.llm.azure_ml import AzureMLService
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
+from taskweaver.llm.google_genai import GoogleGenAIService
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
@@ -24,6 +25,8 @@ class LLMApi(object):
             self._set_completion_service(OllamaService)
         elif self.config.api_type == "azure_ml":
             self._set_completion_service(AzureMLService)
+        elif self.config.api_type == "google_genai":
+            self._set_completion_service(GoogleGenAIService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
@@ -31,6 +34,8 @@ class LLMApi(object):
             self._set_embedding_service(OpenAIService)
         elif self.config.embedding_api_type == "ollama":
             self._set_embedding_service(OllamaService)
+        elif self.config.embedding_api_type == "google_genai":
+            self._set_embedding_service(GoogleGenAIService)
         elif self.config.embedding_api_type == "sentence_transformer":
             self._set_embedding_service(SentenceTransformerService)
         elif self.config.embedding_api_type == "azure_ml":
