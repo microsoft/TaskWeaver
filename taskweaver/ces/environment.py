@@ -349,13 +349,7 @@ class Environment:
         km = self.multi_kernel_manager.get_kernel(kernel_id)
         kc = km.client()
         kc.start_channels()
-        kc.wait_for_ready()
-        if kc.session.metadata is None:
-            kc.session.metadata = {}
-        if exec_type == "control":
-            kc.session.metadata["cellId"] = -1
-        else:
-            del kc.session.metadata["cellId"]
+        kc.wait_for_ready(10)
         result_msg_id = kc.execute(
             code=code,
             silent=silent,

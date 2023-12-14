@@ -1,11 +1,16 @@
 import os
 import sys
 
+from .ext import TaskWeaverZMQShellDisplayHook
 from .logging import logger
 
 
 def start_app():
     from ipykernel.kernelapp import IPKernelApp
+    from ipykernel.zmqshell import ZMQInteractiveShell
+
+    # override displayhook_class for skipping output suppress token issue
+    ZMQInteractiveShell.displayhook_class = TaskWeaverZMQShellDisplayHook
 
     app = IPKernelApp.instance()
     app.config_file_name = os.path.join(
