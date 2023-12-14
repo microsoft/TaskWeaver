@@ -17,12 +17,6 @@ class QWenServiceConfig(LLMServiceConfig):
             shared_api_key,
         )
 
-        shared_api_key = self.llm_module_config.api_key
-        self.api_key = self._get_str(
-            "api_key",
-            shared_api_key,
-        )
-
         shared_model = self.llm_module_config.model
         self.model = self._get_str(
             "model",
