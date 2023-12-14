@@ -9,6 +9,7 @@ from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
+from .qwen import QWenService
 from .util import ChatMessageType, format_chat_message
 
 
@@ -24,6 +25,8 @@ class LLMApi(object):
             self._set_completion_service(OllamaService)
         elif self.config.api_type == "azure_ml":
             self._set_completion_service(AzureMLService)
+        elif self.config.api_type == "qwen":
+            self._set_completion_service(QWenService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
@@ -36,6 +39,10 @@ class LLMApi(object):
         elif self.config.embedding_api_type == "azure_ml":
             self.embedding_service = PlaceholderEmbeddingService(
                 "Azure ML does not support embeddings yet. Please configure a different embedding API.",
+            )
+        elif self.config.embedding_api_type == "qwen":
+            self.embedding_service = PlaceholderEmbeddingService(
+                "QWen does not support embeddings yet. Please configure a different embedding API.",
             )
         else:
             raise ValueError(
