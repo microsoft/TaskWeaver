@@ -128,14 +128,14 @@ class Session:
                         f"{post.send_from} talk to {post.send_to}: {post.message}",
                     )
                     self.internal_chat_num += 1
-                    if self.internal_chat_num >= self.max_internal_chat_round_num:
-                        raise Exception(
-                            f"Internal chat round number exceeds the limit of {self.max_internal_chat_round_num}",
-                        )
                     if post.send_to == "User":
                         chat_round.add_post(post)
                         self.internal_chat_num = 0
                         break
+                    if self.internal_chat_num >= self.max_internal_chat_round_num:
+                        raise Exception(
+                            f"Internal chat round number exceeds the limit of {self.max_internal_chat_round_num}",
+                        )
             else:
                 post = Post.create(
                     message=message,
