@@ -36,13 +36,11 @@ class LLMApi(object):
             self._set_embedding_service(OllamaService)
         elif self.config.embedding_api_type == "sentence_transformer":
             self._set_embedding_service(SentenceTransformerService)
+        elif self.config.embedding_api_type == "qwen":
+            self._set_embedding_service(QWenService)
         elif self.config.embedding_api_type == "azure_ml":
             self.embedding_service = PlaceholderEmbeddingService(
                 "Azure ML does not support embeddings yet. Please configure a different embedding API.",
-            )
-        elif self.config.embedding_api_type == "qwen":
-            self.embedding_service = PlaceholderEmbeddingService(
-                "QWen does not support embeddings yet. Please configure a different embedding API.",
             )
         else:
             raise ValueError(

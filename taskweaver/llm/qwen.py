@@ -3,7 +3,7 @@ from typing import Any, Generator, List, Optional
 
 from injector import inject
 
-from taskweaver.llm.base import CompletionService, LLMServiceConfig
+from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType
 
 
@@ -36,7 +36,7 @@ class QWenServiceConfig(LLMServiceConfig):
         )
 
 
-class QWenService(CompletionService):
+class QWenService(CompletionService, EmbeddingService):
     dashscope = None
 
     @inject
