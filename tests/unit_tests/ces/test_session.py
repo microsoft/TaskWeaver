@@ -47,12 +47,12 @@ spec_def = [
     SessionSpec(
         id="failed_cases",
         round_list=[
-            # RoundSpec(
-            #     id="syntax_error",
-            #     code="Hello World!",
-            #     expect_success=False,
-            #     assessment=lambda r: r.error is not None and "SyntaxError" in r.error,
-            # ),
+            RoundSpec(
+                id="syntax_error",
+                code="Hello World!",
+                expect_success=False,
+                assessment=lambda r: r.error is not None and "SyntaxError" in r.error,
+            ),
             RoundSpec(
                 id="syntax_error_2",
                 code="[1, 2, {",
@@ -61,9 +61,10 @@ spec_def = [
             ),
             RoundSpec(
                 id="not_defined",
-                code="Hell_World",
-                # output="Hello World!",
+                code="Hello_World",
+                output="",
                 expect_success=False,
+                assessment=lambda r: r.error is not None and "NameError" in r.error,
             ),
         ],
     ),
@@ -96,6 +97,6 @@ def test_ces_session(ces_manager: Manager, session_spec: SessionSpec):
                 assert comp[0] == comp[1], f"Expecting stdout line {line + 1} to match: {comp[0]} != {comp[1]}"
 
         if round.assessment is not None:
-            round.assessment(result)
+            assert round.assessment(result), "Expecting assessment to pass"
 
     session.stop()
