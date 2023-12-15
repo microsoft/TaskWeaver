@@ -4,7 +4,7 @@ from typing import Dict
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreter import CodeInterpreter
+from taskweaver.code_interpreter import CodeInterpreterPluginOnly
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
@@ -60,7 +60,7 @@ class Session:
             },
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
-        self.code_interpreter = self.session_injector.get(CodeInterpreter)
+        self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0

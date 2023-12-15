@@ -1,5 +1,5 @@
 name: sql_pull_data
-enabled: true
+enabled: false
 required: false
 description: >-
   Pull data from a SQL database. This plugin takes user requests when obtaining data from database is explicitly mentioned.

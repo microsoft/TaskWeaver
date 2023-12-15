@@ -27,7 +27,7 @@ class CodeGeneratorConfig(ModuleConfig):
             "prompt_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "code_generator_json_prompt.yaml",
+                "code_generator_prompt.yaml",
             ),
         )
         self.example_base_path = self._get_path(

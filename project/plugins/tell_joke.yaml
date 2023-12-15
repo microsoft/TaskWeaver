@@ -1,0 +1,17 @@
+name: tell_joke
+enabled: true
+required: false
+description: >-
+  Call this plugin to tell a joke.
+
+parameters:
+  - name: context
+    type: str
+    required: true
+    description: the context of the joke.
+
+
+returns:
+  - name: joke
+    type: str
+    description: the joke.

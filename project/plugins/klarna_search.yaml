@@ -1,5 +1,5 @@
 name: klarna_search
-enabled: true
+enabled: false
 required: false
 description: >-
   Search and compare prices from thousands of online shops. Only available in the US.

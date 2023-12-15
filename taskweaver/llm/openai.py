@@ -4,6 +4,7 @@ from typing import Any, Generator, List, Optional
 import openai
 from injector import inject
 from openai import AzureOpenAI, OpenAI
+from openai._types import NOT_GIVEN
 
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 
@@ -134,6 +135,7 @@ class OpenAIService(CompletionService, EmbeddingService):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
+        tools: Optional[List] = NOT_GIVEN,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         engine = self.config.model
@@ -148,6 +150,13 @@ class OpenAIService(CompletionService, EmbeddingService):
         try:
             if use_backup_engine:
                 engine = backup_engine
+
+            if tools is not NOT_GIVEN and tools is not None:
+                stream = False
+                tool_choice = "auto"
+            else:
+                tools = NOT_GIVEN
+                tool_choice = NOT_GIVEN
             res: Any = self.client.chat.completions.create(
                 model=engine,
                 messages=messages,  # type: ignore
@@ -162,6 +171,8 @@ class OpenAIService(CompletionService, EmbeddingService):
                 response_format=(
                     {"type": "json_object"} if self.config.response_format == "json_object" else None  # type: ignore
                 ),
+                tool_choice=tool_choice,
+                tools=tools,
             )
             if stream:
                 role: Any = None
@@ -184,7 +195,17 @@ class OpenAIService(CompletionService, EmbeddingService):
                 response: ChatMessageType = format_chat_message(
                     role=oai_response.role if oai_response.role is not None else "assistant",
                     message=oai_response.content if oai_response.content is not None else "",
+                    name="assistant",
                 )
+                if oai_response.tool_calls is not None:
+                    response["name"] = "tool_calls"
+                    response["content"] = (
+                        "["
+                        + ",".join(
+                            [t.function.model_dump_json() for t in oai_response.tool_calls],
+                        )
+                        + "]"
+                    )
                 yield response
 
         except openai.APITimeoutError as e:

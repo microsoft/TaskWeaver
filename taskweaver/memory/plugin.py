@@ -156,6 +156,36 @@ class PluginEntry:
             "enabled": self.enabled,
         }
 
+    def format_function_calling(self) -> Dict:
+        def map_type(t: str) -> str:
+            if t.lower() == "string" or t.lower() == "str" or t.lower() == "text":
+                return "string"
+            if t.lower() == "integer" or t.lower() == "int":
+                return "integer"
+            if t.lower() == "float" or t.lower() == "double" or t.lower() == "number":
+                return "number"
+            if t.lower() == "boolean" or t.lower() == "bool":
+                return "boolean"
+            if t.lower() == "null" or t.lower() == "none":
+                return "null"
+            raise Exception(f"unknown type {t}")
+
+        function = {"type": "function", "function": {}}
+        required_params = []
+        function["function"]["name"] = self.name
+        function["function"]["description"] = self.spec.description
+        function["function"]["parameters"] = {"type": "object", "properties": {}}
+        for arg in self.spec.args:
+            function["function"]["parameters"]["properties"][arg.name] = {
+                "type": map_type(arg.type),
+                "description": arg.description,
+            }
+            if arg.required:
+                required_params.append(arg.name)
+        function["function"]["parameters"]["required"] = required_params
+
+        return function
+
 
 class PluginRegistry(ComponentRegistry[PluginEntry]):
     def __init__(

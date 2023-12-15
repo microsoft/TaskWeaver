@@ -59,6 +59,7 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
+        tools: Optional[List] = None,
         **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
@@ -70,10 +71,13 @@ class LLMApi(object):
             max_tokens,
             top_p,
             stop,
+            tools,
             **kwargs,
         ):
             msg["role"] = msg_chunk["role"]
             msg["content"] += msg_chunk["content"]
+            if "name" in msg_chunk:
+                msg["name"] = msg_chunk["name"]
         return msg
 
     def chat_completion_stream(
