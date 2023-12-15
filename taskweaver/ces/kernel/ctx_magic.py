@@ -73,7 +73,7 @@ class TaskWeaverPluginMagic(Magics):
         except Exception as e:
             return fmt_response(
                 False,
-                f"Plugin {plugin_name} failed to register: " + str(e),
+                f"Plugin {plugin_name} failed to register: {str(e)}",
             )
 
     @line_magic
@@ -103,7 +103,7 @@ class TaskWeaverPluginMagic(Magics):
         except Exception as e:
             return fmt_response(
                 False,
-                f"Plugin {plugin_name} failed to load: " + str(e),
+                f"Plugin {plugin_name} failed to load: {str(e)}",
             )
 
     @needs_local_scope
