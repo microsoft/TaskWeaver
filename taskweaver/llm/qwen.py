@@ -3,7 +3,7 @@ from typing import Any, Generator, List, Optional
 
 from injector import inject
 
-from taskweaver.llm.base import CompletionService, LLMServiceConfig
+from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType
 
 
@@ -23,8 +23,20 @@ class QWenServiceConfig(LLMServiceConfig):
             shared_model if shared_model is not None else "qwen-max-1201",
         )
 
+        shared_backup_model = self.llm_module_config.backup_model
+        self.backup_model = self._get_str(
+            "backup_model",
+            shared_backup_model if shared_backup_model is not None else self.model,
+        )
 
-class QWenService(CompletionService):
+        shared_embedding_model = self.llm_module_config.embedding_model
+        self.embedding_model = self._get_str(
+            "embedding_model",
+            shared_embedding_model if shared_embedding_model is not None else self.model,
+        )
+
+
+class QWenService(CompletionService, EmbeddingService):
     dashscope = None
 
     @inject
@@ -40,6 +52,7 @@ class QWenService(CompletionService):
                 raise Exception(
                     "Package dashscope is required for using QWen API. ",
                 )
+        QWenService.dashscope.api_key = self.config.api_key
 
     def chat_completion(
         self,
@@ -52,8 +65,6 @@ class QWenService(CompletionService):
         stop: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
-        QWenService.dashscope.api_key = self.config.api_key
-
         response = QWenService.dashscope.Generation.call(
             model=self.config.model,
             messages=messages,
@@ -62,13 +73,30 @@ class QWenService(CompletionService):
             top_p=top_p,
             temperature=temperature,
             stop=stop,
-            stream=False,
+            stream=True,
+            incremental_output=True,
         )
 
-        if response.status_code == HTTPStatus.OK:
-            yield response.output.choices[0]["message"]
+        for msg_chunk in response:
+            if msg_chunk.status_code == HTTPStatus.OK:
+                yield msg_chunk.output.choices[0]["message"]
 
+            else:
+                raise Exception(
+                    f"QWen API call failed with status code {response.status_code} and error message {response.error}",
+                )
+
+    def get_embeddings(self, strings: List[str]) -> List[List[float]]:
+        resp = QWenService.dashscope.TextEmbedding.call(
+            model=self.config.embedding_model,
+            input=strings,
+        )
+        embeddings = []
+        if resp.status_code == HTTPStatus.OK:
+            for emb in resp["output"]["embeddings"]:
+                embeddings.append(emb["embedding"])
+            return embeddings
         else:
             raise Exception(
-                f"QWen API call failed with status code {response.status_code} and error message {response.error}",
+                f"QWen API call failed with status code {resp.status_code} and error message {resp.error}",
             )
