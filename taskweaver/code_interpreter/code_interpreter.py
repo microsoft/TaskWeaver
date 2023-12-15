@@ -4,13 +4,9 @@ from typing import Literal, Optional
 from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor, get_artifact_uri
-from taskweaver.code_interpreter.code_generator import (
-    CodeGenerator,
-    code_snippet_verification,
-    format_code_correction_message,
-    format_code_revision_message,
-)
+from taskweaver.code_interpreter.code_generator import CodeGenerator, format_code_revision_message
 from taskweaver.code_interpreter.code_generator.code_generator import format_output_revision_message
+from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post
@@ -22,6 +18,18 @@ class CodeInterpreterConfig(ModuleConfig):
         self._set_name("code_interpreter")
         self.use_local_uri = self._get_bool("use_local_uri", False)
         self.max_retry_count = self._get_int("max_retry_count", 3)
+
+        # for verification
+        self.code_verification_on = self._get_bool("code_verification_on", False)
+        self.plugin_only = self._get_bool("plugin_only", False)
+        self.allowed_modules = self._get_list(
+            "allowed_modules",
+            ["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"],
+        )
+
+        if self.plugin_only:
+            self.code_verification_on = True
+            self.allowed_modules = []
 
 
 def update_verification(
@@ -55,10 +63,17 @@ class CodeInterpreter(Role):
         logger: TelemetryLogger,
         config: CodeInterpreterConfig,
     ):
+        self.config = config
+
         self.generator = generator
+        self.generator.configure_verification(
+            code_verification_on=self.config.code_verification_on,
+            plugin_only=self.config.plugin_only,
+            allowed_modules=self.config.allowed_modules,
+        )
+
         self.executor = executor
         self.logger = logger
-        self.config = config
         self.retry_count = 0
 
         self.logger.info("CodeInterpreter initialized successfully.")
@@ -113,7 +128,9 @@ class CodeInterpreter(Role):
         code_verify_errors = code_snippet_verification(
             code.content,
             [plugin.name for plugin in self.generator.get_plugin_pool()],
-            self.generator.code_verification_config,
+            self.config.code_verification_on,
+            self.config.plugin_only,
+            self.config.allowed_modules,
         )
 
         if code_verify_errors is None:

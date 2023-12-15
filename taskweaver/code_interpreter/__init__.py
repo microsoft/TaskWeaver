@@ -1,1 +1,1 @@
-from .code_interpreter import CodeInterpreter
+from .code_interpreter import CodeInterpreter, CodeInterpreterConfig

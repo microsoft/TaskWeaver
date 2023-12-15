@@ -3,7 +3,6 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_generator.code_verification import CodeVerificationConfig
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
@@ -57,13 +56,11 @@ class CodeGenerator(Role):
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
         llm_api: LLMApi,
-        code_verification_config: CodeVerificationConfig,
         round_compressor: RoundCompressor,
     ):
         self.config = config
         self.logger = logger
         self.llm_api = llm_api
-        self.code_verification_config = code_verification_config
 
         self.role_name = self.config.role_name
         self.executor_name = self.config.executor_name
@@ -78,7 +75,10 @@ class CodeGenerator(Role):
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
 
-        self.examples = self.load_examples(plugin_only=self.code_verification_config.plugin_only)
+        self.examples = None
+        self.code_verification_on = None
+        self.allowed_modules = None
+        self.plugin_only = None
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
@@ -94,27 +94,39 @@ class CodeGenerator(Role):
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 
-    def compose_plugin_only_requirements(
+    def configure_verification(
+        self,
+        code_verification_on: bool,
+        plugin_only: bool,
+        allowed_modules: Optional[list] = None,
+    ):
+        self.plugin_only = plugin_only
+        self.allowed_modules = allowed_modules if allowed_modules is not None else []
+        self.code_verification_on = code_verification_on
+
+    def compose_verification_requirements(
         self,
         plugin_list: List[PluginEntry],
     ) -> str:
         requirements = []
-        if not self.code_verification_config.code_verification_on:
+        if not self.code_verification_on:
             return ""
-        if self.code_verification_config.plugin_only:
+
+        if self.plugin_only:
             requirements.append(
                 f"- {self.role_name} should only use the following plugins and"
                 + " Python built-in functions to complete the task: "
                 + ", ".join([f"{plugin.name}" for plugin in plugin_list]),
             )
             requirements.append(f"- {self.role_name} cannot define new functions or plugins.")
-        allowed_modules = self.code_verification_config.allowed_modules
-        if len(allowed_modules) > 0:
+
+        if len(self.allowed_modules) > 0:
             requirements.append(
                 f"- {self.role_name} can only import the following Python modules: "
-                + ", ".join([f"{module}" for module in allowed_modules]),
+                + ", ".join([f"{module}" for module in self.allowed_modules]),
             )
-        if len(allowed_modules) == 0 and self.code_verification_config.plugin_only:
+
+        if len(self.allowed_modules) == 0 and self.plugin_only:
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
         return "\n".join(requirements)
 
@@ -124,6 +136,9 @@ class CodeGenerator(Role):
         plugins: List[PluginEntry],
     ) -> List[ChatMessageType]:
         chat_history = [format_chat_message(role="system", message=self.instruction)]
+
+        if self.examples is None:
+            self.examples = self.load_examples(plugin_only=self.plugin_only)
         for i, example in enumerate(self.examples):
             chat_history.extend(self.compose_conversation(example.rounds, example.plugins))
 
@@ -227,7 +242,7 @@ class CodeGenerator(Role):
                     # add requirements to the last user message
                     if add_requirements and post_index == len(conversation_round.post_list) - 1:
                         user_message += "\n" + self.query_requirements_template.format(
-                            PLUGIN_ONLY_PROMPT=self.compose_plugin_only_requirements(plugins),
+                            PLUGIN_ONLY_PROMPT=self.compose_verification_requirements(plugins),
                             ROLE_NAME=self.role_name,
                         )
                     chat_history.append(
