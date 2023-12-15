@@ -31,7 +31,7 @@ The following table lists the parameters in the configuration file:
 | `code_generator.enable_auto_plugin_selection` | Whether to enable auto plugin selection                                          | `false`                                                                                |
 | `code_generator.auto_plugin_selection_topk`   | The number of auto selected plugins  in each round                               | `3`                                                                                    |
 | `session.max_internal_chat_round_num`         | The maximum number of internal chat rounds between Planner and Code Interpreter  | `10`                                                                                   |
-| `session.use_planner`                         | Use Planner or only use Code Interpreter                                         | `true`                                                                                 |
+| `session.code_interpreter_only`               | Allow users to directly communicate with the Code Interpreter.                                | `false`                                                                                |
 
 > 💡 ${AppBaseDir} is the project directory.
 
