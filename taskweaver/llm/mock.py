@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import random
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Literal, Optional
@@ -8,7 +9,7 @@ from typing import Any, Dict, Generator, List, Literal, Optional
 import yaml
 from injector import inject
 
-from taskweaver.llm.util import ChatMessageType, format_chat_message
+from taskweaver.llm.util import ChatMessageRoleType, ChatMessageType, format_chat_message
 
 from .base import CompletionService, EmbeddingService, LLMServiceConfig
 
@@ -51,6 +52,13 @@ class MockApiServiceConfig(LLMServiceConfig):
         self.cache_path: str = self._get_path(
             "cache_path",
             os.path.join(self.src.app_base_path, "cache", "mock.yaml"),
+        )
+
+        # split the chat completion response into chunks and delay each chunk by this amount
+        # if negative, return the whole response at once
+        self.playback_chunk_delay: float = self._get_float(
+            "playback_delay",
+            0.05,
         )
 
 
@@ -295,11 +303,10 @@ class MockApiService(CompletionService, EmbeddingService):
     def _get_from_fixed_completion(
         self,
     ) -> Generator[ChatMessageType, None, None]:
-        fixed_responses: List[ChatMessageType] = json.loads(
+        fixed_responses: ChatMessageType = json.loads(
             self.config.fixed_chat_responses,
         )
-        for response in fixed_responses:
-            yield response
+        return self._get_from_playback_completion(fixed_responses)
 
     def _get_from_fixed_embedding(
         self,
@@ -311,4 +318,15 @@ class MockApiService(CompletionService, EmbeddingService):
         self,
         cached_value: ChatMessageType,
     ) -> Generator[ChatMessageType, None, None]:
-        yield cached_value
+        if self.config.playback_chunk_delay < 0:
+            yield cached_value
+
+        role: ChatMessageRoleType = cached_value["role"]  # type: ignore
+        content = cached_value["content"]
+        cur_pos = 0
+        while cur_pos < len(content):
+            chunk_size = random.randint(3, 20)
+            next_pos = min(cur_pos + chunk_size, len(content))
+            yield format_chat_message(role, content[cur_pos:next_pos])
+            cur_pos = next_pos
+            time.sleep(self.config.playback_chunk_delay)
