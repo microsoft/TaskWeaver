@@ -6,38 +6,27 @@ from typing import List, Optional, Tuple
 
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
-
-
-class CodeVerificationConfig(ModuleConfig):
-    def _configure(self) -> None:
-        self._set_name("code_verification")
-        self.code_verification_on = self._get_bool("code_verification_on", False)
-        self.plugin_only = self._get_bool("plugin_only", False)
-        self.allowed_modules = self._get_list(
-            "allowed_modules",
-            ["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"],
-        )
-
-        if self.plugin_only:
-            self.code_verification_on = True
-            self.allowed_modules = []
-
-
 allowed_builtins = [name for name, obj in vars(builtins).items() if callable(obj)]
 
 
 class FunctionCallValidator(ast.NodeVisitor):
     @inject
-    def __init__(self, lines: List[str], config: CodeVerificationConfig, plugin_list: List[str]):
+    def __init__(
+        self,
+        lines: List[str],
+        plugin_list: List[str],
+        plugin_only: bool,
+        allowed_modules: List[str],
+    ):
         self.lines = lines
-        self.config = config
         self.plugin_list = plugin_list
         self.errors = []
         self.plugin_return_values = []
+        self.plugin_only = plugin_only
+        self.allowed_modules = allowed_modules
 
     def visit_Call(self, node):
-        if self.config.plugin_only:
+        if self.plugin_only:
             if isinstance(node.func, ast.Name):
                 function_name = node.func.id
                 if function_name not in self.plugin_list and function_name not in allowed_builtins:
@@ -63,38 +52,38 @@ class FunctionCallValidator(ast.NodeVisitor):
                 return False
 
     def visit_Import(self, node):
-        if len(self.config.allowed_modules) > 0:
+        if len(self.allowed_modules) > 0:
             for alias in node.names:
                 if "." in alias.name:
                     module_name = alias.name.split(".")[0]
                 else:
                     module_name = alias.name
-                if len(self.config.allowed_modules) > 0 and module_name not in self.config.allowed_modules:
+                if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
                     self.errors.append(
                         f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
                         f"=> Importing module '{module_name}' is not allowed. ",
                     )
 
     def visit_ImportFrom(self, node):
-        if len(self.config.allowed_modules) > 0:
+        if len(self.allowed_modules) > 0:
             if "." in node.module:
                 module_name = node.module.split(".")[0]
             else:
                 module_name = node.module
-            if len(self.config.allowed_modules) > 0 and module_name not in self.config.allowed_modules:
+            if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
                 self.errors.append(
                     f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
                     f"=>  Importing from module '{node.module}' is not allowed.",
                 )
 
     def visit_FunctionDef(self, node):
-        if self.config.plugin_only:
+        if self.plugin_only:
             self.errors.append(
                 f"Error on line {node.lineno}: {self.lines[node.lineno-1]} => Defining new functions is not allowed.",
             )
 
     def visit_Assign(self, node):
-        if self.config.plugin_only:
+        if self.plugin_only:
             if isinstance(node.value, ast.Call):
                 is_allowed_call = self.visit_Call(node.value)
                 if not is_allowed_call:
@@ -111,7 +100,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 self.generic_visit(node)
 
     def visit_Name(self, node: Name):
-        if self.config.plugin_only:
+        if self.plugin_only:
             if node.id not in self.plugin_return_values:
                 self.errors.append(
                     f"Error on line {node.lineno}: {self.lines[node.lineno-1]} => "
@@ -120,7 +109,7 @@ class FunctionCallValidator(ast.NodeVisitor):
             # self.generic_visit(node)
 
     def generic_visit(self, node):
-        if self.config.plugin_only and not isinstance(
+        if self.plugin_only and not isinstance(
             node,
             (ast.Call, ast.Assign, ast.Import, ast.ImportFrom, ast.Expr, ast.Module, ast.Name),
         ):
@@ -147,7 +136,7 @@ def format_code_correction_message() -> str:
     )
 
 
-def separate_magics_and_code(input_code: str) -> Tuple[List[str], List[str], List[str]]:
+def separate_magics_and_code(input_code: str) -> Tuple[List[str], str, List[str]]:
     line_magic_pattern = re.compile(r"^\s*%\s*[a-zA-Z_]\w*")
     cell_magic_pattern = re.compile(r"^\s*%%\s*[a-zA-Z_]\w*")
     shell_command_pattern = re.compile(r"^\s*!")
@@ -186,9 +175,11 @@ def separate_magics_and_code(input_code: str) -> Tuple[List[str], List[str], Lis
 def code_snippet_verification(
     code_snippet: str,
     plugin_list: List[str],
-    config: CodeVerificationConfig,
+    code_verification_on: bool = False,
+    plugin_only: bool = False,
+    allowed_modules: List[str] = [],
 ) -> Optional[List[str]]:
-    if not config.code_verification_on:
+    if not code_verification_on:
         return None
     errors = []
     try:
@@ -196,17 +187,16 @@ def code_snippet_verification(
         if len(magics) > 0:
             errors.append(f"Magic commands except package install are not allowed. Details: {magics}")
         tree = ast.parse(python_code)
-        # print the tree structure for debugging
-        # print(ast.dump(tree) + "\n")
+
         processed_lines = []
         for line in python_code.splitlines():
             if not line.strip() or line.strip().startswith("#"):
                 continue
             processed_lines.append(line)
-        validator = FunctionCallValidator(processed_lines, config, plugin_list)
+        validator = FunctionCallValidator(processed_lines, plugin_list, plugin_only, allowed_modules)
         validator.visit(tree)
         errors.extend(validator.errors)
         return errors
     except SyntaxError as e:
-        print(f"Syntax error: {e}")
+        # print(f"Syntax error: {e}")
         return [f"Syntax error: {e}"]

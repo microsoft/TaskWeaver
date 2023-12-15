@@ -1,0 +1,70 @@
+plugin_only: True
+enabled: True
+plugins:
+  - name: read_csv
+    enabled: true
+    required: false
+    description: read the content of a csv file
+
+    parameters:
+      - name: file_path
+        type: string
+        required: true
+        description: the path of the file
+
+    returns:
+      - name: df
+        type: DataFrame
+        description: This DataFrame contains the content of the csv file.
+      - name: description
+        type: str
+        description: This is a string describing the csv schema.
+
+  - name: write_csv
+    enabled: true
+    required: false
+    description: write the content of a DataFrame to a csv file
+
+    parameters:
+      - name: df
+        type: DataFrame
+        required: true
+        description: the DataFrame to be written to the csv file
+      - name: file_path
+        type: string
+        required: true
+        description: the path of the file
+
+    returns:
+      - name: description
+        type: str
+        description: This is a string describing success or failure of the write operation.
+rounds:
+  - user_query: read file /abc/def.csv and write to /abc/backup.csv
+    state: finished
+    post_list:
+      - message: read file /abc/def.csv and write to /abc/backup.csv. You can only use the pre-defined plugins.
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list: []
+      - message: I have read the file /abc/def.csv and written the content to /abc/backup.csv.
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+          - type: thought
+            content: "{ROLE_NAME} will generate a code snippet to read the file /abc/def.csv and add 1 to each value in column \"value\"."
+          - type: thought
+            content: "{ROLE_NAME} is prohibited to generate any code other than variable assignments and plugin calls."
+          - type: python
+            content: |-
+              df = read_csv("/abc/def.csv")
+              status = write_csv(df, "/abc/backup.csv")
+              status
+          - type: verification
+            content: CORRECT
+          - type: code_error
+            content: No code error.
+          - type: execution_status
+            content: SUCCESS
+          - type: execution_result
+            content: The file /abc/def.csv has been read and the content has been written to /abc/backup.csv.

@@ -12,7 +12,4 @@ TaskWeaver is a code-first agent framework for seamlessly planning and executing
 
 We can't wait to see what you create with TaskWeaver!
 
-## How to Run
-```chainlit run app.py```
-
 **Start the Conversation!**

@@ -1,4 +1,6 @@
-# TaskWeaver
+<h1 align="center">
+    <img src="./.asset/logo.color.svg" width="45" /> TaskWeaver
+</h1>
 
 A **code-first** agent framework for seamlessly planning and executing data analytics tasks. 
 This innovative framework interprets user requests through coded snippets and efficiently 
@@ -37,6 +39,7 @@ data analytics tasks
 
 # News
 
+- [2023-12-12] A simple UI demo is available in playground/UI folder, try with the [README](/playground/UI/README.md)
 - [2023-11-30] TaskWeaver is released on GitHub🎈. 
 
 

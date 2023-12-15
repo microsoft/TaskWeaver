@@ -21,10 +21,10 @@ class ModuleConfig(object):
     def _configure(self) -> None:
         pass
 
-    def _get_str(self, key: str, default: Optional[str]) -> str:
-        return self.src.get_str(self._config_key(key), default)
+    def _get_str(self, key: str, default: Optional[str], required: bool = True) -> str:
+        return self.src.get_str(self._config_key(key), default, required)
 
-    def _get_enum(self, key: str, options: List[str], default: Optional[str]) -> str:
+    def _get_enum(self, key: str, options: List[str], default: Optional[str], required: bool = True) -> str:
         return self.src.get_enum(self._config_key(key), options, default)
 
     def _get_bool(self, key: str, default: Optional[bool]) -> bool:

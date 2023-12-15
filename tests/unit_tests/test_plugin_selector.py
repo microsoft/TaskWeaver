@@ -12,8 +12,8 @@ def test_plugin_selector():
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
-            "embedding_model.embedding_model_type": "sentence_transformer",
-            "embedding_model.embedding_model": "all-mpnet-base-v2",
+            "llm.embedding_api_type": "sentence_transformer",
+            "llm.embedding_model": "all-mpnet-base-v2",
             "llm.api_key": "test_key",
             "code_generator.enable_auto_plugin_selection": True,
         },

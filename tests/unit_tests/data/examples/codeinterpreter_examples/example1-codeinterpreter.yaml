@@ -63,7 +63,7 @@ rounds:
         send_to: Planner
         attachment_list:
           - type: thought
-            content: "{ROLE_NAME} will generate a code snippet to create an array of 10 random numbers using np.random.rand()."
+            content: "{ROLE_NAME} will generate a code snippet to create an array of 10 random numbers using np.random.rand() again."
           - type: python
             content: |-
               import numpy as np

@@ -1,327 +1,112 @@
-import os
-from typing import Any, Callable, Generator, Iterator, List, Literal, Optional, TypeVar, Union, overload
+from typing import Any, Generator, List, Optional, Type
 
-import openai
-from injector import inject
-from openai import AzureOpenAI, OpenAI
+from injector import Injector, inject
 
-from taskweaver.config.module_config import ModuleConfig
-from taskweaver.utils.llm_api import ChatMessageType, format_chat_message
+from taskweaver.llm.azure_ml import AzureMLService
+from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
+from taskweaver.llm.ollama import OllamaService
+from taskweaver.llm.openai import OpenAIService
+from taskweaver.llm.placeholder import PlaceholderEmbeddingService
+from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
-DEFAULT_STOP_TOKEN: List[str] = ["<EOS>"]
-
-# TODO: retry logic
-
-_FuncType = TypeVar("_FuncType", bound=Callable[..., Any])
-
-
-class LLMModuleConfig(ModuleConfig):
-    def _configure(self) -> None:
-        self._set_name("llm")
-        self.api_type = self._get_enum(
-            "api_type",
-            ["openai", "azure", "azure_ad"],
-            "openai",
-        )
-        self.api_base = self._get_str("api_base", "https://api.openai.com/v1")
-        self.api_key = self._get_str(
-            "api_key",
-            None if self.api_type != "azure_ad" else "",
-        )
-
-        self.model = self._get_str("model", "gpt-4")
-        self.backup_model = self._get_str("backup_model", self.model)
-
-        self.api_version = self._get_str("api_version", "2023-07-01-preview")
-
-        is_azure_ad_login = self.api_type == "azure_ad"
-        self.aad_auth_mode = self._get_enum(
-            "aad_auth_mode",
-            ["device_login", "aad_app"],
-            None if is_azure_ad_login else "device_login",
-        )
-
-        is_app_login = is_azure_ad_login and self.aad_auth_mode == "aad_app"
-        self.aad_tenant_id = self._get_str(
-            "aad_tenant_id",
-            None if is_app_login else "common",
-        )
-        self.aad_api_resource = self._get_str(
-            "aad_api_resource",
-            None if is_app_login else "https://cognitiveservices.azure.com/",
-        )
-        self.aad_api_scope = self._get_str(
-            "aad_api_scope",
-            None if is_app_login else ".default",
-        )
-        self.aad_client_id = self._get_str(
-            "aad_client_id",
-            None if is_app_login else "",
-        )
-        self.aad_client_secret = self._get_str(
-            "aad_client_secret",
-            None if is_app_login else "",
-        )
-        self.aad_use_token_cache = self._get_bool("aad_use_token_cache", True)
-        self.aad_token_cache_path = self._get_str(
-            "aad_token_cache_path",
-            "cache/token_cache.bin",
-        )
-        self.aad_token_cache_full_path = os.path.join(
-            self.src.app_base_path,
-            self.aad_token_cache_path,
-        )
-        self.response_format = self._get_enum(
-            "response_format",
-            options=["json_object", "text", None],
-            default="json_object",
-        )
+from .qwen import QWenService
+from .util import ChatMessageType, format_chat_message
 
 
 class LLMApi(object):
     @inject
-    def __init__(self, config: LLMModuleConfig):
+    def __init__(self, config: LLMModuleConfig, injector: Injector) -> None:
         self.config = config
+        self.injector = injector
 
-        api_type = self.config.api_type
-        if api_type == "azure":
-            self.client = AzureOpenAI(
-                api_version=self.config.api_version,
-                azure_endpoint=self.config.api_base,
-                api_key=self.config.api_key,
+        if self.config.api_type in ["openai", "azure", "azure_ad"]:
+            self._set_completion_service(OpenAIService)
+        elif self.config.api_type == "ollama":
+            self._set_completion_service(OllamaService)
+        elif self.config.api_type == "azure_ml":
+            self._set_completion_service(AzureMLService)
+        elif self.config.api_type == "qwen":
+            self._set_completion_service(QWenService)
+        else:
+            raise ValueError(f"API type {self.config.api_type} is not supported")
+
+        if self.config.embedding_api_type in ["openai", "azure", "azure_ad"]:
+            self._set_embedding_service(OpenAIService)
+        elif self.config.embedding_api_type == "ollama":
+            self._set_embedding_service(OllamaService)
+        elif self.config.embedding_api_type == "sentence_transformer":
+            self._set_embedding_service(SentenceTransformerService)
+        elif self.config.embedding_api_type == "azure_ml":
+            self.embedding_service = PlaceholderEmbeddingService(
+                "Azure ML does not support embeddings yet. Please configure a different embedding API.",
             )
-        elif api_type == "azure_ad":
-            self.client = AzureOpenAI(
-                api_version=self.config.api_version,
-                azure_endpoint=self.config.api_base,
-                api_key=self._get_aad_token(),
+        elif self.config.embedding_api_type == "qwen":
+            self.embedding_service = PlaceholderEmbeddingService(
+                "QWen does not support embeddings yet. Please configure a different embedding API.",
             )
-        elif api_type == "openai":
-            self.client = OpenAI(
-                base_url=self.config.api_base,
-                api_key=self.config.api_key,
+        else:
+            raise ValueError(
+                f"Embedding API type {self.config.embedding_api_type} is not supported",
             )
 
-    def _get_aad_token(self) -> str:
-        # TODO: migrate to azure-idnetity module
-        try:
-            import msal
-        except ImportError:
-            raise Exception("AAD authentication requires msal module to be installed, please run `pip install msal`")
+    def _set_completion_service(self, svc: Type[CompletionService]) -> None:
+        self.completion_service: CompletionService = self.injector.get(svc)
+        self.injector.binder.bind(svc, to=self.completion_service)
 
-        config = self.config
-
-        cache = msal.SerializableTokenCache()
-
-        token_cache_file: Optional[str] = None
-        if config.aad_use_token_cache:
-            token_cache_file = config.aad_token_cache_full_path
-            if not os.path.exists(token_cache_file):
-                os.makedirs(os.path.dirname(token_cache_file), exist_ok=True)
-            if os.path.exists(token_cache_file):
-                with open(token_cache_file, "r") as cache_file:
-                    cache.deserialize(cache_file.read())
-
-        def save_cache():
-            if token_cache_file is not None and config.aad_use_token_cache:
-                with open(token_cache_file, "w") as cache_file:
-                    cache_file.write(cache.serialize())
-
-        authority = "https://login.microsoftonline.com/" + config.aad_tenant_id
-        api_resource = config.aad_api_resource
-        api_scope = config.aad_api_scope
-        auth_mode = config.aad_auth_mode
-
-        if auth_mode == "aad_app":
-            app = msal.ConfidentialClientApplication(
-                client_id=config.aad_client_id,
-                client_credential=config.aad_client_secret,
-                authority=authority,
-                token_cache=cache,
-            )
-            result = app.acquire_token_for_client(
-                scopes=[
-                    api_resource + "/" + api_scope,
-                ],
-            )
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                raise Exception(
-                    "Authentication failed for acquiring AAD token for application login: " + str(result),
-                )
-
-        scopes = [
-            api_resource + "/" + api_scope,
-        ]
-        app = msal.PublicClientApplication(
-            "feb7b661-cac7-44a8-8dc1-163b63c23df2",  # default id in Azure Identity module
-            authority=authority,
-            token_cache=cache,
-        )
-        result = None
-        try:
-            account = app.get_accounts()[0]
-            result = app.acquire_token_silent(scopes, account=account)
-            if result is not None and "access_token" in result:
-                save_cache()
-                return result["access_token"]
-            result = None
-        except Exception:
-            pass
-
-        try:
-            account = cache.find(cache.CredentialType.ACCOUNT)[0]
-            refresh_token = cache.find(
-                cache.CredentialType.REFRESH_TOKEN,
-                query={
-                    "home_account_id": account["home_account_id"],
-                },
-            )[0]
-            result = app.acquire_token_by_refresh_token(
-                refresh_token["secret"],
-                scopes=scopes,
-            )
-            if result is not None and "access_token" in result:
-                save_cache()
-                return result["access_token"]
-            result = None
-        except Exception:
-            pass
-
-        if result is None:
-            print("no token available from cache, acquiring token from AAD")
-            # The pattern to acquire a token looks like this.
-            flow = app.initiate_device_flow(scopes=scopes)
-            print(flow["message"])
-            result = app.acquire_token_by_device_flow(flow=flow)
-            if result is not None and "access_token" in result:
-                save_cache()
-                return result["access_token"]
-            else:
-                print(result.get("error"))
-                print(result.get("error_description"))
-                raise Exception(
-                    "Authentication failed for acquiring AAD token for AAD auth",
-                )
-
-    def chat_completion_stream(self, prompt: List[ChatMessageType]) -> Iterator[str]:
-        message = ""
-        try:
-            response = self.chat_completion(prompt, stream=True)
-            for chunk in response:
-                message += chunk["content"]
-                yield chunk["content"]
-        except Exception as e:
-            raise e
-
-    @overload
-    def chat_completion(
-        self,
-        messages: List[ChatMessageType],
-        engine: str = ...,
-        temperature: float = ...,
-        max_tokens: int = ...,
-        top_p: float = ...,
-        frequency_penalty: float = ...,
-        presence_penalty: float = ...,
-        stop: Union[str, List[str]] = ...,
-        stream: Literal[False] = ...,
-        backup_engine: str = ...,
-        use_backup_engine: bool = ...,
-    ) -> ChatMessageType:
-        ...
-
-    @overload
-    def chat_completion(
-        self,
-        messages: List[ChatMessageType],
-        engine: str = ...,
-        temperature: float = ...,
-        max_tokens: int = ...,
-        top_p: float = ...,
-        frequency_penalty: float = ...,
-        presence_penalty: float = ...,
-        stop: Union[str, List[str]] = ...,
-        stream: Literal[True] = ...,
-        backup_engine: str = ...,
-        use_backup_engine: bool = ...,
-    ) -> Generator[ChatMessageType, None, None]:
-        ...
+    def _set_embedding_service(self, svc: Type[EmbeddingService]) -> None:
+        self.embedding_service: EmbeddingService = self.injector.get(svc)
+        self.injector.binder.bind(svc, to=self.embedding_service)
 
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        engine: Optional[str] = None,
-        temperature: float = 0,
-        max_tokens: int = 1024,
-        top_p: float = 0,
-        frequency_penalty: float = 0,
-        presence_penalty: float = 0,
-        stop: Union[str, List[str]] = DEFAULT_STOP_TOKEN,
-        stream: bool = False,
-        backup_engine: Optional[str] = None,
         use_backup_engine: bool = False,
-    ) -> Union[ChatMessageType, Generator[ChatMessageType, None, None]]:
-        engine = self.config.model if engine is None else engine
-        backup_engine = self.config.backup_model if backup_engine is None else backup_engine
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> ChatMessageType:
+        msg: ChatMessageType = format_chat_message("assistant", "")
+        for msg_chunk in self.completion_service.chat_completion(
+            messages,
+            use_backup_engine,
+            stream,
+            temperature,
+            max_tokens,
+            top_p,
+            stop,
+            **kwargs,
+        ):
+            msg["role"] = msg_chunk["role"]
+            msg["content"] += msg_chunk["content"]
+        return msg
 
-        def handle_stream_result(res):
-            for stream_res in res:
-                if not stream_res.choices:
-                    continue
-                delta = stream_res.choices[0].delta
-                yield delta.content
+    def chat_completion_stream(
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> Generator[ChatMessageType, None, None]:
+        return self.completion_service.chat_completion(
+            messages,
+            use_backup_engine,
+            stream,
+            temperature,
+            max_tokens,
+            top_p,
+            stop,
+            **kwargs,
+        )
 
-        try:
-            if use_backup_engine:
-                engine = backup_engine
-            res: Any = self.client.chat.completions.create(
-                model=engine,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=top_p,
-                frequency_penalty=frequency_penalty,
-                presence_penalty=presence_penalty,
-                stop=stop,
-                stream=stream,
-                seed=123456,
-                response_format={"type": self.config.response_format} if self.config.response_format else None,
-            )
-            if stream:
-                return handle_stream_result(res)
-            else:
-                oai_response = res.choices[0].message
-                if oai_response is None:
-                    raise Exception("OpenAI API returned an empty response")
-                response: ChatMessageType = format_chat_message(
-                    role=oai_response.role if oai_response.role is not None else "assistant",
-                    message=oai_response.content if oai_response.content is not None else "",
-                )
-                return response
+    def get_embedding(self, string: str) -> List[float]:
+        return self.embedding_service.get_embeddings([string])[0]
 
-        except openai.APITimeoutError as e:
-            # Handle timeout error, e.g. retry or log
-            raise Exception(f"OpenAI API request timed out: {e}")
-        except openai.APIConnectionError as e:
-            # Handle connection error, e.g. check network or log
-            raise Exception(f"OpenAI API request failed to connect: {e}")
-        except openai.BadRequestError as e:
-            # Handle invalid request error, e.g. validate parameters or log
-            raise Exception(f"OpenAI API request was invalid: {e}")
-        except openai.AuthenticationError as e:
-            # Handle authentication error, e.g. check credentials or log
-            raise Exception(f"OpenAI API request was not authorized: {e}")
-        except openai.PermissionDeniedError as e:
-            # Handle permission error, e.g. check scope or log
-            raise Exception(f"OpenAI API request was not permitted: {e}")
-        except openai.RateLimitError as e:
-            # Handle rate limit error, e.g. wait or log
-            raise Exception(f"OpenAI API request exceeded rate limit: {e}")
-        except openai.APIError as e:
-            # Handle API error, e.g. retry or log
-            raise Exception(f"OpenAI API returned an API Error: {e}")
-
-    def get_client(self):
-        return self.client
+    def get_embedding_list(self, strings: List[str]) -> List[List[float]]:
+        return self.embedding_service.get_embeddings(strings)

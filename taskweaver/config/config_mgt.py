@@ -71,6 +71,7 @@ class AppConfigSource:
         var_name: str,
         var_type: AppConfigValueType,
         default_value: Optional[Any] = None,
+        required: bool = True,
     ) -> Optional[Any]:
         self.set_config_value(var_name, var_type, default_value, "default")
 
@@ -92,6 +93,9 @@ class AppConfigSource:
 
         if default_value is not None:
             return default_value
+
+        if not required:
+            return None
 
         raise ValueError(f"Config value {var_name} is not found")
 
@@ -119,23 +123,32 @@ class AppConfigSource:
         self,
         var_name: str,
         default_value: Optional[bool] = None,
+        required: bool = True,
     ) -> bool:
-        val = self._get_config_value(var_name, "bool", default_value)
+        val = self._get_config_value(var_name, "bool", default_value, required)
+
         if isinstance(val, bool):
             return val
         elif str(val).lower() in AppConfigSource._bool_str_map.keys():
             return AppConfigSource._bool_str_map[str(val).lower()]
+        elif val is None and default_value is None and required:
+            raise ValueError(f"Config value {var_name} is not found")
         else:
             raise ValueError(
                 f"Invalid boolean config value {val}, "
                 f"only support transforming {AppConfigSource._bool_str_map.keys()}",
             )
 
-    def get_str(self, var_name: str, default_value: Optional[str] = None) -> str:
-        val = self._get_config_value(var_name, "str", default_value)
+    def get_str(
+        self,
+        var_name: str,
+        default_value: Optional[str] = None,
+        required: bool = True,
+    ) -> str:
+        val = self._get_config_value(var_name, "str", default_value, required)
 
-        if val is None and default_value is None:
-            raise ValueError(f"Invalid string config value {val}")
+        if val is None and default_value is None and required is False:
+            return None  # type: ignore
 
         return str(val)
 
@@ -144,10 +157,15 @@ class AppConfigSource:
         key: str,
         options: List[str],
         default: Optional[str] = None,
+        required: bool = True,
     ) -> str:
-        val = self._get_config_value(key, "enum", default)
-        if val not in options:
+        val = self._get_config_value(key, "enum", default, required)
+        if val not in options and val is not None:
             raise ValueError(f"Invalid enum config value {val}, options are {options}")
+
+        if val is None and default is None and required:
+            raise ValueError("Config value {key} is not found")
+
         return val
 
     def get_list(self, key: str, default: Optional[List[Any]] = None) -> List[str]:
