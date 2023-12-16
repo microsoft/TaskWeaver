@@ -25,13 +25,14 @@ The following table lists the parameters in the configuration file:
 | `logging.log_folder`                          | The folder to store the log file.                                                | `logs`                                                                                 |
 | `plugin.base_path`                            | The folder to store plugins.                                                     | `${AppBaseDir}/plugins`                                                                |
 | `planner.example_base_path`                   | The folder to store planner examples.                                            | `${AppBaseDir}/planner_examples`                                                       |
-| `planner.prompt_compression`                  | Whether to compress the chat history for planner                                 | `false`                                                                                | 
+| `planner.prompt_compression`                  | Whether to compress the chat history for planner.                                | `false`                                                                                | 
+| `planner.skip_planning`                       | Whether to skip LLM planning process and enable the default plan                 | `false`                                                                                |
 | `code_generator.example_base_path`            | The folder to store code interpreter examples.                                   | `${AppBaseDir}/codeinterpreter_examples`                                               |
-| `code_generator.prompt_compression`           | Whether to compress the chat history for code interpreter                        | `false`                                                                                |
-| `code_generator.enable_auto_plugin_selection` | Whether to enable auto plugin selection                                          | `false`                                                                                |
-| `code_generator.auto_plugin_selection_topk`   | The number of auto selected plugins  in each round                               | `3`                                                                                    |
-| `session.max_internal_chat_round_num`         | The maximum number of internal chat rounds between Planner and Code Interpreter  | `10`                                                                                   |
-| `session.use_planner`                         | Use Planner or only use Code Interpreter                                         | `true`                                                                                 |
+| `code_generator.prompt_compression`           | Whether to compress the chat history for code interpreter.                       | `false`                                                                                |
+| `code_generator.enable_auto_plugin_selection` | Whether to enable auto plugin selection.                                         | `false`                                                                                |
+| `code_generator.auto_plugin_selection_topk`   | The number of auto selected plugins in each round.                               | `3`                                                                                    |
+| `session.max_internal_chat_round_num`         | The maximum number of internal chat rounds between Planner and Code Interpreter. | `10`                                                                                   |
+| `session.code_interpreter_only`               | Allow users to directly communicate with the Code Interpreter.                   | `false`                                                                                |
 
 > 💡 ${AppBaseDir} is the project directory.
 
