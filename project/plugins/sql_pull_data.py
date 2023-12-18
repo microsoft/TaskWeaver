@@ -55,7 +55,7 @@ class SqlPullData(Plugin):
         sql_response = RunnableMap(inputs) | prompt | model.bind(stop=["\nSQLResult:"]) | StrOutputParser()
 
         sql = sql_response.invoke({"question": query})
-        print(sql)
+
         result = db._execute(sql, fetch="all")
 
         df = pd.DataFrame(result)
