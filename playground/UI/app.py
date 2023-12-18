@@ -1,15 +1,22 @@
-import chainlit as cl
-import sys
 import os
-
+import sys
 from typing import Dict
+
+try:
+    import chainlit as cl
+
+    print("If UI is not started, please go to the folder playground/UI and run `chainlit run app.py` to start the UI")
+except Exception:
+    raise Exception(
+        "Package chainlit is required for using UI. Please install it manually by running: "
+        "`pip install chainlit` and then run `chainlit run app.py`",
+    )
+
 repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
-from taskweaver.memory.round import Round
-
-from taskweaver.session.session import Session
-
 from taskweaver.app.app import TaskWeaverApp
+from taskweaver.memory.round import Round
+from taskweaver.session.session import Session
 
 project_path = os.path.join(repo_path, "project")
 app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
@@ -47,17 +54,20 @@ async def main(message: cl.Message):
                 artifact_paths = [item.replace("file://", "") for item in atta.content]
             else:
                 elements.append(
-                    cl.Text(name=atta.type, content=atta.content, display="inline")
+                    cl.Text(name=atta.type, content=atta.content, display="inline"),
                 )
         elements.append(
             cl.Text(
                 name=f"{post.send_from} -> {post.send_to}",
                 content=post.message,
                 display="inline",
-            )
+            ),
         )
         await cl.Message(
-            content="---", elements=elements, parent_id=id, author=post.send_from
+            content="---",
+            elements=elements,
+            parent_id=id,
+            author=post.send_from,
         ).send()
 
     if post.send_to == "User":
