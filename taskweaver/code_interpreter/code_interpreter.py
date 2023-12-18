@@ -10,6 +10,7 @@ from taskweaver.code_interpreter.code_verification import code_snippet_verificat
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.role import Role
 
 
@@ -37,9 +38,9 @@ def update_verification(
     status: Literal["NONE", "INCORRECT", "CORRECT"] = "NONE",
     error: str = "No verification is done.",
 ):
-    response.add_attachment(Attachment.create("verification", status))
+    response.add_attachment(Attachment.create(AttachmentType.verification, status))
     response.add_attachment(
-        Attachment.create("code_error", error),
+        Attachment.create(AttachmentType.code_error, error),
     )
 
 
@@ -48,9 +49,9 @@ def update_execution(
     status: Literal["NONE", "SUCCESS", "FAILURE"] = "NONE",
     result: str = "No code is executed.",
 ):
-    response.add_attachment(Attachment.create("execution_status", status))
+    response.add_attachment(Attachment.create(AttachmentType.execution_status, status))
     response.add_attachment(
-        Attachment.create("execution_result", result),
+        Attachment.create(AttachmentType.execution_result, result),
     )
 
 
@@ -97,7 +98,7 @@ class CodeInterpreter(Role):
             event_handler("CodeInterpreter->Planner", response.message)
             return response
 
-        code = next((a for a in response.attachment_list if a.type == "python"), None)
+        code = next((a for a in response.attachment_list if a.type == AttachmentType.python), None)
 
         if code is None:
             # no code is generated is usually due to the failure of parsing the llm output
@@ -108,7 +109,7 @@ class CodeInterpreter(Role):
                 error_message = format_output_revision_message()
                 response.add_attachment(
                     Attachment.create(
-                        "revise_message",
+                        AttachmentType.revise_message,
                         error_message,
                     ),
                 )
@@ -147,7 +148,7 @@ class CodeInterpreter(Role):
             if self.retry_count < self.config.max_retry_count:
                 response.add_attachment(
                     Attachment.create(
-                        "revise_message",
+                        AttachmentType.revise_message,
                         format_code_correction_message(),
                     ),
                 )
@@ -191,7 +192,7 @@ class CodeInterpreter(Role):
         # add artifact paths
         response.add_attachment(
             Attachment.create(
-                "artifact_paths",
+                AttachmentType.artifact_paths,
                 [
                     get_artifact_uri(
                         execution_id=exec_result.execution_id,
@@ -219,7 +220,7 @@ class CodeInterpreter(Role):
         else:
             response.add_attachment(
                 Attachment.create(
-                    "revise_message",
+                    AttachmentType.revise_message,
                     format_code_revision_message(),
                 ),
             )

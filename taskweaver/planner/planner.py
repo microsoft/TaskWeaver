@@ -10,6 +10,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -202,9 +203,11 @@ class Planner(Role):
             assert post.send_to is not None, "send_to field is None"
             assert post.send_to != "Planner", "send_to field should not be Planner"
             assert post.message is not None, "message field is None"
-            assert post.attachment_list[0].type == "init_plan", "attachment type is not init_plan"
-            assert post.attachment_list[1].type == "plan", "attachment type is not plan"
-            assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
+            assert post.attachment_list[0].type == AttachmentType.init_plan, "attachment type is not init_plan"
+            assert post.attachment_list[1].type == AttachmentType.plan, "attachment type is not plan"
+            assert (
+                post.attachment_list[2].type == AttachmentType.current_plan_step
+            ), "attachment type is not current_plan_step"
 
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
             self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
@@ -229,7 +232,7 @@ class Planner(Role):
                 "Please try to regenerate the output.",
                 send_to="Planner",
                 send_from="Planner",
-                attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
+                attachment_list=[Attachment.create(type=AttachmentType.invalid_response, content=llm_output)],
             )
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message

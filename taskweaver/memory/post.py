@@ -4,7 +4,7 @@ import secrets
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from taskweaver.memory.attachment import Attachment
+from taskweaver.memory.attachment import Attachment, AttachmentType
 from taskweaver.memory.type_vars import RoleName
 from taskweaver.utils import create_id
 
@@ -30,14 +30,14 @@ class Post:
     send_from: RoleName
     send_to: RoleName
     message: str
-    attachment_list: List[Attachment[Any]]
+    attachment_list: List[Attachment]
 
     @staticmethod
     def create(
         message: str,
         send_from: RoleName,
         send_to: RoleName,
-        attachment_list: Optional[List[Attachment[Any]]] = None,
+        attachment_list: Optional[List[Attachment]] = None,
     ) -> Post:
         """create a post with the given message, send_from, send_to, and attachment_list."""
         return Post(
@@ -83,14 +83,14 @@ class Post:
             else [],
         )
 
-    def add_attachment(self, attachment: Attachment[Any]) -> None:
+    def add_attachment(self, attachment: Attachment) -> None:
         """Add an attachment to the post."""
         self.attachment_list.append(attachment)
 
-    def get_attachment(self, type: str) -> List[Any]:
+    def get_attachment(self, type: AttachmentType) -> List[Any]:
         """Get all the attachments of the given type."""
         return [attachment.content for attachment in self.attachment_list if attachment.type == type]
 
-    def del_attachment(self, type_list: List[str]) -> None:
+    def del_attachment(self, type_list: List[AttachmentType]) -> None:
         """Delete all the attachments of the given type."""
         self.attachment_list = [attachment for attachment in self.attachment_list if attachment.type not in type_list]

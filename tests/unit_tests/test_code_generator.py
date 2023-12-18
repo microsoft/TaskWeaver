@@ -46,14 +46,19 @@ def test_compose_prompt():
         send_to="Planner",
         attachment_list=[],
     )
-    post2.add_attachment(Attachment.create("thought", "{ROLE_NAME} sees the user wants generate a DataFrame."))
+    post2.add_attachment(
+        Attachment.create(
+            "thought",
+            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+        ),
+    )
     post2.add_attachment(
         Attachment.create(
             "thought",
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("code", code1))
+    post2.add_attachment(Attachment.create("python", code1))
     post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -94,7 +99,7 @@ def test_compose_prompt():
     )
     post4.add_attachment(
         Attachment.create(
-            "code",
+            "python",
             (
                 "min_value = df['VALUE'].min()\n"
                 "max_value = df['VALUE'].max()\n"
@@ -160,7 +165,7 @@ def test_compose_prompt():
         '{"response": [{"type": "thought", "content": "ProgramApe sees the user wants '
         'generate a DataFrame."}, {"type": "thought", "content": "ProgramApe sees all '
         "required Python libs have been imported, so will not generate import "
-        'codes."}, {"type": "code", "content": "df = pd.DataFrame(np.random.rand(10, '
+        'codes."}, {"type": "python", "content": "df = pd.DataFrame(np.random.rand(10, '
         "2), columns=['DATE', 'VALUE'])\\ndescriptions = "
         '[(\\"sample_code_description\\", \\"Sample code has been generated to get a '
         "dataframe `df` \\nwith 10 rows and 2 columns: 'DATE' and 'VALUE'\\\")]\"}, "
@@ -198,7 +203,10 @@ def test_compose_prompt_with_plugin():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
             ),
-            "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "plugin.base_path": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "data/plugins",
+            ),
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -225,14 +233,19 @@ def test_compose_prompt_with_plugin():
         send_to="Planner",
         attachment_list=[],
     )
-    post2.add_attachment(Attachment.create("thought", "{ROLE_NAME} sees the user wants generate a DataFrame."))
+    post2.add_attachment(
+        Attachment.create(
+            "thought",
+            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+        ),
+    )
     post2.add_attachment(
         Attachment.create(
             "thought",
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("code", code1))
+    post2.add_attachment(Attachment.create("python", code1))
     post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -273,7 +286,10 @@ def test_compose_prompt_with_plugin_only():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
             ),
-            "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "plugin.base_path": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "data/plugins",
+            ),
             "code_generator.example_base_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/examples/codeinterpreter_examples",
@@ -287,12 +303,12 @@ def test_compose_prompt_with_plugin_only():
     from taskweaver.code_interpreter.code_generator import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
-    code_generator = app_injector.create_object(
-        CodeGenerator,
-        additional_kwargs={
-            "plugin_only": True,
-            "code_verification_on": True,
-        },
+    code_generator = app_injector.get(CodeGenerator)
+
+    code_generator.configure_verification(
+        code_verification_on=True,
+        plugin_only=True,
+        allowed_modules=[],
     )
 
     code1 = (
@@ -312,14 +328,19 @@ def test_compose_prompt_with_plugin_only():
         send_to="Planner",
         attachment_list=[],
     )
-    post2.add_attachment(Attachment.create("thought", "{ROLE_NAME} sees the user wants generate a DataFrame."))
+    post2.add_attachment(
+        Attachment.create(
+            "thought",
+            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+        ),
+    )
     post2.add_attachment(
         Attachment.create(
             "thought",
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("code", code1))
+    post2.add_attachment(Attachment.create("python", code1))
     post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -362,7 +383,10 @@ def test_compose_prompt_with_not_plugin_only():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/prompts/generator_prompt.yaml",
             ),
-            "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "plugin.base_path": os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "data/plugins",
+            ),
             "code_generator.example_base_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/examples/codeinterpreter_examples",
@@ -395,14 +419,19 @@ def test_compose_prompt_with_not_plugin_only():
         send_to="Planner",
         attachment_list=[],
     )
-    post2.add_attachment(Attachment.create("thought", "{ROLE_NAME} sees the user wants generate a DataFrame."))
+    post2.add_attachment(
+        Attachment.create(
+            "thought",
+            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+        ),
+    )
     post2.add_attachment(
         Attachment.create(
             "thought",
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("code", code1))
+    post2.add_attachment(Attachment.create("python", code1))
     post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -478,14 +507,19 @@ def test_code_correction_prompt():
         send_to="CodeInterpreter",
         attachment_list=[],
     )
-    post2.add_attachment(Attachment.create("thought", "{ROLE_NAME} sees the user wants generate a DataFrame."))
+    post2.add_attachment(
+        Attachment.create(
+            "thought",
+            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+        ),
+    )
     post2.add_attachment(
         Attachment.create(
             "thought",
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("code", code1))
+    post2.add_attachment(Attachment.create("python", code1))
     post2.add_attachment(Attachment.create("execution_status", "FAILURE"))
     post2.add_attachment(
         Attachment.create(
@@ -493,7 +527,9 @@ def test_code_correction_prompt():
             "The code failed to execute. Please check the code and try again.",
         ),
     )
-    post2.add_attachment(Attachment.create("revise_message", "Please check the code and try again."))
+    post2.add_attachment(
+        Attachment.create("revise_message", "Please check the code and try again."),
+    )
 
     round1 = Round.create(user_query="hello", id="round-1")
     round1.add_post(post1)

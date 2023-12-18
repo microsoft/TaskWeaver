@@ -202,8 +202,13 @@ def test_skip_planning():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    response_post = planner.reply(memory, prompt_log_path=None, event_handler=None, use_back_up_engine=False)
+    response_post = planner.reply(
+        memory,
+        prompt_log_path=None,
+        event_handler=lambda *args: None,
+        use_back_up_engine=False,
+    )
 
-    assert response_post.message == "Please reply to the user's request: count the rows of /home/data.csv"
+    assert response_post.message == "Please process this request: count the rows of /home/data.csv"
     assert response_post.send_from == "Planner"
     assert response_post.send_to == "CodeInterpreter"

@@ -2,6 +2,7 @@ import os
 import sys
 from typing import Dict
 
+
 try:
     import chainlit as cl
 
@@ -11,6 +12,10 @@ except Exception:
         "Package chainlit is required for using UI. Please install it manually by running: "
         "`pip install chainlit` and then run `chainlit run app.py`",
     )
+
+
+from taskweaver.memory.attachment import AttachmentType
+
 
 repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
@@ -48,13 +53,16 @@ async def main(message: cl.Message):
             continue
         elements = []
         for atta in post.attachment_list:
-            if atta.type in ["python", "execution_result"]:
+            if atta.type in [
+                AttachmentType.python,
+                AttachmentType.execution_result,
+            ]:
                 continue
-            elif atta.type == "artifact_paths":
+            elif atta.type == AttachmentType.artifact_paths:
                 artifact_paths = [item.replace("file://", "") for item in atta.content]
             else:
                 elements.append(
-                    cl.Text(name=atta.type, content=atta.content, display="inline"),
+                    cl.Text(name=atta.type.value, content=atta.content.encode(), display="inline"),
                 )
         elements.append(
             cl.Text(
