@@ -29,7 +29,7 @@ async def main(message: cl.Message):
     session = app_session_dict[user_session_id]
 
     def send_message_sync(msg: str) -> Round:
-        return session.send_message(msg)
+        return session.send_message(msg,event_handler=lambda _type, _msg: print(f"{_type}:\n{_msg}"))
 
     # display loader before sending message
     id = await cl.Message(content="").send()
