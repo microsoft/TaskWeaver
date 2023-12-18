@@ -28,7 +28,7 @@ class PostTranslator:
         self,
         llm_output: str,
         send_from: str,
-        event_handler: Callable,
+        event_handler: Optional[Callable] = None,
         early_stop: Optional[Callable] = None,
         validation_func: Optional[Callable] = None,
     ) -> Post:
@@ -53,12 +53,13 @@ class PostTranslator:
                 post.send_to = value
             else:
                 post.add_attachment(Attachment.create(type=type, content=value))
-            event_handler(type, value)
+            if event_handler:
+                event_handler(type, value)
 
             if early_stop is not None and early_stop(type, value):
                 break
 
-        if post.send_to is not None:
+        if post.send_to and event_handler:
             event_handler(post.send_from + "->" + post.send_to, post.message)
 
         if validation_func is not None:
