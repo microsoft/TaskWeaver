@@ -42,6 +42,9 @@ class PostTranslator:
         """
         # llm_output_list = [token for token in llm_output_stream]  # collect all the llm output via iterator
         # llm_output = "".join(llm_output_list)
+
+        event_handler = event_handler or (lambda *args: None)
+
         post = Post.create(message=None, send_from=send_from, send_to=None)
         self.logger.info(f"LLM output: {llm_output}")
         for d in self.parse_llm_output_stream([llm_output]):
@@ -53,13 +56,12 @@ class PostTranslator:
                 post.send_to = value
             else:
                 post.add_attachment(Attachment.create(type=type, content=value))
-            if event_handler:
-                event_handler(type, value)
+            event_handler(type, value)
 
             if early_stop is not None and early_stop(type, value):
                 break
 
-        if post.send_to and event_handler:
+        if post.send_to:
             event_handler(post.send_from + "->" + post.send_to, post.message)
 
         if validation_func is not None:
