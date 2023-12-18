@@ -1,3 +1,4 @@
+import json
 import os
 from json import JSONDecodeError
 from typing import List, Optional
@@ -42,6 +43,16 @@ class PlannerConfig(ModuleConfig):
                 "compression_prompt.yaml",
             ),
         )
+
+        self.skip_planning = self._get_bool("skip_planning", False)
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "dummy_plan.json",
+            ),
+            "r",
+        ) as f:
+            self.dummy_plan = json.load(f)
 
 
 class Planner(Role):
@@ -195,7 +206,11 @@ class Planner(Role):
             assert post.attachment_list[1].type == "plan", "attachment type is not plan"
             assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
 
-        llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
+        if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
+            self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
+            llm_output = json.dumps(self.config.dummy_plan)
+        else:
+            llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:
             response_post = self.planner_post_translator.raw_text_to_post(
                 llm_output=llm_output,

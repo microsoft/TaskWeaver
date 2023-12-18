@@ -5,11 +5,13 @@ from injector import Injector, inject
 from taskweaver.llm.azure_ml import AzureMLService
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
 from taskweaver.llm.google_genai import GoogleGenAIService
+from taskweaver.llm.mock import MockApiService
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
 
+from .qwen import QWenService
 from .util import ChatMessageType, format_chat_message
 
 
@@ -27,6 +29,8 @@ class LLMApi(object):
             self._set_completion_service(AzureMLService)
         elif self.config.api_type == "google_genai":
             self._set_completion_service(GoogleGenAIService)
+        elif self.config.api_type == "qwen":
+            self._set_completion_service(QWenService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
@@ -38,14 +42,30 @@ class LLMApi(object):
             self._set_embedding_service(GoogleGenAIService)
         elif self.config.embedding_api_type == "sentence_transformer":
             self._set_embedding_service(SentenceTransformerService)
+        elif self.config.embedding_api_type == "qwen":
+            self._set_embedding_service(QWenService)
         elif self.config.embedding_api_type == "azure_ml":
             self.embedding_service = PlaceholderEmbeddingService(
                 "Azure ML does not support embeddings yet. Please configure a different embedding API.",
+            )
+        elif self.config.embedding_api_type == "qwen":
+            self.embedding_service = PlaceholderEmbeddingService(
+                "QWen does not support embeddings yet. Please configure a different embedding API.",
             )
         else:
             raise ValueError(
                 f"Embedding API type {self.config.embedding_api_type} is not supported",
             )
+
+        if self.config.use_mock:
+            # add mock proxy layer to the completion and embedding services
+            base_completion_service = self.completion_service
+            base_embedding_service = self.embedding_service
+            mock = self.injector.get(MockApiService)
+            mock.set_base_completion_service(base_completion_service)
+            mock.set_base_embedding_service(base_embedding_service)
+            self._set_completion_service(MockApiService)
+            self._set_embedding_service(MockApiService)
 
     def _set_completion_service(self, svc: Type[CompletionService]) -> None:
         self.completion_service: CompletionService = self.injector.get(svc)

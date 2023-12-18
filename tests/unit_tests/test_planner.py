@@ -170,3 +170,40 @@ def test_compose_example_for_prompt():
     assert messages[1]["content"] == "User: Let's start the new conversation!\ncount the rows of /home/data.csv"
     assert messages[-1]["role"] == "user"
     assert messages[-1]["content"] == "User: Let's start the new conversation!\nhello"
+
+
+def test_skip_planning():
+    from taskweaver.memory import Memory, Post, Round
+    from taskweaver.planner import Planner
+
+    app_injector = Injector(
+        [LoggingModule, PluginModule],
+    )
+    app_config = AppConfigSource(
+        config={
+            "llm.api_key": "test_key",
+            "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
+            "planner.skip_planning": True,
+        },
+    )
+    app_injector.binder.bind(AppConfigSource, to=app_config)
+    planner = app_injector.create_object(Planner)
+
+    post1 = Post.create(
+        message="count the rows of /home/data.csv",
+        send_from="User",
+        send_to="Planner",
+        attachment_list=[],
+    )
+
+    round1 = Round.create(user_query="count the rows of ./data.csv", id="round-1")
+    round1.add_post(post1)
+
+    memory = Memory(session_id="session-1")
+    memory.conversation.add_round(round1)
+
+    response_post = planner.reply(memory, prompt_log_path=None, event_handler=None, use_back_up_engine=False)
+
+    assert response_post.message == "Please reply to the user's request: count the rows of /home/data.csv"
+    assert response_post.send_from == "Planner"
+    assert response_post.send_to == "CodeInterpreter"

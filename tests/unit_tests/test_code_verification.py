@@ -1,39 +1,15 @@
-import os
-
 from injector import Injector
 
-from taskweaver.code_interpreter.code_generator import CodeVerificationConfig, code_snippet_verification
-from taskweaver.config.config_mgt import AppConfigSource
+from taskweaver.code_interpreter.code_verification import code_snippet_verification
 from taskweaver.logging import LoggingModule
 
 app_injector = Injector(
     [LoggingModule],
 )
 
-app_config = AppConfigSource(
-    config={
-        "app_dir": os.path.dirname(os.path.abspath(__file__)),
-        "code_verification.code_verification_on": True,
-        "code_verification.allowed_modules": [
-            "pandas",
-            "matplotlib",
-            "numpy",
-            "sklearn",
-            "scipy",
-            "seaborn",
-            "datetime",
-            "os",
-        ],
-        "code_verification.plugin_only": True,
-    },
-)
-app_injector.binder.bind(AppConfigSource, to=app_config)
-
-code_verification_config = app_injector.create_object(CodeVerificationConfig)
-
 
 def test_plugin_only():
-    code_verification_config.plugin_only = True
+    allowed_modules = []
     code_snippet = (
         "anomaly_detection()\n"
         "s = timext()\n"
@@ -46,15 +22,16 @@ def test_plugin_only():
     code_verify_errors = code_snippet_verification(
         code_snippet,
         ["anomaly_detection"],
-        code_verification_config,
+        plugin_only=True,
+        allowed_modules=allowed_modules,
+        code_verification_on=True,
     )
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 2
 
 
 def test_import_allowed():
-    code_verification_config.plugin_only = False
-    code_verification_config.allowed_modules = ["pandas", "matplotlib"]
+    allowed_modules = ["pandas", "matplotlib"]
     code_snippet = (
         "import numpy as np\n"
         "import matplotlib.pyplot as plt\n"
@@ -69,15 +46,17 @@ def test_import_allowed():
     code_verify_errors = code_snippet_verification(
         code_snippet,
         ["anomaly_detection"],
-        code_verification_config,
+        plugin_only=False,
+        allowed_modules=allowed_modules,
+        code_verification_on=True,
     )
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 1
 
 
 def test_normal_code():
-    code_verification_config.plugin_only = False
-    code_verification_config.allowed_modules = []
+    plugin_only = False
+    allowed_modules = []
     code_snippet = (
         "with open('file.txt', 'r') as file:\n"
         "    content = file.read()\n"
@@ -90,7 +69,9 @@ def test_normal_code():
     code_verify_errors = code_snippet_verification(
         code_snippet,
         ["anomaly_detection"],
-        code_verification_config,
+        plugin_only=plugin_only,
+        allowed_modules=allowed_modules,
+        code_verification_on=True,
     )
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 0

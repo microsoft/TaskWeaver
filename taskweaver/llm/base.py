@@ -44,6 +44,8 @@ class LLMModuleConfig(ModuleConfig):
             default="json_object",
         )
 
+        self.use_mock: bool = self._get_bool("use_mock", False)
+
 
 class LLMServiceConfig(ModuleConfig):
     @inject
