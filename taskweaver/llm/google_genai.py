@@ -5,14 +5,6 @@ from injector import inject
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 
-try:
-    import google.generativeai as genai
-except Exception:
-    raise Exception(
-        "Package google-generativeai is required for using Google Gemini API. "
-        "Please install it manually by running: `pip install google-generativeai`",
-    )
-
 
 class GoogleGenAIServiceConfig(LLMServiceConfig):
     def _configure(self) -> None:
@@ -55,6 +47,7 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
     @inject
     def __init__(self, config: GoogleGenAIServiceConfig):
         self.config = config
+        genai = self.import_genai_module()
         genai.configure(api_key=self.config.api_key)
         safety_settings = [
             {
@@ -85,6 +78,16 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
             },
             safety_settings=safety_settings,
         )
+
+    def import_genai_module(self):
+        try:
+            import google.generativeai as genai
+        except Exception:
+            raise Exception(
+                "Package google-generativeai is required for using Google Gemini API. "
+                "Please install it manually by running: `pip install google-generativeai`",
+            )
+        return genai
 
     def chat_completion(
         self,
@@ -151,6 +154,7 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
             yield format_chat_message("assistant", chunk_obj.text)
 
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
+        genai = self.import_genai_module()
         embedding_results = genai.embed_content(
             model=self.config.embedding_model,
             content=strings,
