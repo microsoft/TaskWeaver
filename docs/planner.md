@@ -16,7 +16,7 @@ For instance, if a user wants to count the rows in a data file, the request can 
 When the majority of user requests involve simple tasks, enabling this option will create a dummy plan that is sent alongside the user request to the Code Interpreter directly, without LLM generation process.
 The fixed dummy plan is shown in [dummy_plan.json](../taskweaver/planner/dummy_plan.json).
 Here is an chat example:
-```bash
+`````bash
 =========================================================
  _____         _     _       __
 |_   _|_ _ ___| | _ | |     / /__  ____ __   _____  _____
@@ -56,7 +56,7 @@ The following python code has been executed:
 ```python
 random_numbers = np.random.rand(10)
 random_numbers
-\```
+```
 
 The execution of the generated python code above has succeeded
 
@@ -76,4 +76,4 @@ The random numbers are as follows: [0.65294462, 0.26946084, 0.06244879, 0.785204
 >>> [PLANNER->USER]
 The random numbers are as follows: [0.65294462, 0.26946084, 0.06244879, 0.78520418, 0.87067657, 0.24208003, 0.60249788, 0.30921069, 0.83811521, 0.05135891]
 TaskWeaver: The random numbers are as follows: [0.65294462, 0.26946084, 0.06244879, 0.78520418, 0.87067657, 0.24208003, 0.60249788, 0.30921069, 0.83811521, 0.05135891]
-```
+`````
