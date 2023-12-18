@@ -4,7 +4,7 @@ In TaskWeaver, we provide an auto plugin selection mechanism to dynamically sele
 It targets to solve the following two problems:
 
 1. An excessive number of plugins may cause confusion for LLM, leading to inaccuracies in generating the correct code.
-2. A large number of plugins could lead to increased token usage (potentially exceeding the token limit of LLM) and extended response times.
+2. A large number of plugins could lead to increased token usage (potentially exceeding the token limit of LLM) and extended response time.
 
 ## Auto Plugin Selection Overview
 
@@ -19,7 +19,6 @@ For more information, please refer to the [embedding](./embedding.md) documentat
 
 When the Planner sends a request to the Code Interpreter, the auto plugin selection mechanism will be triggered.
 It will first generate an embedding vector for the request using the same embedding model.
-
 Then, it will calculate the cosine similarity between the request embedding vector and the embedding vectors of all plugins.
 It will select the top-k plugins with the highest cosine similarity scores and  load them into the `code_generator` prompt.
 
@@ -56,8 +55,8 @@ Then we can check the log file `task_weaver.log` in the `logs` folder to see the
 2023-12-18 14:24:10,490 - INFO - CodeInterpreter initialized successfully.
 2023-12-18 14:24:10,490 - INFO - Session 20231218-062343-c18494b1 is initialized
 ```
-We ask TaskWeaver to "search xbox price for me".
-The Planner instructs the Code Interpreter to search xbox price.
+We ask TaskWeaver to "search Xbox price for me".
+The Planner instructs the Code Interpreter to search Xbox price.
 
 ```bash
 TaskWeaver: I am TaskWeaver, an AI assistant. To get started, could you please enter your request?
