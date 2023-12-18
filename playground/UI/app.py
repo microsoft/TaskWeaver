@@ -2,7 +2,6 @@ import os
 import sys
 from typing import Dict
 
-
 try:
     import chainlit as cl
 
@@ -13,13 +12,10 @@ except Exception:
         "`pip install chainlit` and then run `chainlit run app.py`",
     )
 
-
-from taskweaver.memory.attachment import AttachmentType
-
-
 repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
 from taskweaver.app.app import TaskWeaverApp
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.round import Round
 from taskweaver.session.session import Session
 
