@@ -3,6 +3,8 @@ enabled: true
 required: false
 description: >-
   Search and compare prices from thousands of online shops. Only available in the US.
+  This plugin only takes user requests when searching for merchandise.
+  If not clear, confirm with the user if they want to search for merchandise from Klarna.
 
 parameters:
   - name: query
