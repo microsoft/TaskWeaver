@@ -8,7 +8,7 @@ Code generation examples are used to demonstrate how to generate code or orchest
 A planning example tells LLMs how to plan for a specific query from the user; talk to the code interpreter; 
 receive the execution result from the code interpreter; and summarize the execution result.
 Before constructing the planning example, we strongly encourage you to go through the
-[planner prompt](../taskweaver/planner/planner_prompt.yaml).
+[planner prompt](https://github.com/microsoft/TaskWeaver/blob/main/taskweaver/planner/planner_prompt.yaml).
 
 The following is an example of a planning example which contains 4 posts. 
 Each post contains a message, a sender, a receiver, and a list of attachments.
@@ -79,7 +79,7 @@ rounds:
 
 A code interpreter example tells LLMs how to generate code or orchestrate plugins to perform a specific task.
 The task is from the planner. Before constructing the code interpreter example, we strongly encourage you to
-read the [code generator prompt](../taskweaver/code_interpreter/code_generator/code_generator_json_prompt.yaml). 
+read the [code generator prompt](https://github.com/microsoft/TaskWeaver/blob/main/taskweaver/code_interpreter/code_generator/code_generator_prompt.yaml). 
 
 The following is an example of a code interpreter example which contains 2 posts.
 Each post contains a message, a sender, a receiver, and a list of attachments.
