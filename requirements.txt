@@ -8,9 +8,10 @@ pyyaml>=6.0
 scikit-learn>=1.2.2
 click>=8.0.1
 urllib3>=1.26.17
-jsonschema==4.17.3
+jsonschema==4.20.0
 injector>=0.21.0
 ijson>=3.2.3
+requests>=2.31.0
 
 # Code Execution related
 ipykernel==6.26.0
