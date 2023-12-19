@@ -1,6 +1,9 @@
 name: Python package
 
 on:
+  push:
+    branches:    
+      - main
   pull_request:
     branches:    
       - main
@@ -19,7 +22,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      # You can test your matrix by printing the current Python version
       - name: Display Python version
         run: python -c "import sys; print(sys.version)"
       - name: Install taskweaver
@@ -30,7 +32,6 @@ jobs:
         run: |
           pip install pytest pytest-cov
           pytest tests/unit_tests --collect-only
-          echo "++++++++++++++++++++++++++++++++++++++++"
           pytest tests/unit_tests -v --junitxml=junit/test-results-${{ matrix.python-version }}.xml --cov=com --cov-report=xml --cov-report=html
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
