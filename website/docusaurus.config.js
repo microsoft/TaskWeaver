@@ -44,6 +44,7 @@ const config = {
           sidebarPath: './sidebars.js',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
+          // sidebarCollapsed: false,
           editUrl:
             'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
@@ -137,6 +138,29 @@ const config = {
         darkTheme: prismThemes.dracula,
       },
     }),
-};
-
+    themes: [
+      [
+        require.resolve("@easyops-cn/docusaurus-search-local"),
+        /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+        ({
+          hashed: true,
+          docsRouteBasePath: "docs",
+          blogRouteBasePath: "blog",
+          docsDir: "docs", 
+          blogDir: "blog",
+          searchContextByPaths: [
+            {
+              label: "Documents",
+              path: "docs",
+            },
+            {
+              label: "Blog",
+              path: "blogs",
+            },
+          ],
+          hideSearchBarWithNoSearchContext: true,
+        }),
+      ],
+    ],
+};   
 export default config;

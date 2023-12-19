@@ -28,3 +28,13 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+tr:hover {
+  box-shadow: 0 0 7px 0 inset var(--ifm-color-warning);
+  cursor: pointer;
+  outline: 0;
+}
+
+tr {
+  transition: box-shadow .2s;
+}

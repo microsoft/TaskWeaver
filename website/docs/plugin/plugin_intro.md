@@ -1,4 +1,10 @@
-## Plugin Introduction
+---
+id: plugin_intro
+description: Plugin introduction
+slug: /plugin/plugin_intro
+---
+
+# Plugin Introduction
 
 Plugins are the units that could be orchestrated by TaskWeaver. One could view the plugins as tools that the LLM can
 utilize to accomplish certain tasks.

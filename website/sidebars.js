@@ -9,7 +9,7 @@
  Create as many sidebars as you want.
  */
 
-// @ts-check
+// @ts-nocheck
 
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
@@ -20,20 +20,21 @@ const sidebars = {
   
   documentSidebar: [
     'overview',
-    'quickstart',
+    'quickstart',    
     {
       type: 'category',
       label: 'LLMs',
       collapsible: true,
       collapsed: false,
-      items: ['llms/OpenAI'],
+      items: ['llms/index', 'llms/openai', 'llms/liteLLM'],
     },
+
     {
       type: 'category',
       label: 'Plugin',
       collapsible: true,
       collapsed: false,
-      items: ['plugin/plugin', 'plugin/plugin_selection', 'plugin/embedding'],
+      items: ['plugin/plugin_intro', 'plugin/plugin_selection', 'plugin/embedding'],
     },
     'compression',
     'configurations',
