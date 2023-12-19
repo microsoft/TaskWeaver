@@ -1,19 +1,53 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Generic, Optional, TypedDict, TypeVar
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional, TypedDict
 
 from taskweaver.utils import create_id
 
-T = TypeVar("T")
+
+class AttachmentType(Enum):
+    # Planner Type
+    init_plan = "init_plan"
+    plan = "plan"
+    current_plan_step = "current_plan_step"
+
+    # CodeInterpreter - generate code
+    thought = "thought"
+    python = "python"
+
+    # CodeInterpreter - sample code
+    sample = "sample"
+
+    # CodeInterpreter - verification
+    verification = "verification"
+
+    # CodeInterpreter - text message
+    text = "text"
+
+    # CodeInterpreter - execute code
+    code_error = "code_error"
+    execution_status = "execution_status"
+    execution_result = "execution_result"
+    artifact_paths = "artifact_paths"  # TODO: remove and store artifacts to extra info
+
+    # CodeInterpreter - revise code
+    revise_message = "revise_message"
+
+    # Misc
+    invalid_response = "invalid_response"
 
 
 @dataclass
-class Attachment(Generic[T]):
+class Attachment:
     if TYPE_CHECKING:
-        AttachmentDict = TypedDict("AttachmentDict", {"type": str, "content": T, "id": Optional[str]})
+        AttachmentDict = TypedDict(
+            "AttachmentDict",
+            {"type": str, "content": str, "id": Optional[str], "extra": Optional[Any]},
+        )
 
-    """Attachment is the unified interface for responses attached to the text mssage.
+    """Attachment is the unified interface for responses attached to the text massage.
 
     Args:
         type: the type of the attachment, which can be "thought", "code", "markdown", or "execution_result".
@@ -22,11 +56,21 @@ class Attachment(Generic[T]):
     """
 
     id: str
-    type: str
-    content: T
+    type: AttachmentType
+    content: str
+    extra: Optional[Any] = None
 
     @staticmethod
-    def create(type: str, content: T, id: Optional[str] = None) -> Attachment[T]:
+    def create(
+        type: AttachmentType,
+        content: str,
+        id: Optional[str] = None,
+    ) -> Attachment:
+        import builtins
+
+        if builtins.type(type) is str:
+            type = AttachmentType(type)
+        assert type in AttachmentType, f"Invalid attachment type: {type}"
         id = id if id is not None else "atta-" + create_id()
         return Attachment(
             type=type,
@@ -35,7 +79,7 @@ class Attachment(Generic[T]):
         )
 
     def __repr__(self) -> str:
-        return f"{self.type.upper()}: {self.content}"
+        return f"{self.type.value.upper()}: {self.content}"
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -43,14 +87,16 @@ class Attachment(Generic[T]):
     def to_dict(self) -> AttachmentDict:
         return {
             "id": self.id,
-            "type": self.type,
+            "type": self.type.value,
             "content": self.content,
+            "extra": self.extra,
         }
 
     @staticmethod
-    def from_dict(content: AttachmentDict) -> Attachment[T]:
+    def from_dict(content: AttachmentDict) -> Attachment:
+        type = AttachmentType(content["type"])
         return Attachment.create(
-            type=content["type"],
+            type=type,
             content=content["content"],
             id=content["id"] if "id" in content else None,
         )

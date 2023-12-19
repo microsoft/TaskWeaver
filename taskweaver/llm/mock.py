@@ -56,7 +56,7 @@ class MockApiServiceConfig(LLMServiceConfig):
 
         # split the chat completion response into chunks and delay each chunk by this amount
         # if negative, return the whole response at once
-        self.playback_chunk_delay: float = self._get_float(
+        self.playback_delay: float = self._get_float(
             "playback_delay",
             0.05,
         )
@@ -318,8 +318,9 @@ class MockApiService(CompletionService, EmbeddingService):
         self,
         cached_value: ChatMessageType,
     ) -> Generator[ChatMessageType, None, None]:
-        if self.config.playback_chunk_delay < 0:
+        if self.config.playback_delay < 0:
             yield cached_value
+            return
 
         role: ChatMessageRoleType = cached_value["role"]  # type: ignore
         content = cached_value["content"]
@@ -329,4 +330,4 @@ class MockApiService(CompletionService, EmbeddingService):
             next_pos = min(cur_pos + chunk_size, len(content))
             yield format_chat_message(role, content[cur_pos:next_pos])
             cur_pos = next_pos
-            time.sleep(self.config.playback_chunk_delay)
+            time.sleep(self.config.playback_delay)
