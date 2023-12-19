@@ -2,13 +2,20 @@ import os
 import sys
 from typing import Dict
 
-import chainlit as cl
+try:
+    import chainlit as cl
 
-from taskweaver.memory.attachment import AttachmentType
+    print("If UI is not started, please go to the folder playground/UI and run `chainlit run app.py` to start the UI")
+except Exception:
+    raise Exception(
+        "Package chainlit is required for using UI. Please install it manually by running: "
+        "`pip install chainlit` and then run `chainlit run app.py`",
+    )
 
 repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
 from taskweaver.app.app import TaskWeaverApp
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.round import Round
 from taskweaver.session.session import Session
 
