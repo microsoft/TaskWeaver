@@ -79,7 +79,7 @@ rounds:
 
 A code interpreter example tells LLMs how to generate code or orchestrate plugins to perform a specific task.
 The task is from the planner. Before constructing the code interpreter example, we strongly encourage you to
-read the [code generator prompt](../taskweaver/code_interpreter/code_generator/code_generator_json_prompt.yaml). 
+read the [code generator prompt](../taskweaver/code_interpreter/code_generator/code_generator_prompt.yaml). 
 
 The following is an example of a code interpreter example which contains 2 posts.
 Each post contains a message, a sender, a receiver, and a list of attachments.

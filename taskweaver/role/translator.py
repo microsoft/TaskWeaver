@@ -28,7 +28,7 @@ class PostTranslator:
     def raw_text_to_post(
         self,
         llm_output: str,
-        send_from: str,
+        send_from: Literal["User", "Planner", "CodeInterpreter"],
         event_handler: Callable[[str, str], None],
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
@@ -88,7 +88,7 @@ class PostTranslator:
         content_formatter: Callable[[Attachment], str] = lambda x: x.content,
         if_format_message: bool = True,
         if_format_send_to: bool = True,
-        ignore_types: Optional[List[AttachmentType]] = None,
+        ignored_types: Optional[List[AttachmentType]] = None,
     ) -> str:
         """
         Convert a Post object to raw text in the format of LLM output.
@@ -96,13 +96,13 @@ class PostTranslator:
         :param content_formatter:
         :param if_format_message:
         :param if_format_send_to:
-        :param ignore_types:
+        :param ignored_types:
         :return: str
         """
         structured_llm: List[Dict[str, str]] = []
         for attachment in post.attachment_list:
             attachments_dict = {}
-            if ignore_types is not None and attachment.type in ignore_types:
+            if ignored_types is not None and attachment.type in ignored_types:
                 continue
             attachments_dict["type"] = attachment.type.value
             attachments_dict["content"] = content_formatter(attachment)

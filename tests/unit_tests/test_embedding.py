@@ -1,3 +1,4 @@
+import pytest
 from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
@@ -28,6 +29,7 @@ def test_sentence_transformer_embedding():
     assert len(embedding1[1]) == 768
 
 
+@pytest.mark.skip(reason="missing api key")
 def test_openai_embedding():
     app_injector = Injector()
     app_config = AppConfigSource(
@@ -49,6 +51,7 @@ def test_openai_embedding():
     assert len(embedding1[1]) == 1536
 
 
+@pytest.mark.skip(reason="missing api key")
 def test_ollama_embedding():
     app_injector = Injector()
     app_config = AppConfigSource(
@@ -68,6 +71,7 @@ def test_ollama_embedding():
     assert len(embedding1[1]) == 4096
 
 
+@pytest.mark.skip(reason="missing api key")
 def test_qwen_embedding():
     app_injector = Injector()
     app_config = AppConfigSource(
