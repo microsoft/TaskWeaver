@@ -35,6 +35,10 @@ const config = {
     locales: ['en'],
   },
 
+  markdown: {
+    mermaid: true,
+  },
+
   presets: [
     [
       'classic',
@@ -134,8 +138,8 @@ const config = {
         copyright: `Copyright © ${new Date().getFullYear()} TaskWeaver`,
       },
       prism: {
-        theme: prismThemes.github,
-        darkTheme: prismThemes.dracula,
+        darkTheme: prismThemes.github,
+        theme: prismThemes.dracula,
       },
     }),
     themes: [
@@ -161,6 +165,7 @@ const config = {
           hideSearchBarWithNoSearchContext: true,
         }),
       ],
+      '@docusaurus/theme-mermaid'
     ],
 };   
 export default config;
