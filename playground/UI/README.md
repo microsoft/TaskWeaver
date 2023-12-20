@@ -28,5 +28,5 @@ chainlit run app.py
 4. Open the browser with http://localhost:8000 and you can start the trial. 
 
 5. Below are some screenshots:
-![TaskWeaver UI Screenshot 1](../../.asset/ui_screenshot_1.png)
-![TaskWeaver UI Screenshot 2](../../.asset/ui_screenshot_2.png)
+![TaskWeaver UI Screenshot 1](public/ui_screenshot_1.png)
+![TaskWeaver UI Screenshot 2](public/ui_screenshot_2.png)

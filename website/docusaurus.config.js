@@ -46,14 +46,14 @@ const config = {
           // Remove this to remove the "edit this page" links.
           // sidebarCollapsed: false,
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/microsoft/TaskWeaver/tree/docs/website/',
         },
         blog: {
           showReadingTime: true,
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/microsoft/TaskWeaver/tree/docs/website/',
         },
         theme: {
           customCss: './src/css/custom.css',
