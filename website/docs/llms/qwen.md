@@ -15,4 +15,5 @@
 NOTE: `llm.model` is the model name of QWen LLM API. 
 You can find the model name in the [QWen LLM model list](https://help.aliyun.com/zh/dashscope/developer-reference/model-square/?spm=a2c4g.11186623.0.0.35a36ffdt97ljI).
 
-4. Start TaskWeaver and chat with TaskWeaver.
+4. Start TaskWeaver and chat with TaskWeaver. 
+You can refer to the [Quick Start](../quickstart.md) for more details.

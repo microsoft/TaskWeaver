@@ -14,4 +14,5 @@ We recommend deploying the LLM with a parameter scale exceeding 13 billion for e
 }
 ```
 NOTE: `llm.api_base` is the URL started in the Ollama LLM server and `llm.model` is the model name of Ollama LLM. 
-3. Start TaskWeaver and chat with TaskWeaver.
+3. Start TaskWeaver and chat with TaskWeaver. 
+You can refer to the [Quick Start](../quickstart.md) for more details.
