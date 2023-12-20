@@ -26,7 +26,7 @@ const sidebars = {
       label: 'LLMs',
       collapsible: true,
       collapsed: false,
-      items: ['llms/index', 'llms/openai', 'llms/liteLLM'],
+      items: ['llms/index', 'llms/openai', 'llms/liteLLM', 'llms/ollama', 'llms/geni', 'llms/qwen'],
     },
 
     {
