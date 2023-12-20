@@ -59,7 +59,7 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 >💡 Only the latest OpenAI API supports the `json_object` response format. 
 > If you are using an older version of OpenAI API, you need to set the `llm.response_format` to `null`.
 
-More configuration options can be found in the [configuration documentation](docs/configuration.md).
+More configuration options can be found in the [configuration documentation](configurations.md).
 
 ## Start TaskWeaver
 ```bash
