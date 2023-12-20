@@ -8,12 +8,12 @@ rounds:
         send_from: Planner
         send_to: CodeInterpreter
         attachment_list: []
-      - message: Greetings! {ROLE_NAME} can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
+      - message: Greetings! I can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
         send_from: CodeInterpreter
         send_to: Planner
         attachment_list:
           - type: text
-            content: Greetings! {ROLE_NAME} can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
+            content: Greetings! I can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
           - type: verification
             content: NONE
           - type: code_error

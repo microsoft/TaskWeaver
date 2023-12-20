@@ -36,6 +36,7 @@ const sidebars = {
       collapsed: false,
       items: ['plugin/plugin_intro', 'plugin/plugin_selection', 'plugin/embedding'],
     },
+    'example/example',
     'compression',
     'configurations',
     'planner',

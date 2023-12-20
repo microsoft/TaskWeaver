@@ -2,8 +2,9 @@ name: sql_pull_data
 enabled: true
 required: false
 description: >-
-  Pull data from a SQL database. This plugin takes user requests when obtaining data from database is explicitly mentioned.
-  Otherwise, it is not sure if the user wants to pull data from database or not.
+  Pull data from a SQL database. 
+  This plugin takes user requests when obtaining data from database is explicitly mentioned.
+  Otherwise, confirm with the user if they want to pull data from this database.
   The data from this database can only used for anomaly detection.
 
 parameters:

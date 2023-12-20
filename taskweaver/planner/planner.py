@@ -141,7 +141,7 @@ class Planner(Role):
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
-                                message=post.get_attachment(type="invalid_response")[0],
+                                message=post.get_attachment(type=AttachmentType.invalid_response)[0],
                             ),
                         )  # append the invalid response to chat history
                         conversation.append(
