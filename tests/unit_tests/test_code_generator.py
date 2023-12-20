@@ -151,14 +151,19 @@ def test_compose_prompt():
         "## Conversation Start\n"
         "\n"
         "### Context Summary\n"
-        "The context summary of the previous rounds and a list of variables that "
+        "The context summary of previous rounds and the variables that "
         "ProgramApe can refer to:\n"
         "None\n"
         "\n"
         "### Plugin Functions\n"
+        "The functions can be directly called without importing:\n"
         "None\n"
         "-----------------------------\n"
-        "- User: create a dataframe"
+        "# Feedback of the code in the last round (None if no feedback):\n"
+        "None\n"
+        "\n"
+        "# Request from the User in this round:\n"
+        "create a dataframe"
     )
     assert messages[2]["role"] == "assistant"
     assert messages[2]["content"] == (
@@ -168,16 +173,22 @@ def test_compose_prompt():
         'codes."}, {"type": "python", "content": "df = pd.DataFrame(np.random.rand(10, '
         "2), columns=['DATE', 'VALUE'])\\ndescriptions = "
         '[(\\"sample_code_description\\", \\"Sample code has been generated to get a '
-        "dataframe `df` \\nwith 10 rows and 2 columns: 'DATE' and 'VALUE'\\\")]\"}, "
-        '{"type": "execution_status", "content": "SUCCESS"}, {"type": '
-        '"execution_result", "content": "A dataframe `df` with 10 rows and 2 columns: '
-        "'DATE' and 'VALUE' has been generated.\"}]}"
+        "dataframe `df` \\nwith 10 rows and 2 columns: 'DATE' and "
+        "'VALUE'\\\")]\"}]}"
     )
 
     assert messages[5]["role"] == "user"
     assert messages[5]["content"] == (
         "-----------------------------\n"
-        "- User: what is the max value?\n"
+        "# Feedback of the code in the last round (None if no feedback):\n"
+        "## Execution\n"
+        "Your code has been executed successfully with the following result:\n"
+        "The minimum value in the 'VALUE' column is 0.05;The maximum value in the "
+        "'VALUE' column is 0.99;The data range for the 'VALUE' column is 0.94\n"
+        "\n"
+        "\n"
+        "# Request from the User in this round:\n"
+        "what is the max value?\n"
         "Please follow the instructions below to complete the task:\n"
         "- ProgramApe can refer to intermediate variables in the generated code from "
         "previous successful rounds and the context summary in the current "
@@ -185,8 +196,8 @@ def test_compose_prompt():
         "- ProgramApe should not refer to any information from failed rounds, rounds "
         "that have not been executed, or previous Conversations.\n"
         "- ProgramApe put all the result variables in the last line of the code.\n"
-        '- ProgramApe should leave "verification", "code_error", "execution_status", '
-        'and "execution_result" empty in the response. \n'
+        "- ProgramApe must not import the plugins and otherwise the code will be "
+        "failed to execute.\n"
     )
 
 
@@ -294,8 +305,6 @@ def test_compose_prompt_with_plugin_only():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/examples/codeinterpreter_examples",
             ),
-            "code_interpreter.plugin_only": True,
-            "code_interpreter.code_verification_on": True,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -310,6 +319,7 @@ def test_compose_prompt_with_plugin_only():
         plugin_only=True,
         allowed_modules=[],
     )
+    code_generator.configure_verification(code_verification_on=True, plugin_only=True)
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
@@ -363,11 +373,14 @@ def test_compose_prompt_with_plugin_only():
 
     assert "read_csv" in messages[1]["content"]
     assert "write_csv" in messages[1]["content"]
+    assert "This is the feedback" in messages[3]["content"]
+    assert "Execution" in messages[3]["content"]
+    assert "Verification" in messages[3]["content"]
 
-    assert "sql_pull_data" in messages[3]["content"]
-    assert "anomaly_detection" in messages[3]["content"]
-    assert "klarna_search" in messages[3]["content"]
-    assert "paper_summary" in messages[3]["content"]
+    assert "sql_pull_data" in messages[4]["content"]
+    assert "anomaly_detection" in messages[4]["content"]
+    assert "klarna_search" in messages[4]["content"]
+    assert "paper_summary" in messages[4]["content"]
 
 
 def test_compose_prompt_with_not_plugin_only():
@@ -391,8 +404,6 @@ def test_compose_prompt_with_not_plugin_only():
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/examples/codeinterpreter_examples",
             ),
-            "code_verification.plugin_only": False,
-            "code_verification.code_verification_on": False,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -400,7 +411,7 @@ def test_compose_prompt_with_not_plugin_only():
     from taskweaver.code_interpreter.code_generator import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
-    code_generator = app_injector.create_object(CodeGenerator)
+    code_generator = app_injector.get(CodeGenerator)
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
@@ -459,10 +470,10 @@ def test_compose_prompt_with_not_plugin_only():
     assert "klarna_search" not in messages[1]["content"]
     assert "paper_summary" not in messages[1]["content"]
 
-    assert "sql_pull_data" in messages[11]["content"]
-    assert "anomaly_detection" in messages[11]["content"]
-    assert "klarna_search" in messages[11]["content"]
-    assert "paper_summary" in messages[11]["content"]
+    assert "sql_pull_data" in messages[13]["content"]
+    assert "anomaly_detection" in messages[13]["content"]
+    assert "klarna_search" in messages[13]["content"]
+    assert "paper_summary" in messages[13]["content"]
 
 
 def test_code_correction_prompt():
@@ -547,7 +558,14 @@ def test_code_correction_prompt():
     assert messages[3]["role"] == "user"
     assert messages[3]["content"] == (
         "-----------------------------\n"
-        "- User: Please check the code and try again.\n"
+        "# Feedback of the code in the last round (None if no feedback):\n"
+        "## Execution\n"
+        "Your code has failed to execute with the following error:\n"
+        "The code failed to execute. Please check the code and try again.\n"
+        "\n"
+        "\n"
+        "# Request from the User in this round:\n"
+        "Please check the code and try again.\n"
         "Please follow the instructions below to complete the task:\n"
         "- ProgramApe can refer to intermediate variables in the generated code from "
         "previous successful rounds and the context summary in the current "
@@ -555,6 +573,6 @@ def test_code_correction_prompt():
         "- ProgramApe should not refer to any information from failed rounds, rounds "
         "that have not been executed, or previous Conversations.\n"
         "- ProgramApe put all the result variables in the last line of the code.\n"
-        '- ProgramApe should leave "verification", "code_error", "execution_status", '
-        'and "execution_result" empty in the response. \n'
+        "- ProgramApe must not import the plugins and otherwise the code will be "
+        "failed to execute.\n"
     )

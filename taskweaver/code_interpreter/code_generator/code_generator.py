@@ -27,7 +27,7 @@ class CodeGeneratorConfig(ModuleConfig):
             "prompt_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "code_generator_json_prompt.yaml",
+                "code_generator_prompt.yaml",
             ),
         )
         self.example_base_path = self._get_path(
@@ -147,7 +147,7 @@ class CodeGenerator(Role):
             self.examples = self.load_examples(plugin_only=self.plugin_only)
         for i, example in enumerate(self.examples):
             chat_history.extend(
-                self.compose_conversation(example.rounds, example.plugins),
+                self.compose_conversation(example.rounds, example.plugins, add_requirements=False),
             )
 
         summary = None
@@ -155,7 +155,7 @@ class CodeGenerator(Role):
             summary, rounds = self.round_compressor.compress_rounds(
                 rounds,
                 rounds_formatter=lambda _rounds: str(
-                    self.compose_conversation(_rounds, plugins),
+                    self.compose_conversation(_rounds, plugins, add_requirements=False),
                 ),
                 use_back_up_engine=True,
                 prompt_template=self.compression_template,
@@ -171,6 +171,12 @@ class CodeGenerator(Role):
         )
         return chat_history
 
+    def format_attachment(self, attachment: Attachment):
+        if attachment.type == AttachmentType.thought:
+            return attachment.content.format(ROLE_NAME=self.role_name)
+        else:
+            return attachment.content
+
     def compose_conversation(
         self,
         rounds: List[Round],
@@ -178,20 +184,23 @@ class CodeGenerator(Role):
         add_requirements: bool = False,
         summary: Optional[str] = None,
     ) -> List[ChatMessageType]:
-        def format_attachment(attachment: Attachment):
-            if attachment.type == AttachmentType.thought:
-                return attachment.content.format(ROLE_NAME=self.role_name)
-            else:
-                return attachment.content
-
         chat_history: List[ChatMessageType] = []
+        ignored_types = [
+            AttachmentType.revise_message,
+            AttachmentType.verification,
+            AttachmentType.code_error,
+            AttachmentType.execution_status,
+            AttachmentType.execution_result,
+        ]
+
         is_first_post = True
+        last_post: Post = None
         for round_index, conversation_round in enumerate(rounds):
             for post_index, post in enumerate(conversation_round.post_list):
                 # compose user query
                 user_message = ""
                 assistant_message = ""
-
+                is_final_post = round_index == len(rounds) - 1 and post_index == len(conversation_round.post_list) - 1
                 if is_first_post:
                     user_message = (
                         self.conversation_head_template.format(
@@ -209,37 +218,53 @@ class CodeGenerator(Role):
                     enrichment = ""
                     if plan is not None:
                         enrichment = (
-                            f"To complete this request:{user_query}\n\n"
+                            f"To complete this request: {user_query}\n\n"
                             f"I have drawn up a plan: \n{plan}\n\n"
                             f"Please proceed with this step of this plan:"
                         )
 
+                    user_feedback = "None"
+                    if last_post is not None and last_post.send_from == "CodeInterpreter":
+                        user_feedback = format_code_feedback(last_post)
+
                     user_message += self.user_message_head_template.format(
+                        FEEDBACK=user_feedback,
                         MESSAGE=f"{enrichment}{post.message}",
                     )
-                elif post.send_from == "CodeInterpreter" and post.send_to == "CodeInterpreter":
+                elif post.send_from == post.send_to == "CodeInterpreter":
                     # for code correction
                     user_message += self.user_message_head_template.format(
+                        FEEDBACK=format_code_feedback(post),
                         MESSAGE=f"{post.get_attachment(AttachmentType.revise_message)[0]}",
                     )
 
                     assistant_message = self.post_translator.post_to_raw_text(
                         post=post,
-                        content_formatter=format_attachment,
+                        content_formatter=self.format_attachment,
                         if_format_message=False,
                         if_format_send_to=False,
-                        ignore_types=[AttachmentType.revise_message],
+                        ignored_types=ignored_types,
                     )
                 elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
+                    if is_final_post:
+                        # This user message is added to make the conversation complete
+                        # It is used to make sure the last assistant message has a feedback
+                        # This is only used for examples or context summarization
+                        user_message += self.user_message_head_template.format(
+                            FEEDBACK=format_code_feedback(post),
+                            MESSAGE="This is the feedback.",
+                        )
+
                     assistant_message = self.post_translator.post_to_raw_text(
                         post=post,
-                        content_formatter=format_attachment,
+                        content_formatter=self.format_attachment,
                         if_format_message=False,
                         if_format_send_to=False,
-                        ignore_types=[AttachmentType.revise_message],
+                        ignored_types=ignored_types,
                     )
                 else:
                     raise ValueError(f"Invalid post: {post}")
+                last_post = post
 
                 if len(assistant_message) > 0:
                     chat_history.append(
@@ -250,11 +275,9 @@ class CodeGenerator(Role):
                     )
                 if len(user_message) > 0:
                     # add requirements to the last user message
-                    if add_requirements and post_index == len(conversation_round.post_list) - 1:
+                    if is_final_post and add_requirements:
                         user_message += "\n" + self.query_requirements_template.format(
-                            PLUGIN_ONLY_PROMPT=self.compose_verification_requirements(
-                                plugins,
-                            ),
+                            CODE_GENERATION_REQUIREMENTS=self.compose_verification_requirements(plugins),
                             ROLE_NAME=self.role_name,
                         )
                     chat_history.append(
@@ -300,7 +323,7 @@ class CodeGenerator(Role):
 
         prompt = self.compose_prompt(rounds, self.plugin_pool)
 
-        def early_stop(_type: AttachmentType, value: str):
+        def early_stop(_type: AttachmentType, value: str) -> bool:
             if _type in [AttachmentType.text, AttachmentType.python, AttachmentType.sample]:
                 return True
             else:
@@ -377,3 +400,33 @@ def format_output_revision_message() -> str:
         "Don't surround the JSON with ```json and ```, just send the JSON object directly.\n"
         "Please try again."
     )
+
+
+def format_code_feedback(post: Post) -> str:
+    feedback = ""
+    verification_status = ""
+    execution_status = ""
+    for attachment in post.attachment_list:
+        if attachment.type == AttachmentType.verification and attachment.content == "CORRECT":
+            feedback += "## Verification\nI have verified that your code is CORRECT.\n"
+            verification_status = "CORRECT"
+        elif attachment.type == AttachmentType.verification and attachment.content == "NONE":
+            feedback += "## Verification\nNo code verification.\n"
+            verification_status = "NONE"
+        elif attachment.type == AttachmentType.verification and attachment.content == "INCORRECT":
+            feedback += "## Verification\nYour code is INCORRECT with the following error:\n"
+            verification_status = "INCORRECT"
+        elif attachment.type == AttachmentType.code_error and verification_status == "INCORRECT":
+            feedback += f"{attachment.content}\n"
+        elif attachment.type == AttachmentType.execution_status and attachment.content == "NONE":
+            feedback += "## Execution\nNo code execution.\n"
+            execution_status = "NONE"
+        elif attachment.type == AttachmentType.execution_status and attachment.content == "SUCCESS":
+            feedback += "## Execution\nYour code has been executed successfully with the following result:\n"
+            execution_status = "SUCCESS"
+        elif attachment.type == AttachmentType.execution_status and attachment.content == "FAILURE":
+            feedback += "## Execution\nYour code has failed to execute with the following error:\n"
+            execution_status = "FAILURE"
+        elif attachment.type == AttachmentType.execution_result and execution_status != "NONE":
+            feedback += f"{attachment.content}\n"
+    return feedback
