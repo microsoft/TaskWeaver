@@ -70,7 +70,7 @@ python -m taskweaver -p ./project/
 This will start the TaskWeaver process and you can interact with it through the command line interface. 
 If everything goes well, you will see the following prompt:
 
-```
+```bash
 =========================================================
  _____         _     _       __
 |_   _|_ _ ___| | _ | |     / /__  ____ __   _____  _____

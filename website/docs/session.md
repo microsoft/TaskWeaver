@@ -12,7 +12,7 @@ You can refer to [taskweaver_as_a_lib](taskweaver_as_a_lib.md) to see how to set
 - `code_interpreter_only`: allow users to directly communicate with the Code Interpreter.
    In this mode, users can only send messages to the Code Interpreter and receive messages from the Code Interpreter.
    Here is an example:
-`````bash
+``````bash
  =========================================================
  _____         _     _       __
 |_   _|_ _ ___| | _ | |     / /__  ____ __   _____  _____
@@ -22,13 +22,13 @@ You can refer to [taskweaver_as_a_lib](taskweaver_as_a_lib.md) to see how to set
 =========================================================
 TaskWeaver: I am TaskWeaver, an AI assistant. To get started, could you please enter your request?
 Human: generate 10 random numbers
->>> [PYTHON]tarting...      <=�=>     >
+>>> [PYTHON]Starting... 
 import numpy as np
 random_numbers = np.random.rand(10)
 random_numbers
 >>> [VERIFICATION]
 NONE
->>> [STATUS]tarting...         <=�=>  
+>>> [STATUS]Starting...         
 SUCCESS
 >>> [RESULT]
 The execution of the generated python code above has succeeded
@@ -54,7 +54,7 @@ TaskWeaver: The following python code has been executed:
 import numpy as np
 random_numbers = np.random.rand(10)
 random_numbers
-\```
+```
 
 The execution of the generated python code above has succeeded
 

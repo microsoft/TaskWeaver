@@ -24,9 +24,15 @@ const sidebars = {
     {
       type: 'category',
       label: 'LLMs',
+      link: {
+        type: 'generated-index',
+        title: 'LLMs',
+        description: 'Learn how to call models from different LLMs',
+        slug: '/llms',
+      },
       collapsible: true,
       collapsed: false,
-      items: ['llms/index', 'llms/openai', 'llms/liteLLM', 'llms/ollama', 'llms/geni', 'llms/qwen'],
+      items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen'],
     },
 
     {

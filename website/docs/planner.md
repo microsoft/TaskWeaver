@@ -33,17 +33,17 @@ CodeInterpreter
 >>> [INIT_PLAN]
 1. ask Code Interpreter to handle the request; 2. report the result to user <interactively depends on 1>
 >>> [PLAN]
-1. ask Code Interpreter to handle user's request; 2. report the result to user
+1. ask Code Interpreter to handle user\'s request; 2. report the result to user
 >>> [CURRENT_PLAN_STEP]
 1. ask Code Interpreter to handle the request
 >>> [PLANNER->CODEINTERPRETER]
 Please process this request: generate 10 random numbers
->>> [PYTHON]tarting...        <=�=>   
+>>> [PYTHON]Starting...      
 random_numbers = np.random.rand(10)
 random_numbers
 >>> [VERIFICATION]
 NONE
->>> [STATUS]tarting... <=�=>          
+>>> [STATUS]Starting...         
 SUCCESS
 >>> [RESULT]
 The execution of the generated python code above has succeeded
