@@ -60,6 +60,11 @@ data analytics tasks
 ### Installation
 You can install TaskWeaver by running the following command:
 ```bash
+# [optional] create a conda environment to isolate the dependencies
+# conda create -n taskweaver python=3.10
+# conda activate taskweaver
+
+# clone the repository
 git clone https://github.com/microsoft/TaskWeaver.git
 cd TaskWeaver
 # install the requirements

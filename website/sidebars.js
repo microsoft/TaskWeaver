@@ -26,7 +26,7 @@ const sidebars = {
       label: 'LLMs',
       collapsible: true,
       collapsed: false,
-      items: ['llms/index', 'llms/openai', 'llms/liteLLM'],
+      items: ['llms/index', 'llms/openai', 'llms/liteLLM', 'llms/ollama', 'llms/geni', 'llms/qwen'],
     },
 
     {
@@ -36,7 +36,7 @@ const sidebars = {
       collapsed: false,
       items: ['plugin/plugin_intro', 'plugin/plugin_selection', 'plugin/embedding'],
     },
-    'example/example',
+    'example',
     'compression',
     'configurations',
     'planner',

@@ -1,9 +1,10 @@
+# Customizing Examples
 
 There are two types of examples: (1) planning examples and (2) code interpreter examples. 
 Planning examples are used to demonstrate how to use TaskWeaver to plan for a specific task. 
 Code generation examples are used to demonstrate how to generate code or orchestrate plugins to perform a specific task.
 
-#### Planning Examples
+## Planning Examples
 
 A planning example tells LLMs how to plan for a specific query from the user; talk to the code interpreter; 
 receive the execution result from the code interpreter; and summarize the execution result.
@@ -75,7 +76,7 @@ rounds:
             content: 2. report the result to the user
 ```
 
-#### Code Interpreter Examples
+## Code Interpreter Examples
 
 A code interpreter example tells LLMs how to generate code or orchestrate plugins to perform a specific task.
 The task is from the planner. Before constructing the code interpreter example, we strongly encourage you to
