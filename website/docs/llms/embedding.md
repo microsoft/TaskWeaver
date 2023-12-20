@@ -26,4 +26,4 @@ In TaskWeaver, we support various embedding models to generate embeddings for au
     - all-MiniLM-L12-v2
     - multi-qa-MiniLM-L6-cos-v1
 
-You also can use other embedding models supported by the above embedding APIs. 
+You also can use other embedding models supported by the above embedding APIs.

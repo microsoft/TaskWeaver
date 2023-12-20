@@ -15,7 +15,7 @@ NOTE: the automatic plugin selection mechanism is only activated during the code
 
 At the start of TaskWeaver initialization, the automatic plugin selector is activated to generate embedding vectors for all plugins, including their names and descriptions. 
 The embedding vectors are created using the specified embedding model configured in the `taskweaver_config.json` file. 
-For more information, please refer to the [embedding](embedding) documentation.
+For more information, please refer to the [embedding](../llms/embedding.md) documentation.
 
 When the Planner sends a request to the Code Interpreter, the auto plugin selection mechanism will be triggered.
 It will first generate an embedding vector for the request using the same embedding model.
