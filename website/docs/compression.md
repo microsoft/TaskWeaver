@@ -62,8 +62,8 @@ The actual code generated in the summarized rounds is ignored and only the varia
 so that the LLM can still refer the these variables in future code generation.
 
 One thing to note is that chat history summarization requires call the LLM which incurs additional latency and cost.
-The prompts for chat history summarization could be found for [planner](../taskweaver/planner/compression_prompt.yaml)
-and [code generator](../taskweaver/code_interpreter/code_generator/compression_prompt.yaml).
+The prompts for chat history summarization could be found for [planner](../../taskweaver/planner/compression_prompt.yaml)
+and [code generator](../../taskweaver/code_interpreter/code_generator/compression_prompt.yaml).
 
 ## Configurations
 As explained above, there are two parameters in controlling the chat history summarization: 
