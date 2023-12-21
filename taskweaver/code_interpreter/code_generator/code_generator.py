@@ -20,7 +20,6 @@ class CodeGeneratorConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
-        self.executor_name = self._get_str("executor_name", "CodeExecutor")
         self.load_plugin = self._get_bool("load_plugin", True)
         self.load_example = self._get_bool("load_example", True)
         self.prompt_file_path = self._get_path(
@@ -67,7 +66,6 @@ class CodeGenerator(Role):
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
-        self.executor_name = self.config.executor_name
 
         self.post_translator = PostTranslator(logger)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
@@ -86,7 +84,6 @@ class CodeGenerator(Role):
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
-            EXECUTOR_NAME=self.executor_name,
         )
 
         self.round_compressor: RoundCompressor = round_compressor
