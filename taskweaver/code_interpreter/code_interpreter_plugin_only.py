@@ -1,5 +1,5 @@
 import json
-from typing import Literal, Optional
+from typing import Optional
 
 from injector import inject
 
@@ -7,7 +7,8 @@ from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Memory, Post
+from taskweaver.memory import Memory, Post
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.role import Role
 
 
@@ -16,28 +17,6 @@ class CodeInterpreterConfig(ModuleConfig):
         self._set_name("code_interpreter_plugin_only")
         self.use_local_uri = self._get_bool("use_local_uri", False)
         self.max_retry_count = self._get_int("max_retry_count", 3)
-
-
-def update_verification(
-    response: Post,
-    status: Literal["NONE", "INCORRECT", "CORRECT"] = "NONE",
-    error: str = "No verification is done.",
-):
-    response.add_attachment(Attachment.create("verification", status))
-    response.add_attachment(
-        Attachment.create("code_error", error),
-    )
-
-
-def update_execution(
-    response: Post,
-    status: Literal["NONE", "SUCCESS", "FAILURE"] = "NONE",
-    result: str = "No code is executed.",
-):
-    response.add_attachment(Attachment.create("execution_status", status))
-    response.add_attachment(
-        Attachment.create("execution_result", result),
-    )
 
 
 class CodeInterpreterPluginOnly(Role):
@@ -72,7 +51,7 @@ class CodeInterpreterPluginOnly(Role):
         if response.message is not None:
             return response
 
-        functions = json.loads(response.get_attachment(type="function")[0])
+        functions = json.loads(response.get_attachment(type=AttachmentType.function)[0])
         if len(functions) > 0:
             code = []
             for i, f in enumerate(functions):

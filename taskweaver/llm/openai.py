@@ -4,7 +4,6 @@ from typing import Any, Generator, List, Optional
 import openai
 from injector import inject
 from openai import AzureOpenAI, OpenAI
-from openai._types import NOT_GIVEN
 
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 
@@ -135,7 +134,6 @@ class OpenAIService(CompletionService, EmbeddingService):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
-        tools: Optional[List] = NOT_GIVEN,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         engine = self.config.model
@@ -151,12 +149,17 @@ class OpenAIService(CompletionService, EmbeddingService):
             if use_backup_engine:
                 engine = backup_engine
 
-            if tools is not NOT_GIVEN and tools is not None:
-                stream = False
-                tool_choice = "auto"
+            tools_kwargs = {}
+            if "tools" in kwargs and "tool_choice" in kwargs:
+                tools_kwargs["tools"] = kwargs["tools"]
+                tools_kwargs["tool_choice"] = kwargs["tool_choice"]
+            if "response_format" in kwargs:
+                response_format = kwargs["response_format"]
+            elif self.config.response_format == "json_object":
+                response_format = {"type": "json_object"}
             else:
-                tools = NOT_GIVEN
-                tool_choice = NOT_GIVEN
+                response_format = None
+
             res: Any = self.client.chat.completions.create(
                 model=engine,
                 messages=messages,  # type: ignore
@@ -168,11 +171,8 @@ class OpenAIService(CompletionService, EmbeddingService):
                 stop=stop,
                 stream=stream,
                 seed=seed,
-                response_format=(
-                    {"type": "json_object"} if self.config.response_format == "json_object" else None  # type: ignore
-                ),
-                tool_choice=tool_choice,
-                tools=tools,
+                response_format=response_format,
+                **tools_kwargs,
             )
             if stream:
                 role: Any = None

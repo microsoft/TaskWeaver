@@ -3,12 +3,12 @@ from typing import List, Tuple
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_generator import CodeGeneratorConfig
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post, Round
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
@@ -42,7 +42,7 @@ class CodeGeneratorPluginOnly(Role):
     @inject
     def __init__(
         self,
-        config: CodeGeneratorConfig,
+        config: CodeGeneratorPluginOnlyConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
         llm_api: LLMApi,
@@ -99,13 +99,19 @@ class CodeGeneratorPluginOnly(Role):
         )
         post = Post.create(message=None, send_from="CodeInterpreter", send_to="Planner")
 
-        llm_response = self.llm_api.chat_completion(messages=prompt, tools=tools, stream=False)
+        llm_response = self.llm_api.chat_completion(
+            messages=prompt,
+            tools=tools,
+            tool_choice="auto",
+            response_format=None,
+            stream=False,
+        )
         if llm_response["name"] == "assistant":
             post.message = llm_response["content"]
             event_handler("CodeInterpreter->Planner", post.message)
             return post
         elif llm_response["name"] == "tool_calls":
-            post.add_attachment(Attachment.create(type="function", content=llm_response["content"]))
+            post.add_attachment(Attachment.create(type=AttachmentType.function, content=llm_response["content"]))
             event_handler("function", llm_response["content"])
 
             if self.config.enable_auto_plugin_selection:
@@ -114,6 +120,9 @@ class CodeGeneratorPluginOnly(Role):
             return post
         else:
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
+
+    def configure_verification(self, code_verification_on, plugin_only, allowed_modules):
+        pass
 
 
 def compose_prompt(system_instructions: str, rounds: List[Round], plugin_pool: List[PluginEntry]) -> Tuple[List, List]:

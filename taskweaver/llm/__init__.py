@@ -84,7 +84,6 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
-        tools: Optional[List] = None,
         **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
@@ -96,7 +95,6 @@ class LLMApi(object):
             max_tokens,
             top_p,
             stop,
-            tools,
             **kwargs,
         ):
             msg["role"] = msg_chunk["role"]

@@ -35,6 +35,9 @@ class AttachmentType(Enum):
     # CodeInterpreter - revise code
     revise_message = "revise_message"
 
+    # function calling
+    function = "function"
+
     # Misc
     invalid_response = "invalid_response"
 
