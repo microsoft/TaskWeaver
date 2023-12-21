@@ -135,16 +135,29 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         genai_messages = []
+        prev_role = ""
         for msg in messages:
-            if msg["role"] == "system" or msg["role"] == "user":
+            if msg["role"] == "system":
                 genai_messages.append({"role": "user", "parts": [msg["content"]]})
+                genai_messages.append(
+                    {
+                        "role": "model",
+                        "parts": ["I understand your requirements, and I will assist you in the conversations."],
+                    },
+                )
+                prev_role = "model"
+            elif msg["role"] == "user":
+                if prev_role == "user":
+                    # a placeholder to create alternating user and model messages
+                    genai_messages.append({"role": "model", "parts": ["  "]})
+                genai_messages.append({"role": "user", "parts": [msg["content"]]})
+                prev_role = "user"
             elif msg["role"] == "assistant":
                 genai_messages.append({"role": "model", "parts": [msg["content"]]})
+                prev_role = "model"
+            else:
+                raise Exception(f"Invalid role: {msg['role']}")
 
-        genai_messages.insert(
-            1,
-            {"role": "model", "parts": ["I understand your requirements, and I will assist you in the conversations."]},
-        )
         if stream is False:
             response = self.model.generate_content(genai_messages, stream=False)
             yield format_chat_message("assistant", response.text)

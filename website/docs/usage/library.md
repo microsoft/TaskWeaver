@@ -1,4 +1,4 @@
-# Use TaskWeaver as a library
+# Library
 
 If you want to use TaskWeaver as a library, you can refer to the following code example:
 
