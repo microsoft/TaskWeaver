@@ -2,12 +2,12 @@ name: docs
 
 on:
   pull_request:
-    branches: [docs]
+    branches: [main]
     path:
       - 'website/*'
       - '.github/workflows/deploy-website.yml'
   push:
-    branches: [docs]
+    branches: [main]
     path:
       - 'website/*'
       - '.github/workflows/deploy-website.yml'
