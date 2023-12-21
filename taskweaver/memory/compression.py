@@ -47,9 +47,6 @@ class RoundCompressor:
             if _round.id in self.processed_rounds:
                 remaining_rounds -= 1
                 continue
-            if _round.state == "failed":
-                remaining_rounds -= 1
-                continue
             break
 
         # not enough rounds to compress
@@ -64,6 +61,7 @@ class RoundCompressor:
         )
 
         if len(chat_summary) > 0:  # if the compression is successful
+            self.previous_summary = chat_summary
             return chat_summary, rounds[-self.rounds_to_retain :]
         else:
             return self.previous_summary, rounds[-remaining_rounds:]
@@ -86,10 +84,8 @@ class RoundCompressor:
                 format_chat_message("user", chat_history_str),
             ]
             new_summary = self.llm_api.chat_completion(prompt, use_backup_engine=use_back_up_engine)["content"]
-            self.previous_summary = new_summary
             self.processed_rounds.update([_round.id for _round in rounds])
+            return new_summary
         except Exception as e:
             self.logger.warning(f"Failed to compress rounds: {e}")
             return ""
-
-        return self.previous_summary

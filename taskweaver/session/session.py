@@ -17,7 +17,7 @@ class AppSessionConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("session")
 
-        self.use_planner = self._get_bool("use_planner", True)
+        self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
 
 
@@ -120,7 +120,7 @@ class Session:
             return reply_post
 
         try:
-            if self.config.use_planner:
+            if not self.config.code_interpreter_only:
                 post = Post.create(message=message, send_from="User", send_to="Planner")
                 while True:
                     post = _send_message(post.send_to, post)

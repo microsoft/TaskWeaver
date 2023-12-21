@@ -23,6 +23,11 @@ class AzureMLServiceConfig(LLMServiceConfig):
             shared_api_key,
         )
 
+        self.chat_mode = self._get_bool(
+            "chat_mode",
+            True,
+        )
+
 
 class AzureMLService(CompletionService):
     @inject
@@ -57,14 +62,17 @@ class AzureMLService(CompletionService):
             # "top_p": 0.0,
             "do_sample": True,
         }
-
-        prompt = ""
-        for msg in messages:
-            prompt += f"{msg['role']}: {msg['content']}\n\n"
+        if self.config.chat_mode:
+            prompt = messages
+        else:
+            prompt = ""
+            for msg in messages:
+                prompt += f"{msg['role']}: {msg['content']}\n\n"
+            prompt = [prompt]
 
         data = {
             "input_data": {
-                "input_string": [prompt],
+                "input_string": prompt,
                 "parameters": params,
             },
         }

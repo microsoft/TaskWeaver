@@ -1,3 +1,4 @@
+import json
 import os
 from json import JSONDecodeError
 from typing import List, Optional
@@ -9,6 +10,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -42,6 +44,16 @@ class PlannerConfig(ModuleConfig):
                 "compression_prompt.yaml",
             ),
         )
+
+        self.skip_planning = self._get_bool("skip_planning", False)
+        with open(
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "dummy_plan.json",
+            ),
+            "r",
+        ) as f:
+            self.dummy_plan = json.load(f)
 
 
 class Planner(Role):
@@ -129,7 +141,7 @@ class Planner(Role):
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
-                                message=post.get_attachment(type="invalid_response")[0],
+                                message=post.get_attachment(type=AttachmentType.invalid_response)[0],
                             ),
                         )  # append the invalid response to chat history
                         conversation.append(
@@ -191,11 +203,17 @@ class Planner(Role):
             assert post.send_to is not None, "send_to field is None"
             assert post.send_to != "Planner", "send_to field should not be Planner"
             assert post.message is not None, "message field is None"
-            assert post.attachment_list[0].type == "init_plan", "attachment type is not init_plan"
-            assert post.attachment_list[1].type == "plan", "attachment type is not plan"
-            assert post.attachment_list[2].type == "current_plan_step", "attachment type is not current_plan_step"
+            assert post.attachment_list[0].type == AttachmentType.init_plan, "attachment type is not init_plan"
+            assert post.attachment_list[1].type == AttachmentType.plan, "attachment type is not plan"
+            assert (
+                post.attachment_list[2].type == AttachmentType.current_plan_step
+            ), "attachment type is not current_plan_step"
 
-        llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
+        if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
+            self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
+            llm_output = json.dumps(self.config.dummy_plan)
+        else:
+            llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:
             response_post = self.planner_post_translator.raw_text_to_post(
                 llm_output=llm_output,
@@ -214,7 +232,7 @@ class Planner(Role):
                 "Please try to regenerate the output.",
                 send_to="Planner",
                 send_from="Planner",
-                attachment_list=[Attachment.create(type="invalid_response", content=llm_output)],
+                attachment_list=[Attachment.create(type=AttachmentType.invalid_response, content=llm_output)],
             )
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message

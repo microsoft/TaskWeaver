@@ -37,6 +37,9 @@ class SqlPullData(Plugin):
             {schema}
 
             Question: {question}
+            Please only write the sql query.
+            Do not add any comments or extra text.
+            Do not wrap the query in quotes or ```sql.
             SQL Query:"""
         prompt = ChatPromptTemplate.from_template(template)
 
