@@ -2,7 +2,7 @@
 
 `session` is the entrance of TaskWeaver. 
 It is responsible for the communication between the user and TaskWeaver.
-You can refer to [taskweaver_as_a_lib](taskweaver_as_a_lib.md) to see how to setup a TaskWeaver session and start chatting with TaskWeaver.
+You can refer to [taskweaver_as_a_lib](./usage/library.md) to see how to setup a TaskWeaver session and start chatting with TaskWeaver.
 
 
 ## Session Configration
