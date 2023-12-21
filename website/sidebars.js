@@ -23,6 +23,22 @@ const sidebars = {
     'quickstart',    
     {
       type: 'category',
+      label: 'Usage Options',
+      link: {
+        type: 'generated-index',
+        title: 'Usage Options',
+        description: 'Learn how to run TaskWeaver in different ways',
+        slug: '/usage',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: [
+        'usage/cmd',
+        'usage/webui',
+        'usage/library'],
+    },
+    {
+      type: 'category',
       label: 'LLMs',
       link: {
         type: 'generated-index',
@@ -34,21 +50,33 @@ const sidebars = {
       collapsed: false,
       items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen'],
     },
-
     {
       type: 'category',
-      label: 'Plugin',
+      label: 'Customization',
       collapsible: true,
       collapsed: false,
-      items: ['plugin/plugin_intro', 'plugin/plugin_selection', 'plugin/embedding'],
+      items: [{
+        type: 'category',
+        label: 'Plugin',
+        collapsible: true,
+        collapsed: true,
+        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding'],
+      },
+      {
+        type: 'category',
+        label: 'Example',
+        collapsible: true,
+        collapsed: true,
+        items: ['customization/example/example'],
+      },
+    ],
     },
-    'example',
+    // 'example',
     'compression',
     'configurations',
     'planner',
     'session',
     'run_pytest',
-    'taskweaver_as_a_lib'
   ],
   
 };

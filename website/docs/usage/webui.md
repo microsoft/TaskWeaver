@@ -1,6 +1,6 @@
-# How to Run UI
+# Web UI
 
-1. Follow the instruction in the repo's [README](../../README.md) to clone the repo and make configurations
+1. Follow the instruction in [Quick Start](../quickstart.md) to clone the repo and make configurations
 
 ```bash
 git clone https://github.com/microsoft/TaskWeaver.git
@@ -28,5 +28,5 @@ chainlit run app.py
 4. Open the browser with http://localhost:8000 and you can start the trial. 
 
 5. Below are some screenshots:
-![TaskWeaver UI Screenshot 1](public/ui_screenshot_1.png)
-![TaskWeaver UI Screenshot 2](public/ui_screenshot_2.png)
+![TaskWeaver UI Screenshot 1](../../static/img/ui_screenshot_1.png)
+![TaskWeaver UI Screenshot 2](../../static/img/ui_screenshot_2.png)

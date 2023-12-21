@@ -9,7 +9,7 @@ It targets to solve the following two problems:
 ## Auto Plugin Selection Overview
 
 Below is the overview workflow of the auto plugin selection mechanism.
-![Auto Plugin Selection Overview](../../static/img/APS.png)
+![Auto Plugin Selection Overview](../../../static/img/APS.png)
 
 NOTE: the automatic plugin selection mechanism is only activated during the code generation process in the Code Interpreter and does not affect the planning process of the Planner.
 
