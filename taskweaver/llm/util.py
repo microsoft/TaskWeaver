@@ -1,6 +1,6 @@
 from typing import Dict, Literal, Optional
 
-ChatMessageRoleType = Literal["system", "user", "assistant"]
+ChatMessageRoleType = Literal["system", "user", "assistant", "function"]
 ChatMessageType = Dict[Literal["role", "name", "content"], str]
 
 

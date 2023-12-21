@@ -106,11 +106,11 @@ class CodeGeneratorPluginOnly(Role):
             response_format=None,
             stream=False,
         )
-        if llm_response["name"] == "assistant":
+        if llm_response["role"] == "assistant":
             post.message = llm_response["content"]
             event_handler("CodeInterpreter->Planner", post.message)
             return post
-        elif llm_response["name"] == "tool_calls":
+        elif llm_response["role"] == "function":
             post.add_attachment(Attachment.create(type=AttachmentType.function, content=llm_response["content"]))
             event_handler("function", llm_response["content"])
 
@@ -120,9 +120,6 @@ class CodeGeneratorPluginOnly(Role):
             return post
         else:
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
-
-    def configure_verification(self, code_verification_on, plugin_only, allowed_modules):
-        pass
 
 
 def compose_prompt(system_instructions: str, rounds: List[Round], plugin_pool: List[PluginEntry]) -> Tuple[List, List]:

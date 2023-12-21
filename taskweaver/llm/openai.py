@@ -198,7 +198,7 @@ class OpenAIService(CompletionService, EmbeddingService):
                     name="assistant",
                 )
                 if oai_response.tool_calls is not None:
-                    response["name"] = "tool_calls"
+                    response["role"] = "function"
                     response["content"] = (
                         "["
                         + ",".join(
