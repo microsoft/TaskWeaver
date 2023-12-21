@@ -1,4 +1,4 @@
-# running pytests
+# Running pytest
 
 ## quickstart
 
