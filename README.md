@@ -7,7 +7,13 @@ This innovative framework interprets user requests through coded snippets and ef
 coordinates a variety of plugins in the form of functions to execute 
 data analytics tasks
 
-**Highlighted Features**
+# News
+
+- [2023-12-12] A simple UI demo is available in playground/UI folder, try with the [README](/playground/UI/README.md)
+- [2023-11-30] TaskWeaver is released on GitHub🎈. 
+
+
+## Highlights
 
 - [x] **Rich data structure** - TaskWeaver allows you to work with rich data 
     structures in Python, such as DataFrames, instead of having to work with 
@@ -37,30 +43,25 @@ data analytics tasks
     more complex tasks. You can create multiple AI copilots to
     act in different roles, and orchestrate them to achieve complex tasks.
 
-# News
 
-- [2023-12-12] A simple UI demo is available in playground/UI folder, try with the [README](/playground/UI/README.md)
-- [2023-11-30] TaskWeaver is released on GitHub🎈. 
-
-
-# Getting started
-
-## Prerequisites
+<!-- # Getting started
+ -->
+<!-- ### Prerequisites
 
 - Python 3.10 or above
 - OpenAI (or Azure OpenAI) access with GPT-3.5 above models. However, it is strongly recommended to use the GPT-4, which is more stable.
-- Other requirements can be found in the `requirements.txt` file. 
+- Other requirements can be found in the `requirements.txt` file.  -->
 
-> OpenAI API had a major [update](https://github.com/openai/openai-python) from 0.xx to 1.xx in November 2023. 
-> Please make sure you are not using an old version because the API is not backward compatible.
+<!-- > OpenAI API had a major [update](https://github.com/openai/openai-python) from 0.xx to 1.xx in November 2023. 
+> Please make sure you are not using an old version because the API is not backward compatible. -->
 
 
 ## Quick Start
 
 ### Installation
-You can install TaskWeaver by running the following command:
+TaskWeaver requires **Python >= 3.10**. It can be installed by running the following command:
 ```bash
-# [optional] create a conda environment to isolate the dependencies
+# [optional to create conda environment]
 # conda create -n taskweaver python=3.10
 # conda activate taskweaver
 
@@ -72,12 +73,12 @@ pip install -r requirements.txt
 ```
 
 
-### Project Directory
+<!-- ### Project Directory
 TaskWeaver runs as a process, you need to create a project directory to store plugins and configuration files. 
 We provided a sample project directory in the `project` folder. You can copy the `project` folder to your workspace.
-A project directory typically contains the following files and folders:
+A project directory typically contains the following files and folders: -->
 
-```bash
+<!-- ```bash
 📦project
  ┣ 📜taskweaver_config.json # the configuration file for TaskWeaver
  ┣ 📂plugins # the folder to store plugins
@@ -89,22 +90,10 @@ A project directory typically contains the following files and folders:
     ┗ 📂 session_id 
       ┣ 📂ces # the folder used by the code execution service
       ┗ 📂cwd # the current working directory to run the generated code
-```
+``` -->
 
-### OpenAI Configuration
-Before running TaskWeaver, you need to provide your OpenAI API key and other necessary information. 
-You can do this by editing the `taskweaver_config.json` file. 
-If you are using Azure OpenAI, you need to set the following parameters in the `taskweaver_config.json` file:
-#### Azure OpenAI
-```json
-{
-"llm.api_base": "https://xxx.openai.azure.com/",
-"llm.api_key": "your_api_key",
-"llm.api_type": "azure",
-"llm.api_version": "the api version",
-"llm.model": "the model name, e.g., gpt-4"
-}
-```
+### Configure the LLMs
+Before running TaskWeaver, you need to provide your LLM configurations. Taking OpenAI as an example, you can configure `taskweaver_config.json` file as follows. 
 
 #### OpenAI
 ```json
@@ -113,15 +102,16 @@ If you are using Azure OpenAI, you need to set the following parameters in the `
 "llm.model": "the model name, e.g., gpt-4"
 }
 ```
->💡 Only the latest OpenAI API supports the `json_object` response format. 
-> If you are using an older version of OpenAI API, you need to set the `llm.response_format` to `null`.
+<!-- >💡 Only the latest OpenAI API supports the `json_object` response format. 
+> If you are using an older version of OpenAI API, you need to set the `llm.response_format` to `null`. -->
 
-More configuration options can be found in the [configuration documentation](docs/configuration.md).
+💡 TaskWeaver also supports other LLMs and advanced configurations, please check the [documents](https://microsoft.github.io/TaskWeaver/docs/overview) for more details. 
 
 ### Start TaskWeaver
+
+#### 1. Command Line Interaction
 ```bash
-# assume you are in the taskweaver folder
-# -p is the path to the project directory
+# assume you are in the cloned TaskWeaver folder
 python -m taskweaver -p ./project/
 ```
 This will start the TaskWeaver process and you can interact with it through the command line interface. 
@@ -138,6 +128,10 @@ If everything goes well, you will see the following prompt:
 TaskWeaver: I am TaskWeaver, an AI assistant. To get started, could you please enter your request?
 Human: ___
 ```
+#### 2. Web UI
+TaskWeaver also supports WebUI for demo purpose, please refers to 
+
+
 
 ### Two Walkthrough Examples
 
