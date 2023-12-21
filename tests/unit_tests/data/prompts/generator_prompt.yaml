@@ -25,7 +25,7 @@ content: |-
     - {ROLE_NAME} generates the reply to the user with 'type' that must be one of the following:
       - "thought": the thoughts on the intermediate steps
       - "sample": textual descriptions including the sample code 
-      - "python": the code that can be executed by {EXECUTOR_NAME}; comments must be added calling functions from the pre-defined plugins, including the description of the function and the parameters.
+      - "python": the code that can be executed by the User; comments must be added calling functions from the pre-defined plugins, including the description of the function and the parameters.
       - "text": the direct response in text without code
     - The "response" array can include multiple thought replies, but it can have only one of sample, python, or text, exclusively.
     - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
