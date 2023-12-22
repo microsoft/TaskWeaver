@@ -195,7 +195,6 @@ class OpenAIService(CompletionService, EmbeddingService):
                 response: ChatMessageType = format_chat_message(
                     role=oai_response.role if oai_response.role is not None else "assistant",
                     message=oai_response.content if oai_response.content is not None else "",
-                    name="assistant",
                 )
                 if oai_response.tool_calls is not None:
                     response["role"] = "function"

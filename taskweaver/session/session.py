@@ -4,7 +4,7 @@ from typing import Dict
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreter import CodeInterpreterPluginOnly
+from taskweaver.code_interpreter import CodeInterpreter, CodeInterpreterPluginOnly
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
@@ -19,6 +19,7 @@ class AppSessionConfig(ModuleConfig):
 
         self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
+        self.plugin_only_mode = self._get_bool("plugin_only_mode", False)
 
 
 class Session:
@@ -47,8 +48,6 @@ class Session:
 
         self.session_var: Dict[str, str] = {}
 
-        # self.plugins = get_plugin_registry()
-
         self.planner_config = self.session_injector.get(PlannerConfig)
         self.planner = self.session_injector.get(Planner)
         self.code_executor = self.session_injector.create_object(
@@ -60,7 +59,10 @@ class Session:
             },
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
-        self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
+        if self.config.plugin_only_mode:
+            self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
+        else:
+            self.code_interpreter = self.session_injector.get(CodeInterpreter)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0

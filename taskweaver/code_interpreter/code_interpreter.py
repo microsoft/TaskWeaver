@@ -22,15 +22,10 @@ class CodeInterpreterConfig(ModuleConfig):
 
         # for verification
         self.code_verification_on = self._get_bool("code_verification_on", False)
-        self.plugin_only = self._get_bool("plugin_only", False)
         self.allowed_modules = self._get_list(
             "allowed_modules",
             ["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"],
         )
-
-        if self.plugin_only:
-            self.code_verification_on = True
-            self.allowed_modules = []
 
 
 def update_verification(
@@ -69,7 +64,6 @@ class CodeInterpreter(Role):
         self.generator = generator
         self.generator.configure_verification(
             code_verification_on=self.config.code_verification_on,
-            plugin_only=self.config.plugin_only,
             allowed_modules=self.config.allowed_modules,
         )
 
@@ -130,8 +124,8 @@ class CodeInterpreter(Role):
             code.content,
             [plugin.name for plugin in self.generator.get_plugin_pool()],
             self.config.code_verification_on,
-            self.config.plugin_only,
-            self.config.allowed_modules,
+            plugin_only=False,
+            allowed_modules=self.config.allowed_modules,
         )
 
         if code_verify_errors is None:

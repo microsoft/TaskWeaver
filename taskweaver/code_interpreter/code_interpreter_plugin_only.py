@@ -33,6 +33,7 @@ class CodeInterpreterPluginOnly(Role):
         self.logger = logger
         self.config = config
         self.retry_count = 0
+        self.return_id = 0
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
@@ -58,7 +59,7 @@ class CodeInterpreterPluginOnly(Role):
                 function_name = f["name"]
                 function_args = json.loads(f["arguments"])
                 function_call = (
-                    f"r{i}={function_name}("
+                    f"r{self.return_id + i}={function_name}("
                     + ", ".join(
                         [
                             f'{key}="{value}"' if isinstance(value, str) else f"{key}={value}"
@@ -68,25 +69,20 @@ class CodeInterpreterPluginOnly(Role):
                     + ")"
                 )
                 code.append(function_call)
-            code.append(f'{", ".join([f"r{i}" for i in range(len(functions))])}')
+            code.append(f'{", ".join([f"r{self.return_id + i}" for i in range(len(functions))])}')
+            self.return_id += len(functions)
 
             event_handler("code", "\n".join(code))
             exec_result = self.executor.execute_code(
                 exec_id=response.id,
                 code="\n".join(code),
             )
-            if exec_result.is_success:
-                response.message = self.executor.format_code_output(
-                    exec_result,
-                    with_code=True,
-                    use_local_uri=self.config.use_local_uri,
-                )
-                event_handler("CodeInterpreter-> Planner", response.message)
-            else:
-                response.message = self.executor.format_code_output(
-                    exec_result,
-                    with_code=True,
-                    use_local_uri=self.config.use_local_uri,
-                )
-                event_handler("CodeInterpreter-> Planner", response.message)
+
+            response.message = self.executor.format_code_output(
+                exec_result,
+                with_code=True,
+                use_local_uri=self.config.use_local_uri,
+            )
+            event_handler("CodeInterpreter-> Planner", response.message)
+
         return response
