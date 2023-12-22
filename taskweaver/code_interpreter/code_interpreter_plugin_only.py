@@ -33,7 +33,7 @@ class CodeInterpreterPluginOnly(Role):
         self.logger = logger
         self.config = config
         self.retry_count = 0
-        self.return_id = 0
+        self.return_index = 0
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
@@ -59,7 +59,7 @@ class CodeInterpreterPluginOnly(Role):
                 function_name = f["name"]
                 function_args = json.loads(f["arguments"])
                 function_call = (
-                    f"r{self.return_id + i}={function_name}("
+                    f"r{self.return_index + i}={function_name}("
                     + ", ".join(
                         [
                             f'{key}="{value}"' if isinstance(value, str) else f"{key}={value}"
@@ -69,8 +69,8 @@ class CodeInterpreterPluginOnly(Role):
                     + ")"
                 )
                 code.append(function_call)
-            code.append(f'{", ".join([f"r{self.return_id + i}" for i in range(len(functions))])}')
-            self.return_id += len(functions)
+            code.append(f'{", ".join([f"r{self.return_index + i}" for i in range(len(functions))])}')
+            self.return_index += len(functions)
 
             event_handler("code", "\n".join(code))
             exec_result = self.executor.execute_code(

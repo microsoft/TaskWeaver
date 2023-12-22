@@ -27,6 +27,8 @@ class CodeGeneratorPluginOnlyConfig(ModuleConfig):
             ),
         )
         self.prompt_compression = self._get_bool("prompt_compression", False)
+        assert self.prompt_compression is False, "Compression is not supported for plugin only mode."
+
         self.compression_prompt_path = self._get_path(
             "compression_prompt_path",
             os.path.join(
@@ -90,7 +92,7 @@ class CodeGeneratorPluginOnly(Role):
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
         # obtain the user query from the last round
-        prompt, tools = compose_prompt(
+        prompt, tools = _compose_prompt(
             system_instructions=self.instruction_template.format(
                 ROLE_NAME=self.role_name,
             ),
@@ -122,16 +124,18 @@ class CodeGeneratorPluginOnly(Role):
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
 
-def compose_prompt(system_instructions: str, rounds: List[Round], plugin_pool: List[PluginEntry]) -> Tuple[List, List]:
+def _compose_prompt(
+    system_instructions: str,
+    rounds: List[Round],
+    plugin_pool: List[PluginEntry],
+) -> Tuple[List, List]:
     functions = [plugin.format_function_calling() for plugin in plugin_pool]
     prompt = [format_chat_message(role="system", message=system_instructions)]
     for _round in rounds:
         for post in _round.post_list:
             if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
-                user_query = post.message
-                prompt.append(format_chat_message(role="user", message=user_query))
+                prompt.append(format_chat_message(role="user", message=post.message))
             elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
-                assistant_message = post.message
-                prompt.append(format_chat_message(role="assistant", message=assistant_message))
+                prompt.append(format_chat_message(role="assistant", message=post.message))
 
     return prompt, functions
