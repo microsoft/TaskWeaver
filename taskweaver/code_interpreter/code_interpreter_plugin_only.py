@@ -84,5 +84,8 @@ class CodeInterpreterPluginOnly(Role):
                 use_local_uri=self.config.use_local_uri,
             )
             event_handler("CodeInterpreter-> Planner", response.message)
+        else:
+            response.message = "No code is generated because no function is selected."
+            event_handler("CodeInterpreter-> Planner", response.message)
 
         return response
