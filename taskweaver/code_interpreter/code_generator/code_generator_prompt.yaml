@@ -58,4 +58,5 @@ requirements: |-
     - {ROLE_NAME} should not refer to any information from failed rounds, rounds that have not been executed, or previous Conversations.
     - {ROLE_NAME} put all the result variables in the last line of the code.
     - {ROLE_NAME} must not import the plugins and otherwise the code will be failed to execute.
+    - {ROLE_NAME} must try to directly import required modules without installing them, and only install the modules if the execution fails. 
     {CODE_GENERATION_REQUIREMENTS}

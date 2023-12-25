@@ -6,6 +6,7 @@ description: >-
   Search and compare prices from thousands of online shops. Only available in the US.
   This plugin only takes user requests when searching for merchandise.
   If not clear, confirm with the user if they want to search for merchandise from Klarna.
+  For example, result = klarna_search("laptop", 10, 1000, 2000).
 
 parameters:
   - name: query

@@ -3,7 +3,7 @@ enabled: true
 required: false
 plugin_only: true
 description: >-
-  Call this plugin to tell a joke.
+  Call this plugin to tell a joke. For example, result = tell_joke("en").
 
 parameters:
   - name: lan
