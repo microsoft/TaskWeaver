@@ -2,8 +2,10 @@ import os
 
 from injector import Injector
 
+from taskweaver.code_interpreter.code_generator.code_generator_plugin_only import _compose_prompt
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginModule
 
 
@@ -48,21 +50,21 @@ def test_compose_prompt():
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees the user wants generate a DataFrame.",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("python", code1))
-    post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
+    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
-            "execution_result",
+            AttachmentType.execution_result,
             "A dataframe `df` with 10 rows and 2 columns: 'DATE' and 'VALUE' has been generated.",
         ),
     )
@@ -86,20 +88,20 @@ def test_compose_prompt():
     )
     post4.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} understands the user wants to find the data range for the DataFrame.",
         ),
     )
     post4.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} will generate code to calculate the data range of the 'VALUE' column since it is the "
             "only numeric column.",
         ),
     )
     post4.add_attachment(
         Attachment.create(
-            "python",
+            AttachmentType.python,
             (
                 "min_value = df['VALUE'].min()\n"
                 "max_value = df['VALUE'].max()\n"
@@ -112,10 +114,10 @@ def test_compose_prompt():
             ),
         ),
     )
-    post4.add_attachment(Attachment.create("execution_status", "SUCCESS"))
+    post4.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post4.add_attachment(
         Attachment.create(
-            "execution_result",
+            AttachmentType.execution_result,
             "The minimum value in the 'VALUE' column is 0.05;The "
             "maximum value in the 'VALUE' column is 0.99;The "
             "data range for the 'VALUE' column is 0.94",
@@ -246,21 +248,21 @@ def test_compose_prompt_with_plugin():
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees the user wants generate a DataFrame.",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("python", code1))
-    post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
+    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
-            "execution_result",
+            AttachmentType.execution_result,
             "A dataframe `df` with 10 rows and 2 columns: 'DATE' and 'VALUE' has been generated.",
         ),
     )
@@ -292,95 +294,79 @@ def test_compose_prompt_with_plugin_only():
         config={
             "app_dir": os.path.dirname(os.path.abspath(__file__)),
             "llm.api_key": "test_key",  # pragma: allowlist secret
-            "code_generator.prompt_compression": True,
+            "code_generator.prompt_compression": False,
             "code_generator.prompt_file_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "data/prompts/generator_prompt.yaml",
+                "data/prompts/generator_plugin_only.yaml",
             ),
             "plugin.base_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/plugins",
             ),
-            "code_generator.example_base_path": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "data/examples/codeinterpreter_examples",
-            ),
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGenerator
+    from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
     from taskweaver.memory import Attachment, Memory, Post, Round
 
-    code_generator = app_injector.get(CodeGenerator)
+    code_generator = app_injector.get(CodeGeneratorPluginOnly)
 
-    code_generator.configure_verification(
-        code_verification_on=True,
-        plugin_only=True,
-        allowed_modules=[],
-    )
-    code_generator.configure_verification(code_verification_on=True, plugin_only=True)
-
-    code1 = (
-        "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
-        'descriptions = [("sample_code_description", "Sample code has been generated to get a dataframe `df` \n'
-        "with 10 rows and 2 columns: 'DATE' and 'VALUE'\")]"
-    )
+    code1 = "r0 = klarna_search('iphone')\n" "r0"
     post1 = Post.create(
-        message="create a dataframe",
+        message="find iphones on sale",
         send_from="Planner",
         send_to="CodeInterpreter",
         attachment_list=[],
     )
     post2 = Post.create(
-        message="A dataframe `df` with 10 rows and 2 columns: 'DATE' and 'VALUE' has been generated.",
+        message="The iphone 15 pro is on sale.",
         send_from="CodeInterpreter",
         send_to="Planner",
         attachment_list=[],
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
-            "{ROLE_NAME} sees the user wants generate a DataFrame.",
+            AttachmentType.thought,
+            "{ROLE_NAME} sees the user wants to find iphones on sale.",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
-            "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
+            AttachmentType.thought,
+            "{ROLE_NAME} can use the `klarna_search` function to find iphones on sale.",
         ),
     )
-    post2.add_attachment(Attachment.create("python", code1))
-    post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
+    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
-            "execution_result",
+            AttachmentType.execution_result,
             "A dataframe `df` with 10 rows and 2 columns: 'DATE' and 'VALUE' has been generated.",
         ),
     )
 
-    round1 = Round.create(user_query="hello", id="round-1")
+    round1 = Round.create(user_query="find iphones on sale", id="round-1")
     round1.add_post(post1)
     round1.add_post(post2)
 
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages = code_generator.compose_prompt(
+    messages, functions = _compose_prompt(
+        system_instructions=code_generator.instruction_template.format(
+            ROLE_NAME=code_generator.role_name,
+        ),
         rounds=memory.conversation.rounds,
-        plugins=code_generator.get_plugin_pool(),
+        plugin_pool=code_generator.plugin_pool,
     )
 
-    assert "read_csv" in messages[1]["content"]
-    assert "write_csv" in messages[1]["content"]
-    assert "This is the feedback" in messages[3]["content"]
-    assert "Execution" in messages[3]["content"]
-    assert "Verification" in messages[3]["content"]
-
-    assert "sql_pull_data" in messages[4]["content"]
-    assert "anomaly_detection" in messages[4]["content"]
-    assert "klarna_search" in messages[4]["content"]
-    assert "paper_summary" in messages[4]["content"]
+    assert len(functions) == 1
+    assert functions[0]["function"]["name"] == "klarna_search"
+    assert messages[1]["role"] == "user"
+    assert messages[1]["content"] == "find iphones on sale"
+    assert messages[2]["role"] == "assistant"
+    assert messages[2]["content"] == "The iphone 15 pro is on sale."
 
 
 def test_compose_prompt_with_not_plugin_only():
@@ -432,21 +418,21 @@ def test_compose_prompt_with_not_plugin_only():
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees the user wants generate a DataFrame.",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "thought",
+            AttachmentType.thought,
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("python", code1))
-    post2.add_attachment(Attachment.create("execution_status", "SUCCESS"))
+    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
-            "execution_result",
+            AttachmentType.execution_result,
             "A dataframe `df` with 10 rows and 2 columns: 'DATE' and 'VALUE' has been generated.",
         ),
     )
@@ -463,17 +449,11 @@ def test_compose_prompt_with_not_plugin_only():
         plugins=code_generator.get_plugin_pool(),
     )
 
-    assert "read_csv" not in messages[1]["content"]
-    assert "write_csv" not in messages[1]["content"]
-    assert "sql_pull_data" not in messages[1]["content"]
-    assert "anomaly_detection" not in messages[1]["content"]
-    assert "klarna_search" not in messages[1]["content"]
-    assert "paper_summary" not in messages[1]["content"]
-
-    assert "sql_pull_data" in messages[13]["content"]
-    assert "anomaly_detection" in messages[13]["content"]
-    assert "klarna_search" in messages[13]["content"]
-    assert "paper_summary" in messages[13]["content"]
+    assert len(code_generator.plugin_pool) == 4
+    assert "anomaly_detection" in messages[16]["content"]
+    assert "klarna_search" in messages[16]["content"]
+    assert "paper_summary" in messages[16]["content"]
+    assert "sql_pull_data" in messages[16]["content"]
 
 
 def test_code_correction_prompt():

@@ -1,1 +1,2 @@
 from .code_generator import CodeGenerator, CodeGeneratorConfig, format_code_revision_message
+from .code_generator_plugin_only import CodeGeneratorPluginOnly

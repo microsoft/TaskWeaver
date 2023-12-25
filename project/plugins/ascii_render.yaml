@@ -1,0 +1,20 @@
+name: ascii_render
+enabled: true
+required: true
+plugin_only: true
+description: >-
+  This plugin renders the input text into ASCII art form. The input should be a string and the output is also a string in ASCII art.
+  For example, result = ascii_render("Hello World!").
+
+parameters:
+  - name: text
+    type: str
+    required: true
+    description: >-
+      This is the input text to be rendered into ASCII art form.
+
+returns:
+  - name: result
+    type: str
+    description: >-
+      The rendered text in ASCII art.

@@ -80,7 +80,6 @@ class CodeGenerator(Role):
         self.examples = None
         self.code_verification_on: bool = False
         self.allowed_modules: List[str] = []
-        self.plugin_only: bool = False
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
@@ -98,10 +97,8 @@ class CodeGenerator(Role):
     def configure_verification(
         self,
         code_verification_on: bool,
-        plugin_only: bool,
         allowed_modules: Optional[List[str]] = None,
     ):
-        self.plugin_only = plugin_only
         self.allowed_modules = allowed_modules if allowed_modules is not None else []
         self.code_verification_on = code_verification_on
 
@@ -113,23 +110,13 @@ class CodeGenerator(Role):
         if not self.code_verification_on:
             return ""
 
-        if self.plugin_only:
-            requirements.append(
-                f"- {self.role_name} should only use the following plugins and"
-                + " Python built-in functions to complete the task: "
-                + ", ".join([f"{plugin.name}" for plugin in plugin_list]),
-            )
-            requirements.append(
-                f"- {self.role_name} cannot define new functions or plugins.",
-            )
-
         if len(self.allowed_modules) > 0:
             requirements.append(
                 f"- {self.role_name} can only import the following Python modules: "
                 + ", ".join([f"{module}" for module in self.allowed_modules]),
             )
 
-        if len(self.allowed_modules) == 0 and self.plugin_only:
+        if len(self.allowed_modules) == 0:
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
         return "\n".join(requirements)
 
@@ -141,7 +128,7 @@ class CodeGenerator(Role):
         chat_history = [format_chat_message(role="system", message=self.instruction)]
 
         if self.examples is None:
-            self.examples = self.load_examples(plugin_only=self.plugin_only)
+            self.examples = self.load_examples()
         for i, example in enumerate(self.examples):
             chat_history.extend(
                 self.compose_conversation(example.rounds, example.plugins, add_requirements=False),
@@ -366,12 +353,10 @@ class CodeGenerator(Role):
 
     def load_examples(
         self,
-        plugin_only: bool,
     ) -> List[Conversation]:
         if self.config.load_example:
             return load_examples(
                 folder=self.config.example_base_path,
-                plugin_only=plugin_only,
             )
         return []
 

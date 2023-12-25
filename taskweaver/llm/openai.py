@@ -148,6 +148,18 @@ class OpenAIService(CompletionService, EmbeddingService):
         try:
             if use_backup_engine:
                 engine = backup_engine
+
+            tools_kwargs = {}
+            if "tools" in kwargs and "tool_choice" in kwargs:
+                tools_kwargs["tools"] = kwargs["tools"]
+                tools_kwargs["tool_choice"] = kwargs["tool_choice"]
+            if "response_format" in kwargs:
+                response_format = kwargs["response_format"]
+            elif self.config.response_format == "json_object":
+                response_format = {"type": "json_object"}
+            else:
+                response_format = None
+
             res: Any = self.client.chat.completions.create(
                 model=engine,
                 messages=messages,  # type: ignore
@@ -159,9 +171,8 @@ class OpenAIService(CompletionService, EmbeddingService):
                 stop=stop,
                 stream=stream,
                 seed=seed,
-                response_format=(
-                    {"type": "json_object"} if self.config.response_format == "json_object" else None  # type: ignore
-                ),
+                response_format=response_format,
+                **tools_kwargs,
             )
             if stream:
                 role: Any = None
@@ -185,6 +196,15 @@ class OpenAIService(CompletionService, EmbeddingService):
                     role=oai_response.role if oai_response.role is not None else "assistant",
                     message=oai_response.content if oai_response.content is not None else "",
                 )
+                if oai_response.tool_calls is not None:
+                    response["role"] = "function"
+                    response["content"] = (
+                        "["
+                        + ",".join(
+                            [t.function.model_dump_json() for t in oai_response.tool_calls],
+                        )
+                        + "]"
+                    )
                 yield response
 
         except openai.APITimeoutError as e:

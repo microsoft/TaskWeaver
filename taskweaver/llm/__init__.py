@@ -99,6 +99,8 @@ class LLMApi(object):
         ):
             msg["role"] = msg_chunk["role"]
             msg["content"] += msg_chunk["content"]
+            if "name" in msg_chunk:
+                msg["name"] = msg_chunk["name"]
         return msg
 
     def chat_completion_stream(

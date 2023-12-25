@@ -1,5 +1,4 @@
 enabled: True
-plugin_only: False
 rounds:
   - user_query: read file /abc/def.txt
     state: finished

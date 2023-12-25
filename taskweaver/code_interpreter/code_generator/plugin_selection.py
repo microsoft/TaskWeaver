@@ -61,17 +61,21 @@ class PluginSelector:
         self,
         plugin_registry: PluginRegistry,
         llm_api: LLMApi,
+        plugin_only: bool = False,
     ):
-        self.plugin_registry = plugin_registry
+        if plugin_only:
+            self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
+        else:
+            self.available_plugins = plugin_registry.get_list()
         self.llm_api = llm_api
         self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
     def generate_plugin_embeddings(self):
         plugin_intro_text_list: List[str] = []
-        for p in self.plugin_registry.get_list():
+        for p in self.available_plugins:
             plugin_intro_text_list.append(p.name + ": " + p.spec.description)
         plugin_embeddings = self.llm_api.get_embedding_list(plugin_intro_text_list)
-        for i, p in enumerate(self.plugin_registry.get_list()):
+        for i, p in enumerate(self.available_plugins):
             self.plugin_embedding_dict[p.name] = plugin_embeddings[i]
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
@@ -79,10 +83,10 @@ class PluginSelector:
 
         similarities = []
 
-        if top_k >= len(self.plugin_registry.get_list()):
-            return self.plugin_registry.get_list()
+        if top_k >= len(self.available_plugins):
+            return self.available_plugins
 
-        for p in self.plugin_registry.get_list():
+        for p in self.available_plugins:
             similarity = cosine_similarity(
                 user_query_embedding.reshape(
                     1,

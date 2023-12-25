@@ -114,6 +114,7 @@ class PluginSpec:
 @dataclass
 class PluginEntry:
     name: str
+    plugin_only: bool
     impl: str
     spec: PluginSpec
     config: Dict[str, Any]
@@ -140,6 +141,7 @@ class PluginEntry:
                 config=content.get("configurations", {}),
                 required=content.get("required", False),
                 enabled=content.get("enabled", True),
+                plugin_only=content.get("plugin_only", False),
             )
         return None
 
@@ -155,6 +157,38 @@ class PluginEntry:
             "required": self.required,
             "enabled": self.enabled,
         }
+
+    def format_function_calling(self) -> Dict:
+        assert self.plugin_only is True, "Only `plugin_only` plugins can be called in this way."
+
+        def map_type(t: str) -> str:
+            if t.lower() == "string" or t.lower() == "str" or t.lower() == "text":
+                return "string"
+            if t.lower() == "integer" or t.lower() == "int":
+                return "integer"
+            if t.lower() == "float" or t.lower() == "double" or t.lower() == "number":
+                return "number"
+            if t.lower() == "boolean" or t.lower() == "bool":
+                return "boolean"
+            if t.lower() == "null" or t.lower() == "none":
+                return "null"
+            raise Exception(f"unknown type {t}")
+
+        function = {"type": "function", "function": {}}
+        required_params = []
+        function["function"]["name"] = self.name
+        function["function"]["description"] = self.spec.description
+        function["function"]["parameters"] = {"type": "object", "properties": {}}
+        for arg in self.spec.args:
+            function["function"]["parameters"]["properties"][arg.name] = {
+                "type": map_type(arg.type),
+                "description": arg.description,
+            }
+            if arg.required:
+                required_params.append(arg.name)
+        function["function"]["parameters"]["required"] = required_params
+
+        return function
 
 
 class PluginRegistry(ComponentRegistry[PluginEntry]):
