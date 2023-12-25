@@ -72,7 +72,6 @@ class CompletionService(abc.ABC):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
-        tools: Optional[List] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         """
