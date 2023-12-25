@@ -57,7 +57,7 @@ class CodeGeneratorPluginOnly(Role):
 
         self.post_translator = PostTranslator(logger)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
-        self.plugin_pool = plugin_registry.get_list()
+        self.plugin_pool = [p for p in plugin_registry.get_list() if p.plugin_only is True]
         self.instruction_template = self.prompt_data["content"]
 
         if self.config.enable_auto_plugin_selection:

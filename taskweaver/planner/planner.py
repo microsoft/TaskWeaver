@@ -68,11 +68,15 @@ class Planner(Role):
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor] = None,
+        plugin_only: bool = False,
     ):
         self.config = config
         self.logger = logger
         self.llm_api = llm_api
-        self.plugin_registry = plugin_registry
+        if plugin_only:
+            self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
+        else:
+            self.available_plugins = plugin_registry.get_list()
 
         self.planner_post_translator = PostTranslator(logger)
 
@@ -80,12 +84,12 @@ class Planner(Role):
 
         if self.config.use_example:
             self.examples = self.get_examples()
-        if len(self.plugin_registry.get_list()) == 0:
+        if len(self.available_plugins) == 0:
             self.logger.warning("No plugin is loaded for Planner.")
             self.plugin_description = "No plugin functions loaded."
         else:
             self.plugin_description = "\t" + "\n\t".join(
-                [f"- {plugin.name}: " + f"{plugin.spec.description}" for plugin in self.plugin_registry.get_list()],
+                [f"- {plugin.name}: " + f"{plugin.spec.description}" for plugin in self.available_plugins],
             )
         self.instruction_template = self.prompt_data["instruction_template"]
         self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(

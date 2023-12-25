@@ -1,5 +1,5 @@
 name: paper_summary
-enabled: false
+enabled: true
 required: false
 description: >-
   summarize_paper function iteratively summarizes a given paper page by page,

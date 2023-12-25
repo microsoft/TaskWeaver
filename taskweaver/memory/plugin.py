@@ -114,6 +114,7 @@ class PluginSpec:
 @dataclass
 class PluginEntry:
     name: str
+    plugin_only: bool
     impl: str
     spec: PluginSpec
     config: Dict[str, Any]
@@ -140,6 +141,7 @@ class PluginEntry:
                 config=content.get("configurations", {}),
                 required=content.get("required", False),
                 enabled=content.get("enabled", True),
+                plugin_only=content.get("plugin_only", False),
             )
         return None
 
@@ -157,6 +159,8 @@ class PluginEntry:
         }
 
     def format_function_calling(self) -> Dict:
+        assert self.plugin_only is True, "Only `plugin_only` plugins can be called in this way."
+
         def map_type(t: str) -> str:
             if t.lower() == "string" or t.lower() == "str" or t.lower() == "text":
                 return "string"

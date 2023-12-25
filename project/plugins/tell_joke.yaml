@@ -1,14 +1,15 @@
 name: tell_joke
 enabled: true
 required: false
+plugin_only: true
 description: >-
   Call this plugin to tell a joke.
 
 parameters:
-  - name: context
+  - name: lan
     type: str
-    required: true
-    description: the context of the joke.
+    required: false
+    description: the language of the joke. Default is English. It can be en, de, es, it, gl, eu.
 
 
 returns:

@@ -44,6 +44,7 @@ def test_function_formatting():
         config={"test_key": "test_val"},
         required=False,
         enabled=True,
+        plugin_only=True,
     )
     assert plugin.format_function_calling() == {
         "type": "function",

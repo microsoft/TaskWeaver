@@ -9,7 +9,7 @@ from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
-from taskweaver.planner.planner import Planner, PlannerConfig
+from taskweaver.planner.planner import Planner
 from taskweaver.workspace.workspace import Workspace
 
 
@@ -48,8 +48,12 @@ class Session:
 
         self.session_var: Dict[str, str] = {}
 
-        self.planner_config = self.session_injector.get(PlannerConfig)
-        self.planner = self.session_injector.get(Planner)
+        self.planner = self.session_injector.create_object(
+            Planner,
+            {
+                "plugin_only": self.config.plugin_only_mode,
+            },
+        )
         self.code_executor = self.session_injector.create_object(
             CodeExecutor,
             {
