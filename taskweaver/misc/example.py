@@ -11,7 +11,6 @@ def load_examples(folder: str) -> List[Conversation]:
 
     Args:
         folder: the folder path.
-        plugin_only: whether to load only the plugin examples.
     """
     example_file_list: List[str] = glob.glob(path.join(folder, "*.yaml"))
     example_conv_pool: List[Conversation] = []
