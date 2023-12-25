@@ -20,10 +20,11 @@
     "@easyops-cn/docusaurus-search-local": "^0.40.0",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
-    "docusaurus": "^1.14.7",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
-    "react-dom": "^18.0.0"
+    "react-dom": "^18.0.0",
+    "shell-quote": "^1.7.3",
+    "trim-newlines": "^3.0.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.0.1",
