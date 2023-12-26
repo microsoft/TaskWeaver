@@ -55,10 +55,14 @@ async def main(message: cl.Message):
             ]:
                 continue
             elif atta.type == AttachmentType.artifact_paths:
-                artifact_paths = [item.replace("file://", "") for item in atta.content]
+                artifact_paths = atta.content
             else:
                 elements.append(
-                    cl.Text(name=atta.type.value, content=atta.content.encode(), display="inline"),
+                    cl.Text(
+                        name=atta.type.value,
+                        content=atta.content.encode(),
+                        display="inline",
+                    ),
                 )
         elements.append(
             cl.Text(
@@ -79,6 +83,25 @@ async def main(message: cl.Message):
         if len(artifact_paths) > 0:
             elements = []
             for path in artifact_paths:
-                image = cl.Image(name=path, display="inline", path=path, size="large")
-                elements.append(image)
+                # if path is image, display it
+                if path.endswith((".png", ".jpg", ".jpeg", ".gif")):
+                    image = cl.Image(
+                        name=path,
+                        display="inline",
+                        path=path,
+                        size="large",
+                    )
+                    elements.append(image)
+                elif path.endswith(".csv"):
+                    import pandas as pd
+
+                    data = pd.read_csv(path)
+                    row_count = len(data)
+                    table = cl.Text(
+                        name=path,
+                        content=f"There are {row_count} in the data. The top {min(row_count, 5)} rows are:\n"
+                        + data.head(n=5).to_markdown(),
+                        display="inline",
+                    )
+                    elements.append(table)
         await cl.Message(content=f"{post.message}", elements=elements).send()

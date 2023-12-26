@@ -3,7 +3,7 @@ from typing import Literal, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_executor import CodeExecutor, get_artifact_uri
+from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGenerator, format_code_revision_message
 from taskweaver.code_interpreter.code_generator.code_generator import format_output_revision_message
 from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
@@ -188,14 +188,10 @@ class CodeInterpreter(Role):
             Attachment.create(
                 AttachmentType.artifact_paths,
                 [
-                    get_artifact_uri(
-                        execution_id=exec_result.execution_id,
-                        file=(
-                            a.file_name
-                            if os.path.isabs(a.file_name) or not self.config.use_local_uri
-                            else os.path.join(self.executor.execution_cwd, a.file_name)
-                        ),
-                        use_local_uri=self.config.use_local_uri,
+                    (
+                        a.file_name
+                        if os.path.isabs(a.file_name) or not self.config.use_local_uri
+                        else os.path.join(self.executor.execution_cwd, a.file_name)
                     )
                     for a in exec_result.artifact
                 ],
