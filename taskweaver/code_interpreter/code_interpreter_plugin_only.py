@@ -34,6 +34,7 @@ class CodeInterpreterPluginOnly(Role):
         self.executor = executor
         self.logger = logger
         self.config = config
+        self.event_emitter = event_emitter
         self.retry_count = 0
         self.return_index = 0
 
@@ -83,9 +84,9 @@ class CodeInterpreterPluginOnly(Role):
                 with_code=True,
                 use_local_uri=self.config.use_local_uri,
             )
-            event_handler("CodeInterpreter-> Planner", response.message)
+            self.event_emitter.emit_compat("CodeInterpreter-> Planner", response.message)
         else:
             response.message = "No code is generated because no function is selected."
-            event_handler("CodeInterpreter-> Planner", response.message)
+            self.event_emitter.emit_compat("CodeInterpreter-> Planner", response.message)
 
         return response
