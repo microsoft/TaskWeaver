@@ -13,6 +13,7 @@ from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, Rou
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -65,6 +66,7 @@ class Planner(Role):
         self,
         config: PlannerConfig,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor] = None,
@@ -72,6 +74,7 @@ class Planner(Role):
     ):
         self.config = config
         self.logger = logger
+        self.event_emitter = event_emitter
         self.llm_api = llm_api
         if plugin_only:
             self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
@@ -195,7 +198,6 @@ class Planner(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
@@ -222,11 +224,10 @@ class Planner(Role):
             response_post = self.planner_post_translator.raw_text_to_post(
                 llm_output=llm_output,
                 send_from="Planner",
-                event_handler=event_handler,
                 validation_func=check_post_validity,
             )
             if response_post.send_to == "User":
-                event_handler("final_reply_message", response_post.message)
+                self.event_emitter.emit_compat("final_reply_message", response_post.message)
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             response_post = Post.create(

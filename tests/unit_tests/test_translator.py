@@ -55,7 +55,6 @@ def test_parse_llm():
     response = translator.raw_text_to_post(
         llm_output=response_str1,
         send_from="CodeInterpreter",
-        event_handler=lambda t, v: print(f"{t}: {v}"),
         early_stop=early_stop,
     )
 
@@ -72,7 +71,6 @@ def test_parse_llm():
     response = translator.raw_text_to_post(
         llm_output=response_str1,
         send_from="CodeInterpreter",
-        event_handler=lambda t, v: print(f"{t}: {v}"),
     )
     assert len(response.attachment_list) == 6
     assert response.attachment_list[4].type == AttachmentType.execution_status

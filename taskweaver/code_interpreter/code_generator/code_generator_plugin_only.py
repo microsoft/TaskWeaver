@@ -10,6 +10,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -47,11 +48,13 @@ class CodeGeneratorPluginOnly(Role):
         config: CodeGeneratorPluginOnlyConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
         self.config = config
         self.logger = logger
         self.llm_api = llm_api
+        self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 
@@ -68,7 +71,7 @@ class CodeGeneratorPluginOnly(Role):
 
     def select_plugins_for_prompt(
         self,
-        user_query,
+        user_query: str,
     ) -> List[PluginEntry]:
         selected_plugins = self.plugin_selector.plugin_select(
             user_query,
@@ -80,7 +83,7 @@ class CodeGeneratorPluginOnly(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
-    def reply(self, memory: Memory, event_handler: callable) -> Post:
+    def reply(self, memory: Memory) -> Post:
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -110,11 +113,11 @@ class CodeGeneratorPluginOnly(Role):
         )
         if llm_response["role"] == "assistant":
             post.message = llm_response["content"]
-            event_handler("CodeInterpreter->Planner", post.message)
+            self.event_emitter.emit_compat("CodeInterpreter->Planner", post.message)
             return post
         elif llm_response["role"] == "function":
             post.add_attachment(Attachment.create(type=AttachmentType.function, content=llm_response["content"]))
-            event_handler("function", llm_response["content"])
+            self.event_emitter.emit_compat("function", llm_response["content"])
 
             if self.config.enable_auto_plugin_selection:
                 # here the code is in json format, not really code

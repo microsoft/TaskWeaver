@@ -10,6 +10,7 @@ from injector import inject
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.module.event_emitter import SessionEventEmitter
 
 
 class PostTranslator:
@@ -22,14 +23,15 @@ class PostTranslator:
     def __init__(
         self,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
     ):
         self.logger = logger
+        self.event_emitter = event_emitter
 
     def raw_text_to_post(
         self,
         llm_output: str,
         send_from: Literal["User", "Planner", "CodeInterpreter"],
-        event_handler: Callable[[str, str], None],
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
     ) -> Post:
@@ -37,7 +39,6 @@ class PostTranslator:
         Convert the raw text output of LLM to a Post object.
         :param llm_output_stream:
         :param send_from:
-        :param event_handler:
         :param early_stop:
         :return: Post
         """
@@ -61,7 +62,7 @@ class PostTranslator:
             else:
                 type = AttachmentType(type_str)
                 post.add_attachment(Attachment.create(type=type, content=value))
-            event_handler(type_str, value)
+            self.event_emitter.emit_compat(type_str, value)
             parsed_type = (
                 type
                 if type is not None
@@ -76,7 +77,7 @@ class PostTranslator:
                 break
 
         if post.send_to is not None:
-            event_handler(post.send_from + "->" + post.send_to, post.message)
+            self.event_emitter.emit_compat(post.send_from + "->" + post.send_to, post.message)
 
         if validation_func is not None:
             validation_func(post)

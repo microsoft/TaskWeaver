@@ -1,5 +1,14 @@
+import abc
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, List, Optional, ParamSpec, TypeVar, Union
+
+
+class EventScope(Enum):
+    session = "session"
+    round = "round"
+    post = "post"
 
 
 class SessionEventType(Enum):
@@ -23,33 +32,132 @@ class PostEventType(Enum):
 
 
 @dataclass
-class SessionEvent:
-    t: SessionEventType
+class TaskWeaverEvent:
+    scope: EventScope
+    t: Union[SessionEventType, RoundEventType, PostEventType]
     session_id: str
-    message: str
+    round_id: Optional[str]
+    post_id: Optional[str]
+    msg: str
+    extra: Any = None
 
 
-@dataclass
-class RoundEvent:
-    t: RoundEventType
-    session_id: str
-    round_id: str
-    message: str
+class SessionEventHandler(abc.ABC):
+    @abc.abstractmethod
+    def handle(self, event: TaskWeaverEvent):
+        pass
 
 
-@dataclass
-class PostEvent:
-    t: PostEventType
-    session_id: str
-    round_id: str
-    post_id: str
-    message: str
+class SessionEventHandlerBase(SessionEventHandler):
+    def handle(self, event: TaskWeaverEvent):
+        if event.scope == EventScope.session:
+            assert isinstance(event.t, SessionEventType)
+            session_event_type: SessionEventType = event.t
+            self.handle_session(
+                session_event_type,
+                event.msg,
+                event.extra,
+                event.session_id,
+            )
+        elif event.scope == EventScope.round:
+            assert isinstance(event.t, RoundEventType)
+            assert event.round_id is not None
+            round_event_type: RoundEventType = event.t
+            self.handle_round(
+                round_event_type,
+                event.msg,
+                event.extra,
+                event.round_id,
+                event.session_id,
+            )
+
+        elif event.scope == EventScope.post:
+            assert isinstance(event.t, PostEventType)
+            assert event.post_id is not None
+            assert event.round_id is not None
+            post_event_type: PostEventType = event.t
+            self.handle_post(
+                post_event_type,
+                event.msg,
+                event.extra,
+                event.post_id,
+                event.round_id,
+                event.session_id,
+            )
+
+    @abc.abstractmethod
+    def handle_session(
+        self,
+        type: SessionEventType,
+        msg: str,
+        extra: Any,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    @abc.abstractmethod
+    def handle_round(
+        self,
+        type: RoundEventType,
+        msg: str,
+        extra: Any,
+        round_id: str,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    @abc.abstractmethod
+    def handle_post(
+        self,
+        type: PostEventType,
+        msg: str,
+        extra: Any,
+        post_id: str,
+        round_id: str,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+
+_ParamType = ParamSpec("_ParamType")
+_ReturnType = TypeVar("_ReturnType")
 
 
 class SessionEventEmitter:
     def __init__(self):
-        self.handlers = []
+        self.handlers: List[SessionEventHandler] = []
 
-    def emit(self, event: SessionEvent):
+    def emit(self, event: TaskWeaverEvent):
         for handler in self.handlers:
-            handler(event)
+            handler.handle(event)
+
+    def emit_compat(self, t: str, msg: str, extra: Any = None):
+        self.emit(
+            TaskWeaverEvent(
+                EventScope.session,
+                SessionEventType(t),
+                "",
+                None,
+                None,
+                msg,
+                extra,
+            ),
+        )
+
+    def register(self, handler: SessionEventHandler):
+        self.handlers.append(handler)
+
+    def unregister(self, handler: SessionEventHandler):
+        self.handlers.remove(handler)
+
+    @contextmanager
+    def handle_events_ctx(self, handler: Optional[SessionEventHandler] = None):
+        if handler is None:
+            yield
+        else:
+            self.register(handler)
+            yield
+            self.unregister(handler)

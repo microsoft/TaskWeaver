@@ -11,6 +11,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Memory, Post
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import Role
 
 
@@ -57,6 +58,7 @@ class CodeInterpreter(Role):
         generator: CodeGenerator,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
         self.config = config
@@ -69,6 +71,7 @@ class CodeInterpreter(Role):
 
         self.executor = executor
         self.logger = logger
+        self.event_emitter = event_emitter
         self.retry_count = 0
 
         self.logger.info("CodeInterpreter initialized successfully.")
@@ -76,20 +79,18 @@ class CodeInterpreter(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler: callable,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: Optional[bool] = False,
+        use_back_up_engine: bool = False,
     ) -> Post:
         response: Post = self.generator.reply(
             memory,
-            event_handler,
             prompt_log_path,
             use_back_up_engine,
         )
         if response.message is not None:
             update_verification(response, "NONE", "No code verification is performed.")
             update_execution(response, "NONE", "No code is executed.")
-            event_handler("CodeInterpreter->Planner", response.message)
+            self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
             return response
 
         code = next((a for a in response.attachment_list if a.type == AttachmentType.python), None)
@@ -108,14 +109,14 @@ class CodeInterpreter(Role):
                     ),
                 )
                 response.send_to = "CodeInterpreter"
-                event_handler(
+                self.event_emitter.emit_compat(
                     "CodeInterpreter->CodeInterpreter",
                     error_message,
                 )
                 self.retry_count += 1
             else:
                 self.retry_count = 0
-                event_handler("CodeInterpreter->Planner", response.message)
+                self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
 
             return response
 
@@ -129,14 +130,14 @@ class CodeInterpreter(Role):
         )
 
         if code_verify_errors is None:
-            event_handler("verification", "NONE")
+            self.event_emitter.emit_compat("verification", "NONE")
             update_verification(response, "NONE", "No code verification is performed.")
         elif len(code_verify_errors) > 0:
             self.logger.info(
                 f"Code verification finished with {len(code_verify_errors)} errors.",
             )
             code_error = "\n".join(code_verify_errors)
-            event_handler("verification", f"INCORRECT: {code_error}")
+            self.event_emitter.emit_compat("verification", f"INCORRECT: {code_error}")
             update_verification(response, "INCORRECT", code_error)
             response.message = code_error
             if self.retry_count < self.config.max_retry_count:
@@ -147,20 +148,20 @@ class CodeInterpreter(Role):
                     ),
                 )
                 response.send_to = "CodeInterpreter"
-                event_handler(
+                self.event_emitter.emit_compat(
                     "CodeInterpreter->CodeInterpreter",
                     format_code_correction_message(),
                 )
                 self.retry_count += 1
             else:
                 self.retry_count = 0
-                event_handler("CodeInterpreter->Planner", response.message)
+                self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
 
             # add execution status and result
             update_execution(response, "NONE", "No code is executed due to code verification failure.")
             return response
         elif len(code_verify_errors) == 0:
-            event_handler("verification", "CORRECT")
+            self.event_emitter.emit_compat("verification", "CORRECT")
             update_verification(response, "CORRECT", "No error is found.")
 
         self.logger.info(f"Code to be executed: {code.content}")
@@ -169,14 +170,14 @@ class CodeInterpreter(Role):
             exec_id=response.id,
             code=code.content,
         )
-        event_handler("status", "SUCCESS" if exec_result.is_success else "FAILURE")
+        self.event_emitter.emit_compat("status", "SUCCESS" if exec_result.is_success else "FAILURE")
         code_output = self.executor.format_code_output(
             exec_result,
             with_code=False,
             use_local_uri=self.config.use_local_uri,
         )
 
-        event_handler("result", code_output)
+        self.event_emitter.emit_compat("result", code_output)
         update_execution(
             response,
             status="SUCCESS" if exec_result.is_success else "FAILURE",
@@ -206,7 +207,7 @@ class CodeInterpreter(Role):
 
         if exec_result.is_success or self.retry_count >= self.config.max_retry_count:
             self.retry_count = 0
-            event_handler("CodeInterpreter->Planner", response.message)
+            self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
         else:
             response.add_attachment(
                 Attachment.create(
@@ -215,7 +216,7 @@ class CodeInterpreter(Role):
                 ),
             )
             response.send_to = "CodeInterpreter"
-            event_handler(
+            self.event_emitter.emit_compat(
                 "CodeInterpreter->CodeInterpreter",
                 format_code_revision_message(),
             )

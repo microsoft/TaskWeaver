@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Dict
+from typing import Dict, Optional
 
 from injector import Injector, inject
 
@@ -9,6 +9,7 @@ from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
+from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.planner.planner import Planner
 from taskweaver.workspace.workspace import Workspace
 
@@ -67,6 +68,7 @@ class Session:
             self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
         else:
             self.code_interpreter = self.session_injector.get(CodeInterpreter)
+        self.event_emitter = self.session_injector.get(SessionEventEmitter)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
@@ -90,11 +92,10 @@ class Session:
     def update_session_var(self, variables: Dict[str, str]):
         self.session_var.update(variables)
 
-    def send_message(self, message: str, event_handler: callable = None) -> Round:
-        event_handler = event_handler or (lambda *args: None)
+    def _send_text_message(self, message: str) -> Round:
         chat_round = self.memory.create_round(user_query=message)
 
-        def _send_message(recipient: str, post: Post):
+        def _send_message(recipient: str, post: Post) -> Post:
             chat_round.add_post(post)
 
             use_back_up_engine = True if recipient == post.send_from else False
@@ -107,13 +108,11 @@ class Session:
                         self.workspace,
                         f"planner_prompt_log_{chat_round.id}_{post.id}.json",
                     ),
-                    event_handler=event_handler,
                     use_back_up_engine=use_back_up_engine,
                 )
             elif recipient == "CodeInterpreter":
                 reply_post = self.code_interpreter.reply(
                     self.memory,
-                    event_handler=event_handler,
                     prompt_log_path=os.path.join(
                         self.workspace,
                         f"code_generator_prompt_log_{chat_round.id}_{post.id}.json",
@@ -149,7 +148,7 @@ class Session:
                     send_to="CodeInterpreter",
                 )
                 post = _send_message("CodeInterpreter", post)
-                event_handler("final_reply_message", post.message)
+                self.event_emitter.emit_compat("final_reply_message", post.message)
 
             self.round_index += 1
             chat_round.change_round_state("finished")
@@ -161,7 +160,7 @@ class Session:
             self.logger.error(stack_trace_str)
             chat_round.change_round_state("failed")
             err_message = f"Cannot process your request due to Exception: {str(e)} \n {stack_trace_str}"
-            event_handler("error", err_message)
+            self.event_emitter.emit_compat("error", err_message)
 
         finally:
             self.internal_chat_num = 0
@@ -174,22 +173,31 @@ class Session:
             )
             return chat_round
 
+    def send_message(
+        self,
+        message: str,
+        event_handler: Optional[SessionEventHandler] = None,
+    ) -> Round:
+        with self.event_emitter.handle_events_ctx(event_handler):
+            return self._send_text_message(message)
+
     def send_file(
         self,
         file_name: str,
         file_path: str,
-        event_handler: callable,
+        event_handler: Optional[SessionEventHandler] = None,
     ) -> Round:
-        file_full_path = self.get_full_path(self.execution_cwd, file_name)
-        if os.path.exists(file_full_path):
-            os.remove(file_full_path)
-            message = f'reload file "{file_name}"'
-        else:
-            message = f'load file "{file_name}"'
+        with self.event_emitter.handle_events_ctx(event_handler):
+            file_full_path = self.get_full_path(self.execution_cwd, file_name)
+            if os.path.exists(file_full_path):
+                os.remove(file_full_path)
+                message = f'reload file "{file_name}"'
+            else:
+                message = f'load file "{file_name}"'
 
-        shutil.copyfile(file_path, file_full_path)
+            shutil.copyfile(file_path, file_full_path)
 
-        return self.send_message(message, event_handler=event_handler)
+            return self._send_text_message(message)
 
     def get_full_path(self, *file_path: str, in_execution_cwd: bool = False) -> str:
         return str(
@@ -201,7 +209,7 @@ class Session:
             ),
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, str]:
         return {
             "session_id": self.session_id,
             "workspace": self.workspace,

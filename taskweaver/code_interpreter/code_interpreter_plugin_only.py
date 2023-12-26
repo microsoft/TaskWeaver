@@ -9,6 +9,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import Role
 
 
@@ -26,6 +27,7 @@ class CodeInterpreterPluginOnly(Role):
         generator: CodeGeneratorPluginOnly,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
         self.generator = generator
@@ -40,13 +42,11 @@ class CodeInterpreterPluginOnly(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler: callable,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: Optional[bool] = False,
     ) -> Post:
         response: Post = self.generator.reply(
             memory,
-            event_handler,
         )
 
         if response.message is not None:
@@ -72,7 +72,7 @@ class CodeInterpreterPluginOnly(Role):
             code.append(f'{", ".join([f"r{self.return_index + i}" for i in range(len(functions))])}')
             self.return_index += len(functions)
 
-            event_handler("code", "\n".join(code))
+            self.event_emitter.emit_compat("code", "\n".join(code))
             exec_result = self.executor.execute_code(
                 exec_id=response.id,
                 code="\n".join(code),

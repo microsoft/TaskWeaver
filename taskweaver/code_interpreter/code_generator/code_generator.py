@@ -60,6 +60,7 @@ class CodeGenerator(Role):
         logger: TelemetryLogger,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
+        post_translator: PostTranslator,
     ):
         self.config = config
         self.logger = logger
@@ -67,7 +68,7 @@ class CodeGenerator(Role):
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger)
+        self.post_translator = post_translator
         self.prompt_data = read_yaml(self.config.prompt_file_path)
 
         self.instruction_template = self.prompt_data["content"]
@@ -289,7 +290,6 @@ class CodeGenerator(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler: callable,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
@@ -319,7 +319,6 @@ class CodeGenerator(Role):
                 use_backup_engine=use_back_up_engine,
             )["content"],
             send_from="CodeInterpreter",
-            event_handler=event_handler,
             early_stop=early_stop,
         )
         response.send_to = "Planner"

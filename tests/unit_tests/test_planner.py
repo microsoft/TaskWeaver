@@ -205,7 +205,6 @@ def test_skip_planning():
     response_post = planner.reply(
         memory,
         prompt_log_path=None,
-        event_handler=lambda *args: None,
         use_back_up_engine=False,
     )
 
