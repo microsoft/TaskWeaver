@@ -85,7 +85,6 @@ class SessionEventHandlerBase(SessionEventHandler):
                 event.session_id,
             )
 
-    @abc.abstractmethod
     def handle_session(
         self,
         type: SessionEventType,
@@ -96,7 +95,6 @@ class SessionEventHandlerBase(SessionEventHandler):
     ):
         pass
 
-    @abc.abstractmethod
     def handle_round(
         self,
         type: RoundEventType,
@@ -108,7 +106,6 @@ class SessionEventHandlerBase(SessionEventHandler):
     ):
         pass
 
-    @abc.abstractmethod
     def handle_post(
         self,
         type: PostEventType,
@@ -135,6 +132,7 @@ class SessionEventEmitter:
             handler.handle(event)
 
     def emit_compat(self, t: str, msg: str, extra: Any = None):
+        print(f"[{t}] {msg}")
         self.emit(
             TaskWeaverEvent(
                 EventScope.session,

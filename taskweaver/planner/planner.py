@@ -69,7 +69,8 @@ class Planner(Role):
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
-        round_compressor: Optional[RoundCompressor] = None,
+        round_compressor: Optional[RoundCompressor],
+        post_translator: PostTranslator,
         plugin_only: bool = False,
     ):
         self.config = config
@@ -81,7 +82,7 @@ class Planner(Role):
         else:
             self.available_plugins = plugin_registry.get_list()
 
-        self.planner_post_translator = PostTranslator(logger)
+        self.planner_post_translator = post_translator
 
         self.prompt_data = read_yaml(self.config.prompt_file_path)
 

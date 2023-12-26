@@ -1,11 +1,13 @@
 import threading
 import time
-from typing import List, Optional
+from textwrap import dedent
+from typing import Any, List, Optional, Tuple
 
 import click
 from colorama import ansi
 
 from taskweaver.app.app import TaskWeaverApp
+from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase, SessionEventType
 
 
 def error_message(message: str) -> None:
@@ -39,14 +41,16 @@ def thought_animate(message: str, type: str = " 🐙 ", frame: int = 0):
     )
 
 
-def user_input_message(prompt: str = "Human"):
+def user_input_message(prompt: str = "Human") -> str:
     import os
 
     import prompt_toolkit
     import prompt_toolkit.history
 
-    history = prompt_toolkit.history.FileHistory(os.path.expanduser("~/.taskweaver-history"))
-    session = prompt_toolkit.PromptSession(
+    history = prompt_toolkit.history.FileHistory(
+        os.path.expanduser("~/.taskweaver-history"),
+    )
+    session = prompt_toolkit.PromptSession[str](
         history=history,
         multiline=False,
         wrap_lines=True,
@@ -65,25 +69,78 @@ def user_input_message(prompt: str = "Human"):
     return user_input
 
 
-def chat_taskweaver(app_dir: Optional[str] = None):
-    app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
-    session = app.get_session()
+class TaskWeaverChatApp(SessionEventHandlerBase):
+    def __init__(self, app_dir: Optional[str] = None):
+        self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
+        self.session = self.app.get_session()
 
-    # prepare data file
-    assistant_message(
-        "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",
-    )
+    def run(self):
+        while True:
+            user_input = user_input_message()
+            self._process_user_input(user_input)
 
-    while True:
-        user_query = user_input_message()
-        if user_query == "":
+    def _process_user_input(self, user_input: str) -> None:
+        msg = user_input.strip()
+        if msg == "":
             error_message("Empty input, please try again")
-            continue
-        
+            return
+
+        if msg.startswith("/"):
+            lower_message = msg.lower()
+            if lower_message == "/exit":
+                exit(0)
+            if lower_message == "/help":
+                self._print_help()
+                return
+            if lower_message == "/clear":
+                click.clear()
+                return
+            if lower_message == "/reset":
+                self.session = self.app.get_session()
+                return
+            if lower_message.startswith("/load"):
+                file_to_load = msg[5:].strip()
+                self._load_file(file_to_load)
+                return
+            error_message(f"Unknown command '{msg}', please try again")
+
+        self._handle_message(msg)
+
+    def _print_help(self):
+        self._system_message(
+            dedent(
+                """
+                TaskWeaver Chat Console
+                -----------------------
+                /load <file>: load a file
+                /reset: reset the session
+                /clear: clear the console
+                /exit: exit the chat console
+                /help: print this help message
+                """,
+            ),
+        )
+
+    def _load_file(self, file_to_load: str):
+        self._system_message(f"Loading file '{file_to_load}'")
+
+    def _reset_session(self, first_session: bool = False):
+        if not first_session:
+            self._system_message("--- new session starts ---")
+            self.session = self.app.get_session()
+
+        assistant_message(
+            "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",
+        )
+
+    def _system_message(self, message: str):
+        click.secho(message, fg="gray")
+
+    def _handle_message(self, input_message: str):
         exit_event = threading.Event()
         lock = threading.Lock()
-        messages: List = []
-        response = []
+        messages: List[Tuple[str, str]] = []
+        response: List[str] = []
 
         def execution_thread():
             def event_handler(type: str, msg: str):
@@ -92,12 +149,11 @@ def chat_taskweaver(app_dir: Optional[str] = None):
 
             event_handler("stage", "starting")
             try:
-                response.append(
-                    session.send_message(
-                        user_query,
-                        event_handler=event_handler,
-                    ),
+                self.session.send_message(
+                    input_message,
+                    event_handler=self,
                 )
+                response.append("Finished")
                 exit_event.set()
             except Exception as e:
                 response.append("Error")
@@ -110,7 +166,7 @@ def chat_taskweaver(app_dir: Optional[str] = None):
             def clear_line():
                 print(ansi.clear_line(), end="\r")
 
-            def process_messages(stage):
+            def process_messages(stage: str):
                 if len(messages) == 0:
                     return stage
 
@@ -159,6 +215,43 @@ def chat_taskweaver(app_dir: Optional[str] = None):
             t_ui.join(1)
         except Exception:
             pass
+
+    def handle_session(
+        self,
+        type: SessionEventType,
+        msg: str,
+        extra: Any,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    def handle_round(
+        self,
+        type: RoundEventType,
+        msg: str,
+        extra: Any,
+        round_id: str,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    def handle_post(
+        self,
+        type: PostEventType,
+        msg: str,
+        extra: Any,
+        post_id: str,
+        round_id: str,
+        session_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+
+def chat_taskweaver(app_dir: Optional[str] = None):
+    TaskWeaverChatApp(app_dir=app_dir).run()
 
 
 if __name__ == "__main__":
