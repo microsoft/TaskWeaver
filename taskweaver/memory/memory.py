@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import os
 from typing import List
 
 from taskweaver.memory.conversation import Conversation
@@ -41,3 +43,7 @@ class Memory:
                     new_round.add_post(post)
             rounds_from_role.append(new_round)
         return rounds_from_role
+
+    def save_experience(self, exp_dir: str):
+        with open(os.path.join(exp_dir, f"exp_{self.session_id}.json"), "w") as f:
+            json.dump(self.conversation.to_dict(), f)
