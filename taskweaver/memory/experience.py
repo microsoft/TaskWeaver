@@ -18,6 +18,16 @@ class Experience:
     session_id: str
     embedding: Optional[List[float]] = None
     raw_experience_path: Optional[str] = None
+    embedding_model: Optional[str] = None
+
+    def to_dict(self):
+        return {
+            "experience_text": self.experience_text,
+            "session_id": self.session_id,
+            "embedding": self.embedding,
+            "raw_experience_path": self.raw_experience_path,
+            "embedding_model": self.embedding_model,
+        }
 
 
 class ExperienceConfig(ModuleConfig):
@@ -35,6 +45,7 @@ class ExperienceConfig(ModuleConfig):
                 "default_exp_prompt_template.yaml",
             ),
         )
+        self.flush_experience = self._get_bool("flush_experience", False)
 
 
 class ExperienceManger:
@@ -100,27 +111,31 @@ class ExperienceManger:
 
         for session_id in session_ids:
             exp_file_name = f"summarized_exp_{session_id}.json"
-            if exp_file_name in os.listdir(self.config.session_history_dir):
+            if not self.config.flush_experience and exp_file_name in os.listdir(self.config.session_history_dir):
                 continue
+
             summarized_experience = self.summarize_experience(session_id)
-            with open(os.path.join(self.config.session_history_dir, exp_file_name, "w")) as f:
-                json.dump({"experience": summarized_experience, "session_id": session_id}, f)
-            self.experience_list.append(
-                Experience(
-                    experience_text=summarized_experience,
-                    session_id=session_id,
-                    raw_experience_path=os.path.join(
-                        self.config.session_history_dir,
-                        f"raw_exp_{session_id}.json",
-                    ),
+            experience_obj = Experience(
+                experience_text=summarized_experience,
+                session_id=session_id,
+                raw_experience_path=os.path.join(
+                    self.config.session_history_dir,
+                    f"raw_exp_{session_id}.json",
                 ),
             )
+            self.experience_list.append(experience_obj)
         self.logger.info("Summarized experience created. Experience files number: {}".format(len(session_ids)))
 
         exp_embeddings = self.llm_api.get_embedding_list([exp.experience_text for exp in self.experience_list])
         for i, session_id in enumerate(session_ids):
             self.experience_list[i].embedding = exp_embeddings[i]
+            self.experience_list[i].embedding_model = self.llm_api.config.embedding_model
         self.logger.info("Summarized experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
+
+        for exp in self.experience_list:
+            with open(os.path.join(self.config.session_history_dir, f"exp_{exp.session_id}.json"), "w") as f:
+                json.dump(exp.to_dict(), f)
+        self.logger.info("Experience saved.")
 
     def retrieve_experience(self, user_query: str, threshold: float = 0.5):
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
@@ -128,6 +143,12 @@ class ExperienceManger:
         similarities = []
 
         for experience in self.experience_list:
+            if experience.embedding_model != self.llm_api.config.embedding_model:
+                raise ValueError(
+                    "The embedding model of the experience is not the same as the current one."
+                    "Please re-summarize the experience.",
+                )
+
             similarity = cosine_similarity(
                 user_query_embedding.reshape(
                     1,
@@ -146,3 +167,12 @@ class ExperienceManger:
         selected_experiences = [exp for sid, exp, sim in experience_rank if sim >= threshold]
 
         return selected_experiences
+
+    def delete_experience(self, session_id: str):
+        exp_file_name = f"exp_{session_id}.json"
+        if exp_file_name in os.listdir(self.config.session_history_dir):
+            os.remove(os.path.join(self.config.session_history_dir, exp_file_name))
+            os.remove(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.json"))
+            self.logger.info(f"Experience {exp_file_name} deleted.")
+        else:
+            self.logger.info(f"Experience {exp_file_name} not found.")
