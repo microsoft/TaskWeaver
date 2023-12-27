@@ -99,14 +99,16 @@ class Session:
 
     def send_message(self, message: str, event_handler: callable = None) -> Round:
         event_handler = event_handler or (lambda *args: None)
-        chat_round = self.memory.create_round(user_query=message)
 
         if message == "SAVE AS EXP":
             send_from = "Planner" if not self.config.code_interpreter_only else "CodeInterpreter"
-            chat_round.add_post(Post.create(message="Experience saving...", send_from=send_from, send_to="User"))
             self.memory.save_experience(exp_dir=self.config.experience_dir)
             event_handler("final_reply_message", "Experience saved.")
-            return chat_round
+            response_round = Round.create(user_query=message)
+            response_round.add_post(Post.create(message="Experience saved.", send_from=send_from, send_to="User"))
+            return response_round
+
+        chat_round = self.memory.create_round(user_query=message)
 
         def _send_message(recipient: str, post: Post):
             chat_round.add_post(post)
