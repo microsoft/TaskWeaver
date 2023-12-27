@@ -45,5 +45,5 @@ class Memory:
         return rounds_from_role
 
     def save_experience(self, exp_dir: str):
-        with open(os.path.join(exp_dir, f"exp_{self.session_id}.json"), "w") as f:
+        with open(os.path.join(exp_dir, f"raw_exp_{self.session_id}.json"), "w") as f:
             json.dump(self.conversation.to_dict(), f)

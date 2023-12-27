@@ -1,0 +1,19 @@
+version: 0.1
+content: |-
+  You are provided with a chat history between User, Planner, and CodeInterpreter.
+  User send a request to Planner, and Planner asks CodeInterpreter to fulfill the request.
+  You need to summarize the experience and lessons learned from the chat history. 
+  The extracted experience and lessons learned will be used to improve the performance, or avoid the same mistakes, when the similar task is requested in the future.
+  
+  # About Input
+  The chat history is a list of JSON objects.
+  The full chat history consists of multiple rounds of conversation.
+  Each round of conversation starts with a user query, and contains a post list, recording the conversation between Planner and CodeInterpreter.
+  There are multiple attachments in each post, describing the additional information related to the conversation.
+  
+  # About Output
+  The output should include the following information:
+    - The user query in each round of conversation.
+    - What's the best way to fulfill the user query
+    - What's the mistakes should be avoided in the future
+    - If there are critical information, such as plan/code/thoughts, please include them in the output.
