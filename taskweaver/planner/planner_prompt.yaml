@@ -126,3 +126,9 @@ code_interpreter_introduction : |-
   - CodeInterpreter returns the execution results, generated Python code, or error messages to the Planner.
   - CodeInterpreter is stateful and it remembers the execution results of the previous rounds.
   - The input of CodeInterpreter will be prefixed with "CodeInterpreter:" in the chat history.
+  
+
+experience_instruction: |-
+  # Experience And Lessons
+  Before starting planning, please refer to the following experiences and lessons learned from the previous tasks:
+  {experiences}

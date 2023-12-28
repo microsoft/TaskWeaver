@@ -17,3 +17,6 @@ content: |-
     - Best Practice: What's the best way to fulfill the user query? What additional information or guidance does Users provide to help the Planner and CodeInterpreter to fulfill the user query?
     - Mistakes to Avoid: What's the mistakes should be avoided in the future.
     - Critical Information: If there are critical information, such as plan/code/thoughts, please include them in the output.
+  
+  - DO NOT add the specific results of this conversation in the output because the experience and lessons learned should be generalized to other conversations.
+  - Generate only one experience from the given conversation.

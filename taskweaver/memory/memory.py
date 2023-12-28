@@ -47,3 +47,10 @@ class Memory:
     def save_experience(self, exp_dir: str):
         raw_exp_path = os.path.join(exp_dir, f"raw_exp_{self.session_id}.yaml")
         write_yaml(raw_exp_path, self.conversation.to_dict())
+
+    def from_yaml(self, session_id: str, path: str) -> Memory:
+        """Load the memory from a yaml file."""
+        conversation = Conversation.from_yaml(path)
+        self.conversation = conversation
+        self.session_id = session_id
+        return self

@@ -39,11 +39,11 @@ class ExperienceConfig(ModuleConfig):
             "session_history_dir",
             os.path.join(self.src.app_base_path, "experience"),
         )
-        self.default_exp_prompt_template_path = self._get_path(
-            "default_exp_prompt_template_path",
+        self.default_exp_prompt_path = self._get_path(
+            "default_exp_prompt_path",
             os.path.join(
                 os.path.dirname(__file__),
-                "default_exp_prompt_template.yaml",
+                "default_exp_prompt.yaml",
             ),
         )
         self.refresh_experience = self._get_bool("refresh_experience", False)
@@ -62,13 +62,13 @@ class ExperienceManger:
         self.llm_api = llm_api
         self.logger = logger
 
-        with open(self.config.default_exp_prompt_template_path, "r") as f:
+        with open(self.config.default_exp_prompt_path, "r") as f:
             self.default_prompt_template = f.read()
 
         self.experience_list: List[Experience] = []
 
     @staticmethod
-    def _preprocess_session_data(session_data: dict, target_role: Literal["Planner", "CodeInterpreter"]):
+    def _preprocess_conversation_data(conv_data: dict, target_role: Literal["Planner", "CodeInterpreter"]):
         def remove_id_fields(d):
             if isinstance(d, dict):
                 for key in list(d.keys()):
@@ -80,38 +80,48 @@ class ExperienceManger:
                 for item in d:
                     remove_id_fields(item)
 
-        session_data = session_data["rounds"]
-        remove_id_fields(session_data)
+        def select_role(conv_data, target_role):
+            for round_data in conv_data:
+                for idx, post in enumerate(round_data["post_list"]):
+                    if post["send_from"] != target_role and post["send_to"] != target_role:
+                        del round_data["post_list"][idx]
 
-        return session_data
+        conv_data = conv_data["rounds"]
+        remove_id_fields(conv_data)
+        select_role(conv_data, target_role)
+
+        return conv_data
 
     def summarize_experience(
         self,
         session_id: str,
-        prompt_template: Optional[str] = None,
+        prompt: Optional[str] = None,
         target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
     ):
         raw_exp_file_path = os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.yaml")
-        session_data = read_yaml(raw_exp_file_path)
-        session_data = self._preprocess_session_data(session_data, target_role)
+        conversation = read_yaml(raw_exp_file_path)
 
-        if prompt_template is None:
-            system_instruction = self.default_prompt_template
+        conversation = self._preprocess_conversation_data(conversation, target_role)
+
+        system_instruction = prompt if prompt else self.default_prompt_template
         prompt = [
             format_chat_message("system", system_instruction),
-            format_chat_message("user", json.dumps(session_data)),
+            format_chat_message("user", json.dumps(conversation)),
         ]
         summarized_experience = self.llm_api.chat_completion(prompt)["content"]
 
         return summarized_experience
 
-    def summarize_experience_in_batch(self):
+    def summarize_experience_in_batch(
+        self,
+        prompt: Optional[str] = None,
+        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
+    ):
         exp_files = os.listdir(self.config.session_history_dir)
         session_ids = [exp_file.split("_")[2].split(".")[0] for exp_file in exp_files if exp_file.startswith("raw_exp")]
 
         if len(session_ids) == 0:
-            self.logger.info("No experience file found.")
-            return
+            raise ValueError("No experience found.")
 
         for session_id in session_ids:
             exp_file_name = f"exp_{session_id}.yaml"
@@ -121,9 +131,10 @@ class ExperienceManger:
                 experience = read_yaml(exp_file_path)
                 experience_obj = Experience(**experience)
                 self.experience_list.append(experience_obj)
+                self.logger.info(f"Experience {exp_file_name} loaded.")
             else:
                 # otherwise, summarize the experience and save it
-                summarized_experience = self.summarize_experience(session_id)
+                summarized_experience = self.summarize_experience(session_id, prompt, target_role)
                 experience_obj = Experience(
                     experience_text=summarized_experience,
                     session_id=session_id,
@@ -133,7 +144,7 @@ class ExperienceManger:
                     ),
                 )
                 self.experience_list.append(experience_obj)
-        self.logger.info("Experience created. Experience files number: {}".format(len(session_ids)))
+                self.logger.info("Experience created. Experience files number: {}".format(len(session_ids)))
 
         exp_embeddings = self.llm_api.get_embedding_list([exp.experience_text for exp in self.experience_list])
         for i, session_id in enumerate(session_ids):

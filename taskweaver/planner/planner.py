@@ -11,7 +11,7 @@ from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.memory.experience import ExperienceManger
+from taskweaver.memory.experience import Experience, ExperienceManger
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -57,11 +57,11 @@ class PlannerConfig(ModuleConfig):
             self.dummy_plan = json.load(f)
 
         self.use_experience = self._get_bool("use_experience", False)
-        self.exp_prompt_template_path = self._get_path(
-            "planner_exp_prompt_template_path",
+        self.exp_prompt_path = self._get_path(
+            "exp_prompt_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "planner_exp_prompt_template.yaml",
+                "planner_exp_prompt.yaml",
             ),
         )
 
@@ -118,9 +118,12 @@ class Planner(Role):
         self.round_compressor = round_compressor
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        # self.experience_manager = experience_manager
-        # self.experience_prompt_template = read_yaml(self.config.exp_prompt_template_path)["content"]
-        # self.experience_manager.summarize_experience_in_batch()
+        self.experience_manager = experience_manager
+        self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
+        self.experience_manager.summarize_experience_in_batch(
+            prompt=self.experience_prompt_template,
+            target_role="Planner",
+        )
 
         self.logger.info("Planner initialized successfully")
 
@@ -181,7 +184,16 @@ class Planner(Role):
 
         return conversation
 
-    def compose_prompt(self, rounds: List[Round]) -> List[ChatMessageType]:
+    def compose_prompt(
+        self,
+        rounds: List[Round],
+        selected_experiences: Optional[List[Experience]] = None,
+    ) -> List[ChatMessageType]:
+        if selected_experiences is not None:
+            self.experience_instruction = self.prompt_data["experience_instruction"].format(
+                experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
+            )
+            self.instruction += "\n\n" + self.experience_instruction
         chat_history = [format_chat_message(role="system", message=self.instruction)]
 
         if self.config.use_example and len(self.examples) != 0:
@@ -216,7 +228,14 @@ class Planner(Role):
     ) -> Post:
         rounds = memory.get_role_rounds(role="Planner")
         assert len(rounds) != 0, "No chat rounds found for planner"
-        chat_history = self.compose_prompt(rounds)
+
+        user_query = rounds[-1].user_query
+        if self.config.use_experience and self.experience_manager is not None:
+            selected_experiences = self.experience_manager.retrieve_experience(user_query)
+        else:
+            selected_experiences = None
+
+        chat_history = self.compose_prompt(rounds, selected_experiences)
 
         def check_post_validity(post: Post):
             assert post.send_to is not None, "send_to field is None"
