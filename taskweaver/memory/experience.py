@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 from injector import inject
@@ -45,7 +45,8 @@ class ExperienceConfig(ModuleConfig):
                 "default_exp_prompt_template.yaml",
             ),
         )
-        self.flush_experience = self._get_bool("flush_experience", False)
+        self.refresh_experience = self._get_bool("refresh_experience", False)
+        self.retrieve_threshold = self._get_float("retrieve_threshold", 0.5)
 
 
 class ExperienceManger:
@@ -88,7 +89,7 @@ class ExperienceManger:
         session_id: str,
         prompt_template: Optional[str] = None,
     ):
-        with open(os.path.join(self.config.session_history_dir, f"exp_{session_id}.json"), "r") as f:
+        with open(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.json"), "r") as f:
             session_data = json.load(f)
         session_data = self._preprocess_session_data(session_data)
 
@@ -103,41 +104,47 @@ class ExperienceManger:
         return summarized_experience
 
     def summarize_experience_in_batch(self):
-        session_ids = os.listdir(self.config.session_history_dir)
+        exp_files = os.listdir(self.config.session_history_dir)
+        session_ids = [exp_file.split("_")[2].split(".")[0] for exp_file in exp_files if exp_file.startswith("raw_exp")]
 
         if len(session_ids) == 0:
             self.logger.info("No experience file found.")
             return
 
         for session_id in session_ids:
-            exp_file_name = f"summarized_exp_{session_id}.json"
-            if not self.config.flush_experience and exp_file_name in os.listdir(self.config.session_history_dir):
-                continue
-
-            summarized_experience = self.summarize_experience(session_id)
-            experience_obj = Experience(
-                experience_text=summarized_experience,
-                session_id=session_id,
-                raw_experience_path=os.path.join(
-                    self.config.session_history_dir,
-                    f"raw_exp_{session_id}.json",
-                ),
-            )
-            self.experience_list.append(experience_obj)
-        self.logger.info("Summarized experience created. Experience files number: {}".format(len(session_ids)))
+            exp_file_name = f"exp_{session_id}.json"
+            # if the experience file already exists, load it
+            if not self.config.refresh_experience and exp_file_name in os.listdir(self.config.session_history_dir):
+                with open(os.path.join(self.config.session_history_dir, exp_file_name), "r") as f:
+                    experience = json.load(f)
+                experience_obj = Experience(**experience)
+                self.experience_list.append(experience_obj)
+            else:
+                # otherwise, summarize the experience and save it
+                summarized_experience = self.summarize_experience(session_id)
+                experience_obj = Experience(
+                    experience_text=summarized_experience,
+                    session_id=session_id,
+                    raw_experience_path=os.path.join(
+                        self.config.session_history_dir,
+                        f"raw_exp_{session_id}.json",
+                    ),
+                )
+                self.experience_list.append(experience_obj)
+        self.logger.info("Experience created. Experience files number: {}".format(len(session_ids)))
 
         exp_embeddings = self.llm_api.get_embedding_list([exp.experience_text for exp in self.experience_list])
         for i, session_id in enumerate(session_ids):
             self.experience_list[i].embedding = exp_embeddings[i]
             self.experience_list[i].embedding_model = self.llm_api.config.embedding_model
-        self.logger.info("Summarized experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
+        self.logger.info("Experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
 
         for exp in self.experience_list:
             with open(os.path.join(self.config.session_history_dir, f"exp_{exp.session_id}.json"), "w") as f:
                 json.dump(exp.to_dict(), f)
-        self.logger.info("Experience saved.")
+        self.logger.info("Experience obj saved.")
 
-    def retrieve_experience(self, user_query: str, threshold: float = 0.5):
+    def retrieve_experience(self, user_query: str) -> List[Tuple[Experience, float]]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
 
         similarities = []
@@ -156,15 +163,15 @@ class ExperienceManger:
                 ),
                 np.array(experience.embedding).reshape(1, -1),
             )
-            similarities.append((experience.session_id, experience.experience_text, similarity))
+            similarities.append((experience, similarity))
 
         experience_rank = sorted(
             similarities,
-            key=lambda x: x[2],
+            key=lambda x: x[1],
             reverse=True,
         )
 
-        selected_experiences = [exp for sid, exp, sim in experience_rank if sim >= threshold]
+        selected_experiences = [(exp, sim) for exp, sim in experience_rank if sim >= self.config.retrieve_threshold]
 
         return selected_experiences
 

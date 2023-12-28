@@ -12,8 +12,8 @@ content: |-
   There are multiple attachments in each post, describing the additional information related to the conversation.
   
   # About Output
-  The output should include the following information:
-    - The user query in each round of conversation.
-    - What's the best way to fulfill the user query
-    - What's the mistakes should be avoided in the future
-    - If there are critical information, such as plan/code/thoughts, please include them in the output.
+  The output should be formatted as below:
+    - User Query: The user query/task/request for the given conversation.
+    - Best Practice: What's the best way to fulfill the user query? What additional information or guidance does Users provide to help the Planner and CodeInterpreter to fulfill the user query?
+    - Mistakes to Avoid: What's the mistakes should be avoided in the future.
+    - Critical Information: If there are critical information, such as plan/code/thoughts, please include them in the output.
