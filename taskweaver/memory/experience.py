@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import numpy as np
 from injector import inject
@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.logging import TelemetryLogger
+from taskweaver.utils import read_yaml, write_yaml
 
 
 @dataclass
@@ -46,7 +47,7 @@ class ExperienceConfig(ModuleConfig):
             ),
         )
         self.refresh_experience = self._get_bool("refresh_experience", False)
-        self.retrieve_threshold = self._get_float("retrieve_threshold", 0.5)
+        self.retrieve_threshold = self._get_float("retrieve_threshold", 0.2)
 
 
 class ExperienceManger:
@@ -67,7 +68,7 @@ class ExperienceManger:
         self.experience_list: List[Experience] = []
 
     @staticmethod
-    def _preprocess_session_data(session_data: dict) -> dict:
+    def _preprocess_session_data(session_data: dict, target_role: Literal["Planner", "CodeInterpreter"]):
         def remove_id_fields(d):
             if isinstance(d, dict):
                 for key in list(d.keys()):
@@ -88,10 +89,11 @@ class ExperienceManger:
         self,
         session_id: str,
         prompt_template: Optional[str] = None,
+        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
     ):
-        with open(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.json"), "r") as f:
-            session_data = json.load(f)
-        session_data = self._preprocess_session_data(session_data)
+        raw_exp_file_path = os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.yaml")
+        session_data = read_yaml(raw_exp_file_path)
+        session_data = self._preprocess_session_data(session_data, target_role)
 
         if prompt_template is None:
             system_instruction = self.default_prompt_template
@@ -112,11 +114,11 @@ class ExperienceManger:
             return
 
         for session_id in session_ids:
-            exp_file_name = f"exp_{session_id}.json"
+            exp_file_name = f"exp_{session_id}.yaml"
             # if the experience file already exists, load it
             if not self.config.refresh_experience and exp_file_name in os.listdir(self.config.session_history_dir):
-                with open(os.path.join(self.config.session_history_dir, exp_file_name), "r") as f:
-                    experience = json.load(f)
+                exp_file_path = os.path.join(self.config.session_history_dir, exp_file_name)
+                experience = read_yaml(exp_file_path)
                 experience_obj = Experience(**experience)
                 self.experience_list.append(experience_obj)
             else:
@@ -127,7 +129,7 @@ class ExperienceManger:
                     session_id=session_id,
                     raw_experience_path=os.path.join(
                         self.config.session_history_dir,
-                        f"raw_exp_{session_id}.json",
+                        f"raw_exp_{session_id}.yaml",
                     ),
                 )
                 self.experience_list.append(experience_obj)
@@ -140,8 +142,8 @@ class ExperienceManger:
         self.logger.info("Experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
 
         for exp in self.experience_list:
-            with open(os.path.join(self.config.session_history_dir, f"exp_{exp.session_id}.json"), "w") as f:
-                json.dump(exp.to_dict(), f)
+            experience_file_path = os.path.join(self.config.session_history_dir, f"exp_{exp.session_id}.yaml")
+            write_yaml(experience_file_path, exp.to_dict())
         self.logger.info("Experience obj saved.")
 
     def retrieve_experience(self, user_query: str) -> List[Tuple[Experience, float]]:
@@ -176,10 +178,10 @@ class ExperienceManger:
         return selected_experiences
 
     def delete_experience(self, session_id: str):
-        exp_file_name = f"exp_{session_id}.json"
+        exp_file_name = f"exp_{session_id}.yaml"
         if exp_file_name in os.listdir(self.config.session_history_dir):
             os.remove(os.path.join(self.config.session_history_dir, exp_file_name))
-            os.remove(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.json"))
+            os.remove(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.yaml"))
             self.logger.info(f"Experience {exp_file_name} deleted.")
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")

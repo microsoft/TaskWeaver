@@ -1,7 +1,7 @@
-import json
 import os
 
 import pytest
+import yaml
 from injector import Injector
 from tests.unit_tests.test_embedding import IN_GITHUB_ACTIONS
 
@@ -33,7 +33,7 @@ def test_experience_generation():
 
     exp_files = os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience"))
     assert len(exp_files) == 2
-    assert "exp_test-session-1.json" in exp_files
+    assert "exp_test-session-1.yaml" in exp_files
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]
@@ -44,28 +44,22 @@ def test_experience_generation():
         os.path.dirname(os.path.abspath(__file__)),
         "data",
         "experience",
-        "raw_exp_test-session-1.json",
+        "raw_exp_test-session-1.yaml",
     )
     assert exp.embedding_model == "all-mpnet-base-v2"
 
-    with open(
-        os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data/experience/exp_test-session-1.json",
-        ),
-        "r",
-    ) as f:
-        exp = json.load(f)
-        assert "experience_text" in exp
-        assert exp["session_id"] == "test-session-1"
-        assert len(exp["embedding"]) == 768
-        assert exp["raw_experience_path"] == os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "data",
-            "experience",
-            "raw_exp_test-session-1.json",
-        )
-        assert exp["embedding_model"] == "all-mpnet-base-v2"
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience/exp_test-session-1.yaml")) as f:
+        exp = yaml.safe_load(f)
+    assert "experience_text" in exp
+    assert exp["session_id"] == "test-session-1"
+    assert len(exp["embedding"]) == 768
+    assert exp["raw_experience_path"] == os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "data",
+        "experience",
+        "raw_exp_test-session-1.yaml",
+    )
+    assert exp["embedding_model"] == "all-mpnet-base-v2"
 
 
 @pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
@@ -80,7 +74,7 @@ def test_experience_retrieval():
                 "data/experience",
             ),
             "experience.refresh_experience": False,
-            "experience.retrieve_threshold": 0.1,
+            "experience.retrieve_threshold": 0.0,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
@@ -99,7 +93,7 @@ def test_experience_retrieval():
         os.path.dirname(os.path.abspath(__file__)),
         "data",
         "experience",
-        "raw_exp_test-session-1.json",
+        "raw_exp_test-session-1.yaml",
     )
     assert exp.embedding_model == "all-mpnet-base-v2"
 

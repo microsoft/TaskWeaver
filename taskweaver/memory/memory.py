@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import os
 from typing import List
 
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
 from taskweaver.memory.type_vars import RoleName
+from taskweaver.utils import write_yaml
 
 
 class Memory:
@@ -45,5 +45,5 @@ class Memory:
         return rounds_from_role
 
     def save_experience(self, exp_dir: str):
-        with open(os.path.join(exp_dir, f"raw_exp_{self.session_id}.json"), "w") as f:
-            json.dump(self.conversation.to_dict(), f)
+        raw_exp_path = os.path.join(exp_dir, f"raw_exp_{self.session_id}.yaml")
+        write_yaml(raw_exp_path, self.conversation.to_dict())

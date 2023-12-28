@@ -11,6 +11,7 @@ from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.memory.experience import ExperienceManger
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -55,6 +56,15 @@ class PlannerConfig(ModuleConfig):
         ) as f:
             self.dummy_plan = json.load(f)
 
+        self.use_experience = self._get_bool("use_experience", False)
+        self.exp_prompt_template_path = self._get_path(
+            "planner_exp_prompt_template_path",
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "planner_exp_prompt_template.yaml",
+            ),
+        )
+
 
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
@@ -69,6 +79,7 @@ class Planner(Role):
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor] = None,
         plugin_only: bool = False,
+        experience_manager: Optional[ExperienceManger] = None,
     ):
         self.config = config
         self.logger = logger
@@ -105,7 +116,11 @@ class Planner(Role):
         self.max_self_ask_num = 3
 
         self.round_compressor = round_compressor
-        self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
+        self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
+
+        # self.experience_manager = experience_manager
+        # self.experience_prompt_template = read_yaml(self.config.exp_prompt_template_path)["content"]
+        # self.experience_manager.summarize_experience_in_batch()
 
         self.logger.info("Planner initialized successfully")
 
@@ -180,7 +195,7 @@ class Planner(Role):
                 rounds,
                 rounds_formatter=lambda _rounds: str(self.compose_conversation_for_prompt(_rounds)),
                 use_back_up_engine=True,
-                prompt_template=self.compression_template,
+                prompt_template=self.compression_prompt_template,
             )
 
         chat_history.extend(
