@@ -118,12 +118,13 @@ class Planner(Role):
         self.round_compressor = round_compressor
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        self.experience_manager = experience_manager
-        self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
-        self.experience_manager.summarize_experience_in_batch(
-            prompt=self.experience_prompt_template,
-            target_role="Planner",
-        )
+        if self.config.use_experience:
+            self.experience_manager = experience_manager
+            self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
+            self.experience_manager.summarize_experience_in_batch(
+                prompt=self.experience_prompt_template,
+                target_role="All",
+            )
 
         self.logger.info("Planner initialized successfully")
 
@@ -189,7 +190,7 @@ class Planner(Role):
         rounds: List[Round],
         selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        if selected_experiences is not None:
+        if selected_experiences is not None and len(selected_experiences) != 0:
             self.experience_instruction = self.prompt_data["experience_instruction"].format(
                 experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
             )
@@ -230,7 +231,7 @@ class Planner(Role):
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
-        if self.config.use_experience and self.experience_manager is not None:
+        if self.config.use_experience:
             selected_experiences = self.experience_manager.retrieve_experience(user_query)
         else:
             selected_experiences = None

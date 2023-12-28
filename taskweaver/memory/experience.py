@@ -1,5 +1,6 @@
 import json
 import os
+import warnings
 from dataclasses import dataclass
 from typing import List, Literal, Optional, Tuple
 
@@ -35,8 +36,8 @@ class ExperienceConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("experience")
 
-        self.session_history_dir = self._get_path(
-            "session_history_dir",
+        self.experience_dir = self._get_path(
+            "experience_dir",
             os.path.join(self.src.app_base_path, "experience"),
         )
         self.default_exp_prompt_path = self._get_path(
@@ -62,8 +63,7 @@ class ExperienceManger:
         self.llm_api = llm_api
         self.logger = logger
 
-        with open(self.config.default_exp_prompt_path, "r") as f:
-            self.default_prompt_template = f.read()
+        self.default_prompt_template = read_yaml(self.config.default_exp_prompt_path)["content"]
 
         self.experience_list: List[Experience] = []
 
@@ -81,6 +81,8 @@ class ExperienceManger:
                     remove_id_fields(item)
 
         def select_role(conv_data, target_role):
+            if target_role == "All":
+                return
             for round_data in conv_data:
                 for idx, post in enumerate(round_data["post_list"]):
                     if post["send_from"] != target_role and post["send_to"] != target_role:
@@ -96,9 +98,9 @@ class ExperienceManger:
         self,
         session_id: str,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
+        target_role: Literal["Planner", "CodeInterpreter", "All"] = "Planner",
     ):
-        raw_exp_file_path = os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.yaml")
+        raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{session_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
 
         conversation = self._preprocess_conversation_data(conversation, target_role)
@@ -115,19 +117,20 @@ class ExperienceManger:
     def summarize_experience_in_batch(
         self,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
+        target_role: Literal["Planner", "CodeInterpreter", "All"] = "Planner",
     ):
-        exp_files = os.listdir(self.config.session_history_dir)
+        exp_files = os.listdir(self.config.experience_dir)
         session_ids = [exp_file.split("_")[2].split(".")[0] for exp_file in exp_files if exp_file.startswith("raw_exp")]
 
         if len(session_ids) == 0:
-            raise ValueError("No experience found.")
+            warnings.warn("No experience found. Please type SAVE AS EXP in the chat window to save experience.")
+            return
 
         for session_id in session_ids:
             exp_file_name = f"exp_{session_id}.yaml"
             # if the experience file already exists, load it
-            if not self.config.refresh_experience and exp_file_name in os.listdir(self.config.session_history_dir):
-                exp_file_path = os.path.join(self.config.session_history_dir, exp_file_name)
+            if not self.config.refresh_experience and exp_file_name in os.listdir(self.config.experience_dir):
+                exp_file_path = os.path.join(self.config.experience_dir, exp_file_name)
                 experience = read_yaml(exp_file_path)
                 experience_obj = Experience(**experience)
                 self.experience_list.append(experience_obj)
@@ -139,7 +142,7 @@ class ExperienceManger:
                     experience_text=summarized_experience,
                     session_id=session_id,
                     raw_experience_path=os.path.join(
-                        self.config.session_history_dir,
+                        self.config.experience_dir,
                         f"raw_exp_{session_id}.yaml",
                     ),
                 )
@@ -153,7 +156,7 @@ class ExperienceManger:
         self.logger.info("Experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
 
         for exp in self.experience_list:
-            experience_file_path = os.path.join(self.config.session_history_dir, f"exp_{exp.session_id}.yaml")
+            experience_file_path = os.path.join(self.config.experience_dir, f"exp_{exp.session_id}.yaml")
             write_yaml(experience_file_path, exp.to_dict())
         self.logger.info("Experience obj saved.")
 
@@ -185,14 +188,15 @@ class ExperienceManger:
         )
 
         selected_experiences = [(exp, sim) for exp, sim in experience_rank if sim >= self.config.retrieve_threshold]
-
+        self.logger.info(f"Retrieved {len(selected_experiences)} experiences.")
+        self.logger.info(f"Retrieved experiences: {[exp.session_id for exp, sim in selected_experiences]}")
         return selected_experiences
 
     def delete_experience(self, session_id: str):
         exp_file_name = f"exp_{session_id}.yaml"
-        if exp_file_name in os.listdir(self.config.session_history_dir):
-            os.remove(os.path.join(self.config.session_history_dir, exp_file_name))
-            os.remove(os.path.join(self.config.session_history_dir, f"raw_exp_{session_id}.yaml"))
+        if exp_file_name in os.listdir(self.config.experience_dir):
+            os.remove(os.path.join(self.config.experience_dir, exp_file_name))
+            os.remove(os.path.join(self.config.experience_dir, f"raw_exp_{session_id}.yaml"))
             self.logger.info(f"Experience {exp_file_name} deleted.")
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")

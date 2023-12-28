@@ -19,7 +19,7 @@ def test_experience_generation():
             # please refer to the https://microsoft.github.io/TaskWeaver/docs/llms
             "llm.embedding_api_type": "sentence_transformer",
             "llm.embedding_model": "all-mpnet-base-v2",
-            "experience.session_history_dir": os.path.join(
+            "experience.experience_dir": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/experience",
             ),
@@ -69,7 +69,7 @@ def test_experience_retrieval():
         config={
             "llm.embedding_api_type": "sentence_transformer",
             "llm.embedding_model": "all-mpnet-base-v2",
-            "experience.session_history_dir": os.path.join(
+            "experience.experience_dir": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "data/experience",
             ),
