@@ -2,7 +2,7 @@ import abc
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, List, Optional, ParamSpec, TypeVar, Union
+from typing import Any, List, Optional, Union
 
 
 class EventScope(Enum):
@@ -14,14 +14,14 @@ class EventScope(Enum):
 class SessionEventType(Enum):
     session_start = "session_start"
     session_end = "session_end"
-    session_round_update = "session_round_update"
+    session_new_round = "session_new_round"
 
 
 class RoundEventType(Enum):
     round_start = "round_start"
     round_end = "round_end"
     round_error = "round_error"
-    round_post_update = "round_post_update"
+    round_new_post = "round_new_post"
 
 
 class PostEventType(Enum):
@@ -35,7 +35,6 @@ class PostEventType(Enum):
 class TaskWeaverEvent:
     scope: EventScope
     t: Union[SessionEventType, RoundEventType, PostEventType]
-    session_id: str
     round_id: Optional[str]
     post_id: Optional[str]
     msg: str
@@ -57,7 +56,6 @@ class SessionEventHandlerBase(SessionEventHandler):
                 session_event_type,
                 event.msg,
                 event.extra,
-                event.session_id,
             )
         elif event.scope == EventScope.round:
             assert isinstance(event.t, RoundEventType)
@@ -68,7 +66,6 @@ class SessionEventHandlerBase(SessionEventHandler):
                 event.msg,
                 event.extra,
                 event.round_id,
-                event.session_id,
             )
 
         elif event.scope == EventScope.post:
@@ -82,7 +79,6 @@ class SessionEventHandlerBase(SessionEventHandler):
                 event.extra,
                 event.post_id,
                 event.round_id,
-                event.session_id,
             )
 
     def handle_session(
@@ -90,7 +86,6 @@ class SessionEventHandlerBase(SessionEventHandler):
         type: SessionEventType,
         msg: str,
         extra: Any,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
@@ -101,7 +96,6 @@ class SessionEventHandlerBase(SessionEventHandler):
         msg: str,
         extra: Any,
         round_id: str,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
@@ -113,14 +107,9 @@ class SessionEventHandlerBase(SessionEventHandler):
         extra: Any,
         post_id: str,
         round_id: str,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
-
-
-_ParamType = ParamSpec("_ParamType")
-_ReturnType = TypeVar("_ReturnType")
 
 
 class SessionEventEmitter:
@@ -137,7 +126,6 @@ class SessionEventEmitter:
             TaskWeaverEvent(
                 EventScope.session,
                 SessionEventType(t),
-                "",
                 None,
                 None,
                 msg,
