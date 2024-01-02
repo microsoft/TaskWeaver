@@ -11,7 +11,7 @@ from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.memory.experience import Experience, ExperienceManger
+from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.role import PostTranslator, Role
@@ -79,7 +79,7 @@ class Planner(Role):
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor] = None,
         plugin_only: bool = False,
-        experience_manager: Optional[ExperienceManger] = None,
+        experience_manager: Optional[ExperienceGenerator] = None,
     ):
         self.config = config
         self.logger = logger

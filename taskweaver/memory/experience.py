@@ -11,6 +11,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.logging import TelemetryLogger
+from taskweaver.session.session import SAVE_EXP_MESSAGE
 from taskweaver.utils import read_yaml, write_yaml
 
 
@@ -47,11 +48,10 @@ class ExperienceConfig(ModuleConfig):
                 "default_exp_prompt.yaml",
             ),
         )
-        self.refresh_experience = self._get_bool("refresh_experience", False)
         self.retrieve_threshold = self._get_float("retrieve_threshold", 0.2)
 
 
-class ExperienceManger:
+class ExperienceGenerator:
     @inject
     def __init__(
         self,
@@ -118,18 +118,25 @@ class ExperienceManger:
         self,
         prompt: Optional[str] = None,
         target_role: Literal["Planner", "CodeInterpreter", "All"] = "Planner",
+        refresh: bool = False,
     ):
         exp_files = os.listdir(self.config.experience_dir)
         session_ids = [exp_file.split("_")[2].split(".")[0] for exp_file in exp_files if exp_file.startswith("raw_exp")]
 
         if len(session_ids) == 0:
-            warnings.warn("No experience found. Please type SAVE AS EXP in the chat window to save experience.")
+            warnings.warn(f"No experience found. Please type {SAVE_EXP_MESSAGE} in the chat window to save experience.")
             return
 
-        for session_id in session_ids:
+        if refresh:
+            self.experience_list = []
+            for session_id in session_ids:
+                self.delete_experience(session_id)
+
+        to_be_embedded = []
+        for idx, session_id in enumerate(session_ids):
             exp_file_name = f"exp_{session_id}.yaml"
             # if the experience file already exists, load it
-            if not self.config.refresh_experience and exp_file_name in os.listdir(self.config.experience_dir):
+            if exp_file_name in os.listdir(self.config.experience_dir):
                 exp_file_path = os.path.join(self.config.experience_dir, exp_file_name)
                 experience = read_yaml(exp_file_path)
                 experience_obj = Experience(**experience)
@@ -147,13 +154,18 @@ class ExperienceManger:
                     ),
                 )
                 self.experience_list.append(experience_obj)
+                to_be_embedded.append(idx)
                 self.logger.info("Experience created. Experience files number: {}".format(len(session_ids)))
 
-        exp_embeddings = self.llm_api.get_embedding_list([exp.experience_text for exp in self.experience_list])
-        for i, session_id in enumerate(session_ids):
-            self.experience_list[i].embedding = exp_embeddings[i]
-            self.experience_list[i].embedding_model = self.llm_api.embedding_service.config.embedding_model
-        self.logger.info("Experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
+        if len(to_be_embedded) == 0:
+            return
+        else:
+            exp_embeddings = self.llm_api.get_embedding_list(
+                [exp.experience_text for i, exp in enumerate(self.experience_list) if i in to_be_embedded],
+            )
+            for i, idx in enumerate(to_be_embedded):
+                self.experience_list[idx].embedding = exp_embeddings[i]
+                self.experience_list[idx].embedding_model = self.llm_api.embedding_service.config.embedding_model
 
         for exp in self.experience_list:
             experience_file_path = os.path.join(self.config.experience_dir, f"exp_{exp.session_id}.yaml")
@@ -196,7 +208,14 @@ class ExperienceManger:
         exp_file_name = f"exp_{session_id}.yaml"
         if exp_file_name in os.listdir(self.config.experience_dir):
             os.remove(os.path.join(self.config.experience_dir, exp_file_name))
-            os.remove(os.path.join(self.config.experience_dir, f"raw_exp_{session_id}.yaml"))
             self.logger.info(f"Experience {exp_file_name} deleted.")
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")
+
+    def delete_raw_experience(self, session_id: str):
+        exp_file_name = f"raw_exp_{session_id}.yaml"
+        if exp_file_name in os.listdir(self.config.experience_dir):
+            os.remove(os.path.join(self.config.experience_dir, exp_file_name))
+            self.logger.info(f"Raw Experience {exp_file_name} deleted.")
+        else:
+            self.logger.info(f"Raw Experience {exp_file_name} not found.")
