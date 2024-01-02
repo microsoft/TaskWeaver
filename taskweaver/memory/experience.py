@@ -166,7 +166,7 @@ class ExperienceManger:
         similarities = []
 
         for experience in self.experience_list:
-            if experience.embedding_model != self.llm_api.config.embedding_model:
+            if experience.embedding_model != self.llm_api.embedding_service.config.embedding_model:
                 raise ValueError(
                     "The embedding model of the experience is not the same as the current one."
                     "Please re-summarize the experience.",

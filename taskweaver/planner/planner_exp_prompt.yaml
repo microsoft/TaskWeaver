@@ -12,10 +12,15 @@ content: |-
   There are multiple attachments in each post, describing the additional information related to the conversation.
   
   # About Output
-  The output should be formatted as below:
+  You should answer the following questions and format the answers in the output.
     - User Query: The user query/task/request for the given conversation.
-    - Best Practice: How does Planner make the correct and clear plan? What additional information or guidance does Users provide to help the Planner make the correct and clear plan? How does Planner instruct CodeInterpreter to execute the plan?
-    - Mistakes to Avoid: What's the mistakes should be avoided in the future planning? Is there any additional information or guidance that should be provided by Planner to make CodeInterpreter generate the correct code in one time?
+    - Best Practice: 
+      - How should Planner make a plan to finish the User query/task/request correctly, bypassing the mistakes made by Planner/CodeInterpreter in the chat history?
+      - What additional information or guidance did User provide to help the Planner make the correct and clear plan? 
+      - How should Planner instruct CodeInterpreter to execute the plan, bypassing the mistakes made by CodeInterpreter in the chat history?
+    - Mistakes to Avoid: 
+      - What's the mistakes should be avoided in the future planning? 
+      - Is there any additional information or guidance that should be provided by Planner to make CodeInterpreter generate the correct code in one time?
     - Critical Information: If there are critical information for planning, please include them in the output.
   
   - DO NOT add the results of this conversation in the output.
