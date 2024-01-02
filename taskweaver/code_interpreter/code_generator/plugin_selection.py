@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 from injector import inject
@@ -6,6 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.llm import LLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
+from taskweaver.utils import write_yaml
 
 
 class SelectedPluginPool:
@@ -70,13 +71,34 @@ class PluginSelector:
         self.llm_api = llm_api
         self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
-    def generate_plugin_embeddings(self):
-        plugin_intro_text_list: List[str] = []
-        for p in self.available_plugins:
-            plugin_intro_text_list.append(p.name + ": " + p.spec.description)
-        plugin_embeddings = self.llm_api.get_embedding_list(plugin_intro_text_list)
-        for i, p in enumerate(self.available_plugins):
-            self.plugin_embedding_dict[p.name] = plugin_embeddings[i]
+    def generate_plugin_embeddings(self, refresh: bool = False):
+        if refresh:
+            self.plugin_embedding_dict = {}
+            for p in self.available_plugins:
+                p.spec.embedding = []
+
+        plugin_to_embedded: List[Tuple[int, str]] = []
+        for idx, p in enumerate(self.available_plugins):
+            if len(p.spec.embedding) > 0:
+                if p.spec.embedding_model != self.llm_api.embedding_service.config.embedding_model:
+                    raise Exception(
+                        f"Plugin {p.name} is using embedding model {p.spec.embedding_model}, "
+                        f"which is different from the one used by current session"
+                        f" ({self.llm_api.embedding_service.config.embedding_model}). "
+                        f"Please use the same embedding model or refresh the plugin embedding.",
+                    )
+                else:
+                    self.plugin_embedding_dict[p.name] = p.spec.embedding
+            else:
+                plugin_to_embedded.append((idx, p.name + ": " + p.spec.description))
+
+        plugin_embeddings = self.llm_api.get_embedding_list([t for _, t in plugin_to_embedded])
+        for i, embedding in enumerate(plugin_embeddings):
+            p = self.available_plugins[plugin_to_embedded[i][0]]
+            self.plugin_embedding_dict[p.name] = embedding
+            p.spec.embedding = embedding
+            p.spec.embedding_model = self.llm_api.embedding_service.config.embedding_model
+            write_yaml(p.spec.path, p.spec.to_dict())
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))

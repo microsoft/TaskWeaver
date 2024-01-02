@@ -41,6 +41,14 @@ class PluginParameter:
 
         return "\n".join(lines)
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "type": self.type,
+            "required": self.required,
+            "description": self.description,
+        }
+
 
 @dataclass
 class PluginSpec:
@@ -51,16 +59,31 @@ class PluginSpec:
     args: List[PluginParameter] = field(default_factory=list)
     returns: List[PluginParameter] = field(default_factory=list)
     embedding: List[float] = field(default_factory=list)
+    embedding_model: Optional[str] = None
+    path: Optional[str] = None
 
     @staticmethod
-    def from_dict(d: Dict[str, Any]):
+    def from_dict(d: Dict[str, Any], path: str):
         return PluginSpec(
             name=d["name"],
             description=d["description"],
             args=[PluginParameter.from_dict(p) for p in d["parameters"]],
             returns=[PluginParameter.from_dict(p) for p in d["returns"]],
-            embedding=[],
+            embedding=d["embedding"] if "embedding" in d else [],
+            embedding_model=d["embedding_model"] if "embedding_model" in d else None,
+            path=path,
         )
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": [p.to_dict() for p in self.args],
+            "returns": [p.to_dict() for p in self.returns],
+            "embedding": self.embedding,
+            "embedding_model": self.embedding_model,
+            "path": self.path,
+        }
 
     def format_prompt(self) -> str:
         def normalize_type(t: str) -> str:
@@ -124,16 +147,16 @@ class PluginEntry:
     @staticmethod
     def from_yaml_file(path: str) -> Optional["PluginEntry"]:
         content = read_yaml(path)
-        return PluginEntry.from_yaml_content(content)
+        return PluginEntry.from_yaml_content(content, path)
 
     @staticmethod
-    def from_yaml_content(content: Dict) -> Optional["PluginEntry"]:
+    def from_yaml_content(content: Dict, path: Optional[str] = None) -> Optional["PluginEntry"]:
         do_validate = False
         valid_state = False
         if do_validate:
             valid_state = validate_yaml(content, schema="plugin_schema")
         if not do_validate or valid_state:
-            spec: PluginSpec = PluginSpec.from_dict(content)
+            spec: PluginSpec = PluginSpec.from_dict(content, path)
             return PluginEntry(
                 name=spec.name,
                 impl=content.get("code", spec.name),

@@ -24,6 +24,16 @@ def read_yaml(path: str) -> Dict[str, Any]:
         raise ValueError(f"Yaml loading failed due to: {e}")
 
 
+def write_yaml(path: str, content: Dict[str, Any]):
+    import yaml
+
+    try:
+        with open(path, "w") as file:
+            yaml.dump(content, file)
+    except Exception as e:
+        raise ValueError(f"Yaml writing failed due to: {e}")
+
+
 def validate_yaml(content: Any, schema: str) -> bool:
     import jsonschema
 
