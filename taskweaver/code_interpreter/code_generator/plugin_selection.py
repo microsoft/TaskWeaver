@@ -76,6 +76,7 @@ class PluginSelector:
             self.plugin_embedding_dict = {}
             for p in self.available_plugins:
                 p.spec.embedding = []
+                p.spec.embedding_model = None
 
         plugin_to_embedded: List[Tuple[int, str]] = []
         for idx, p in enumerate(self.available_plugins):
@@ -92,6 +93,8 @@ class PluginSelector:
             else:
                 plugin_to_embedded.append((idx, p.name + ": " + p.spec.description))
 
+        if len(plugin_to_embedded) == 0:
+            return
         plugin_embeddings = self.llm_api.get_embedding_list([t for _, t in plugin_to_embedded])
         for i, embedding in enumerate(plugin_embeddings):
             p = self.available_plugins[plugin_to_embedded[i][0]]
