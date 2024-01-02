@@ -152,7 +152,7 @@ class ExperienceManger:
         exp_embeddings = self.llm_api.get_embedding_list([exp.experience_text for exp in self.experience_list])
         for i, session_id in enumerate(session_ids):
             self.experience_list[i].embedding = exp_embeddings[i]
-            self.experience_list[i].embedding_model = self.llm_api.config.embedding_model
+            self.experience_list[i].embedding_model = self.llm_api.embedding_service.config.embedding_model
         self.logger.info("Experience embeddings created. Embeddings number: {}".format(len(exp_embeddings)))
 
         for exp in self.experience_list:
