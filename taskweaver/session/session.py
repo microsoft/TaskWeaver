@@ -4,8 +4,6 @@ from typing import Dict
 
 from injector import Injector, inject
 
-SAVE_EXP_MESSAGE = "#SAVE AS EXP"
-
 from taskweaver.code_interpreter import CodeInterpreter, CodeInterpreterPluginOnly
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
@@ -102,7 +100,7 @@ class Session:
     def send_message(self, message: str, event_handler: callable = None) -> Round:
         event_handler = event_handler or (lambda *args: None)
 
-        if message == SAVE_EXP_MESSAGE:
+        if message == "#SAVE AS EXP":
             send_from = "Planner" if not self.config.code_interpreter_only else "CodeInterpreter"
             self.memory.save_experience(exp_dir=self.config.experience_dir)
             event_handler("final_reply_message", "Experience saved.")

@@ -123,7 +123,7 @@ class Planner(Role):
             self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
             self.experience_manager.summarize_experience_in_batch(
                 prompt=self.experience_prompt_template,
-                target_role="All",
+                target_role="Planner",
             )
 
         self.logger.info("Planner initialized successfully")

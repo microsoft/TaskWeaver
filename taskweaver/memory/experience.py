@@ -11,7 +11,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.session.session import SAVE_EXP_MESSAGE
 from taskweaver.utils import read_yaml, write_yaml
 
 
@@ -81,7 +80,7 @@ class ExperienceGenerator:
                     remove_id_fields(item)
 
         def select_role(conv_data, target_role):
-            if target_role == "All":
+            if target_role == "Planner":  # For Planner, keep all messages for global view
                 return
             for round_data in conv_data:
                 for idx, post in enumerate(round_data["post_list"]):
@@ -98,7 +97,7 @@ class ExperienceGenerator:
         self,
         session_id: str,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter", "All"] = "Planner",
+        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
     ):
         raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{session_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
@@ -117,14 +116,18 @@ class ExperienceGenerator:
     def summarize_experience_in_batch(
         self,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter", "All"] = "Planner",
+        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
         refresh: bool = False,
     ):
         exp_files = os.listdir(self.config.experience_dir)
-        session_ids = [exp_file.split("_")[2].split(".")[0] for exp_file in exp_files if exp_file.startswith("raw_exp")]
+        session_ids = [
+            os.path.splitext(os.path.basename(exp_file))[0].split("_")[2]
+            for exp_file in exp_files
+            if exp_file.startswith("raw_exp")
+        ]
 
         if len(session_ids) == 0:
-            warnings.warn(f"No experience found. Please type {SAVE_EXP_MESSAGE} in the chat window to save experience.")
+            warnings.warn("No experience found. Please type #SAVE AS EXP in the chat window to save experience.")
             return
 
         if refresh:
@@ -134,7 +137,7 @@ class ExperienceGenerator:
 
         to_be_embedded = []
         for idx, session_id in enumerate(session_ids):
-            exp_file_name = f"exp_{session_id}.yaml"
+            exp_file_name = f"{target_role}_exp_{session_id}.yaml"
             # if the experience file already exists, load it
             if exp_file_name in os.listdir(self.config.experience_dir):
                 exp_file_path = os.path.join(self.config.experience_dir, exp_file_name)
@@ -168,7 +171,7 @@ class ExperienceGenerator:
                 self.experience_list[idx].embedding_model = self.llm_api.embedding_service.config.embedding_model
 
         for exp in self.experience_list:
-            experience_file_path = os.path.join(self.config.experience_dir, f"exp_{exp.session_id}.yaml")
+            experience_file_path = os.path.join(self.config.experience_dir, f"{target_role}_exp_{exp.session_id}.yaml")
             write_yaml(experience_file_path, exp.to_dict())
         self.logger.info("Experience obj saved.")
 
