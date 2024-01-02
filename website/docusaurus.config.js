@@ -113,7 +113,7 @@ const config = {
               // },
               {
                 label: 'Discord',
-                href: 'https://discord.gg/nvFMRbzA',
+                href: 'https://discord.gg/Z56MXmZgMb',
               },
               // {
               //   label: 'Twitter',
