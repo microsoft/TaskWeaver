@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from injector import inject
 
@@ -80,7 +80,13 @@ class CodeGeneratorPluginOnly(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
-    def reply(self, memory: Memory, event_handler: callable) -> Post:
+    def reply(
+        self,
+        memory: Memory,
+        event_handler,
+        prompt_log_path: Optional[str] = None,
+        use_back_up_engine: bool = False,
+    ) -> Post:
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -99,6 +105,10 @@ class CodeGeneratorPluginOnly(Role):
             rounds=rounds,
             plugin_pool=self.plugin_pool,
         )
+
+        if prompt_log_path is not None:
+            self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
+
         post = Post.create(message=None, send_from="CodeInterpreter", send_to="Planner")
 
         llm_response = self.llm_api.chat_completion(
