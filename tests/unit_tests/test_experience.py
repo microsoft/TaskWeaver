@@ -35,11 +35,11 @@ def test_experience_generation():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     experience_manager = app_injector.create_object(ExperienceGenerator)
 
-    experience_manager.summarize_experience_in_batch(refresh=True)
+    experience_manager.summarize_experience_in_batch(target_role="Planner", refresh=True)
 
     exp_files = os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience"))
     assert len(exp_files) == 2
-    assert "exp_test-session-1.yaml" in exp_files
+    assert "Planner_exp_test-session-1.yaml" in exp_files
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]
@@ -54,7 +54,9 @@ def test_experience_generation():
     )
     assert exp.embedding_model == "all-mpnet-base-v2"
 
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience/exp_test-session-1.yaml")) as f:
+    with open(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience/Planner_exp_test-session-1.yaml"),
+    ) as f:
         exp = yaml.safe_load(f)
     assert "experience_text" in exp
     assert exp["session_id"] == "test-session-1"
@@ -96,7 +98,7 @@ def test_experience_retrieval():
 
     user_query = "show top 10 data in ./data.csv"
 
-    experience_manager.summarize_experience_in_batch()
+    experience_manager.summarize_experience_in_batch(target_role="Planner")
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]
