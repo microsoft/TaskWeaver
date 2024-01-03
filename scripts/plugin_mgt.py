@@ -1,5 +1,8 @@
 import argparse
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
 from injector import Injector
 
@@ -44,12 +47,12 @@ class PluginManager:
     def show(self):
         plugin_list = self.experience_generator.available_plugins
         for p in plugin_list:
-            print(f"* Plugin name: {p.name}")
-            print(f"* Plugin description: {p.spec.description}")
-            print(f"* Plugin embedding dim: {len(p.spec.embedding)}")
-            print(f"* Plugin embedding model: {p.spec.embedding_model}")
-            print(f"* Plugin args: {p.spec.args}")
-            print(f"* Plugin returns: {p.spec.returns}")
+            print(f"* Plugin Name: {p.name}")
+            print(f"* Plugin Description: {p.spec.description}")
+            print(f"* Plugin Embedding dim: {len(p.spec.embedding)}")
+            print(f"* Plugin Embedding model: {p.spec.embedding_model}")
+            print(f"* Plugin Args: {p.spec.args}")
+            print(f"* Plugin Returns: {p.spec.returns}")
             print(f"_________________________________")
 
 
