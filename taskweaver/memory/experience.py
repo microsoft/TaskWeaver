@@ -18,17 +18,17 @@ from taskweaver.utils import read_yaml, write_yaml
 class Experience:
     experience_text: str
     session_id: str
-    embedding: Optional[List[float]] = None
     raw_experience_path: Optional[str] = None
     embedding_model: Optional[str] = None
+    embedding: Optional[List[float]] = None
 
     def to_dict(self):
         return {
-            "experience_text": self.experience_text,
             "session_id": self.session_id,
-            "embedding": self.embedding,
+            "experience_text": self.experience_text,
             "raw_experience_path": self.raw_experience_path,
             "embedding_model": self.embedding_model,
+            "embedding": self.embedding,
         }
 
 
@@ -115,10 +115,12 @@ class ExperienceGenerator:
 
     def summarize_experience_in_batch(
         self,
+        target_role: Literal["Planner", "CodeInterpreter"],
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
         refresh: bool = False,
     ):
+        if not os.path.exists(self.config.experience_dir):
+            raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
         exp_files = os.listdir(self.config.experience_dir)
         session_ids = [
             os.path.splitext(os.path.basename(exp_file))[0].split("_")[2]
@@ -133,7 +135,7 @@ class ExperienceGenerator:
         if refresh:
             self.experience_list = []
             for session_id in session_ids:
-                self.delete_experience(session_id)
+                self.delete_experience(session_id, target_role)
 
         to_be_embedded = []
         for idx, session_id in enumerate(session_ids):
@@ -207,8 +209,8 @@ class ExperienceGenerator:
         self.logger.info(f"Retrieved experiences: {[exp.session_id for exp, sim in selected_experiences]}")
         return selected_experiences
 
-    def delete_experience(self, session_id: str):
-        exp_file_name = f"exp_{session_id}.yaml"
+    def delete_experience(self, session_id: str, target_role: Literal["Planner", "CodeInterpreter"] = "Planner"):
+        exp_file_name = f"{target_role}_exp_{session_id}.yaml"
         if exp_file_name in os.listdir(self.config.experience_dir):
             os.remove(os.path.join(self.config.experience_dir, exp_file_name))
             self.logger.info(f"Experience {exp_file_name} deleted.")

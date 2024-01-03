@@ -29,7 +29,7 @@ def write_yaml(path: str, content: Dict[str, Any]):
 
     try:
         with open(path, "w") as file:
-            yaml.dump(content, file)
+            yaml.safe_dump(content, file, sort_keys=False)
     except Exception as e:
         raise ValueError(f"Yaml writing failed due to: {e}")
 

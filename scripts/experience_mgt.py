@@ -8,6 +8,16 @@ from taskweaver.logging import LoggingModule
 from taskweaver.memory.experience import ExperienceGenerator
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--target_role", type=str, choices=["Planner", "CodeInterpreter"], required=True)
+parser.add_argument(
+    "--project_dir",
+    type=str,
+    default=os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "project",
+    ),
+)
 parser.add_argument("--refresh", action="store_true")
 parser.add_argument(
     "--delete",
@@ -15,6 +25,7 @@ parser.add_argument(
     type=str,
     help="Delete experience with experience id, e.g., exp_{ID}.yaml",
 )
+parser.add_argument("--delete_raw", metavar="EXP_ID", type=str, help="Delete raw experience with experience id")
 parser.add_argument("--show", action="store_true")
 
 args = parser.parse_args()
@@ -25,28 +36,26 @@ class ExperienceManager:
         app_injector = Injector([LoggingModule])
         app_config = AppConfigSource(
             config_file_path=os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "project/taskweaver_config.json",
+                args.project_dir,
+                "taskweaver_config.json",
             ),
-            app_base_path=os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "project",
-            ),
+            app_base_path=args.project_dir,
         )
         app_injector.binder.bind(AppConfigSource, to=app_config)
         self.experience_generator = app_injector.create_object(ExperienceGenerator)
-        self.experience_generator.summarize_experience_in_batch(refresh=False)
+        self.experience_generator.summarize_experience_in_batch(args.target_role, refresh=False)
 
     def refresh(self):
-        self.experience_generator.summarize_experience_in_batch(refresh=True)
+        self.experience_generator.summarize_experience_in_batch(args.target_role, refresh=True)
         print("Refreshed experience list")
 
-    def delete(self, session_id: str):
-        self.experience_generator.delete_experience(session_id=session_id)
-        self.experience_generator.delete_raw_experience(session_id=session_id)
+    def delete_experience(self, session_id: str):
+        self.experience_generator.delete_experience(session_id=session_id, target_role=args.target_role)
         print(f"Deleted experience with id: {session_id}")
+
+    def delete_raw_experience(self, session_id: str):
+        self.experience_generator.delete_raw_experience(session_id=session_id)
+        print(f"Deleted raw experience with id: {session_id}")
 
     def show(self):
         for exp in self.experience_generator.experience_list:
@@ -63,6 +72,8 @@ if __name__ == "__main__":
     if args.refresh:
         experience_manager.refresh()
     if args.delete:
-        experience_manager.delete(args.delete)
+        experience_manager.delete_experience(args.delete)
+    if args.delete_raw:
+        experience_manager.delete_raw_experience(args.delete_raw)
     if args.show:
         experience_manager.show()
