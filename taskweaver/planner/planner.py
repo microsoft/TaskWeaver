@@ -79,7 +79,7 @@ class Planner(Role):
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor] = None,
         plugin_only: bool = False,
-        experience_manager: Optional[ExperienceGenerator] = None,
+        experience_generator: Optional[ExperienceGenerator] = None,
     ):
         self.config = config
         self.logger = logger
@@ -119,9 +119,9 @@ class Planner(Role):
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
         if self.config.use_experience:
-            self.experience_manager = experience_manager
+            self.experience_generator = experience_generator
             self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
-            self.experience_manager.summarize_experience_in_batch(
+            self.experience_generator.summarize_experience_in_batch(
                 prompt=self.experience_prompt_template,
                 target_role="Planner",
             )
@@ -232,7 +232,7 @@ class Planner(Role):
 
         user_query = rounds[-1].user_query
         if self.config.use_experience:
-            selected_experiences = self.experience_manager.retrieve_experience(user_query)
+            selected_experiences = self.experience_generator.retrieve_experience(user_query)
         else:
             selected_experiences = None
 
