@@ -11,6 +11,34 @@ from taskweaver.utils import read_yaml, validate_yaml
 
 
 @dataclass
+class PluginMetaData:
+    name: str
+    embedding: List[float] = field(default_factory=list)
+    embedding_model: Optional[str] = None
+    path: Optional[str] = None
+    md5hash: Optional[str] = None
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]):
+        return PluginMetaData(
+            name=d["name"],
+            embedding=d["embedding"] if "embedding" in d else [],
+            embedding_model=d["embedding_model"] if "embedding_model" in d else None,
+            path=d["path"] if "path" in d else None,
+            md5hash=d["md5hash"] if "md5hash" in d else None,
+        )
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "embedding": self.embedding,
+            "embedding_model": self.embedding_model,
+            "path": self.path,
+            "md5hash": self.md5hash,
+        }
+
+
+@dataclass
 class PluginParameter:
     """PluginParameter is the data structure for plugin parameters (including arguments and return values.)"""
 
@@ -58,20 +86,14 @@ class PluginSpec:
     description: str = ""
     args: List[PluginParameter] = field(default_factory=list)
     returns: List[PluginParameter] = field(default_factory=list)
-    embedding: List[float] = field(default_factory=list)
-    embedding_model: Optional[str] = None
-    path: Optional[str] = None
 
     @staticmethod
-    def from_dict(d: Dict[str, Any], path: str):
+    def from_dict(d: Dict[str, Any]):
         return PluginSpec(
             name=d["name"],
             description=d["description"],
             args=[PluginParameter.from_dict(p) for p in d["parameters"]],
             returns=[PluginParameter.from_dict(p) for p in d["returns"]],
-            embedding=d["embedding"] if "embedding" in d else [],
-            embedding_model=d["embedding_model"] if "embedding_model" in d else None,
-            path=path,
         )
 
     def to_dict(self):
@@ -80,9 +102,6 @@ class PluginSpec:
             "description": self.description,
             "parameters": [p.to_dict() for p in self.args],
             "returns": [p.to_dict() for p in self.returns],
-            "embedding": self.embedding,
-            "embedding_model": self.embedding_model,
-            "path": self.path,
         }
 
     def format_prompt(self) -> str:
@@ -143,20 +162,28 @@ class PluginEntry:
     config: Dict[str, Any]
     required: bool
     enabled: bool = True
+    meta_data: Optional[PluginMetaData] = None
 
     @staticmethod
     def from_yaml_file(path: str) -> Optional["PluginEntry"]:
         content = read_yaml(path)
-        return PluginEntry.from_yaml_content(content, path)
+        yaml_file_name = os.path.basename(path)
+        meta_file_path = os.path.join(os.path.dirname(path), f"meta_{yaml_file_name}")
+        if os.path.exists(meta_file_path):
+            meta_data = PluginMetaData.from_dict(read_yaml(meta_file_path))
+            meta_data.path = meta_file_path
+        else:
+            meta_data = PluginMetaData(name=yaml_file_name.split(".")[0], path=meta_file_path)
+        return PluginEntry.from_yaml_content(content, meta_data)
 
     @staticmethod
-    def from_yaml_content(content: Dict, path: Optional[str] = None) -> Optional["PluginEntry"]:
+    def from_yaml_content(content: Dict, meta_data: Optional[PluginMetaData] = None) -> Optional["PluginEntry"]:
         do_validate = False
         valid_state = False
         if do_validate:
             valid_state = validate_yaml(content, schema="plugin_schema")
         if not do_validate or valid_state:
-            spec: PluginSpec = PluginSpec.from_dict(content, path)
+            spec: PluginSpec = PluginSpec.from_dict(content)
             return PluginEntry(
                 name=spec.name,
                 impl=content.get("code", spec.name),
@@ -165,6 +192,7 @@ class PluginEntry:
                 required=content.get("required", False),
                 enabled=content.get("enabled", True),
                 plugin_only=content.get("plugin_only", False),
+                meta_data=meta_data,
             )
         return None
 
@@ -179,6 +207,7 @@ class PluginEntry:
             "config": self.config,
             "required": self.required,
             "enabled": self.enabled,
+            "plugin_only": self.plugin_only,
         }
 
     def format_function_calling(self) -> Dict:

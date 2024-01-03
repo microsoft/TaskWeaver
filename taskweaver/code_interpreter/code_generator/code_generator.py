@@ -49,7 +49,6 @@ class CodeGeneratorConfig(ModuleConfig):
             False,
         )
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
-        self.dump_embedding_for_plugin_selection = self._get_bool("dump_embedding_for_plugin_selection", False)
 
 
 class CodeGenerator(Role):
@@ -91,10 +90,7 @@ class CodeGenerator(Role):
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(plugin_registry, self.llm_api)
-            self.plugin_selector.generate_plugin_embeddings(
-                refresh=False,
-                dump_embeddings=self.config.dump_embedding_for_plugin_selection,
-            )
+            self.plugin_selector.generate_plugin_embeddings(refresh=False)
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 

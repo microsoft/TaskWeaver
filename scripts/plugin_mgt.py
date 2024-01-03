@@ -49,8 +49,8 @@ class PluginManager:
         for p in plugin_list:
             print(f"* Plugin Name: {p.name}")
             print(f"* Plugin Description: {p.spec.description}")
-            print(f"* Plugin Embedding dim: {len(p.spec.embedding)}")
-            print(f"* Plugin Embedding model: {p.spec.embedding_model}")
+            print(f"* Plugin Embedding dim: {len(p.meta_data.embedding)}")
+            print(f"* Plugin Embedding model: {p.meta_data.embedding_model}")
             print(f"* Plugin Args: {p.spec.args}")
             print(f"* Plugin Returns: {p.spec.returns}")
             print(f"_________________________________")

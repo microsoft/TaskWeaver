@@ -1,4 +1,5 @@
-from typing import Dict, List, Tuple
+from hashlib import md5
+from typing import Dict, List
 
 import numpy as np
 from injector import inject
@@ -71,38 +72,40 @@ class PluginSelector:
         self.llm_api = llm_api
         self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
-    def generate_plugin_embeddings(self, refresh: bool = False, dump_embeddings: bool = False):
+        self.refresh_message = (
+            "Please cd to the `script` directory and "
+            "run `python -m plugin_mgt --refresh` to refresh the plugin embedding."
+        )
+
+    def generate_plugin_embeddings(self, refresh: bool = False):
         if refresh:
-            self.plugin_embedding_dict = {}
-            for p in self.available_plugins:
-                p.spec.embedding = []
-                p.spec.embedding_model = None
-
-        plugin_to_embedded: List[Tuple[int, str]] = []
-        for idx, p in enumerate(self.available_plugins):
-            if len(p.spec.embedding) > 0:
-                if p.spec.embedding_model != self.llm_api.embedding_service.config.embedding_model:
-                    raise Exception(
-                        f"Plugin {p.name} is using embedding model {p.spec.embedding_model}, "
-                        f"which is different from the one used by current session"
-                        f" ({self.llm_api.embedding_service.config.embedding_model}). "
-                        f"Please use the same embedding model or refresh the plugin embedding.",
-                    )
-                else:
-                    self.plugin_embedding_dict[p.name] = p.spec.embedding
-            else:
-                plugin_to_embedded.append((idx, p.name + ": " + p.spec.description))
-
-        if len(plugin_to_embedded) == 0:
-            return
-        plugin_embeddings = self.llm_api.get_embedding_list([t for _, t in plugin_to_embedded])
-        for i, embedding in enumerate(plugin_embeddings):
-            p = self.available_plugins[plugin_to_embedded[i][0]]
-            self.plugin_embedding_dict[p.name] = embedding
-            if dump_embeddings:
-                p.spec.embedding = embedding
-                p.spec.embedding_model = self.llm_api.embedding_service.config.embedding_model
-                write_yaml(p.spec.path, p.spec.to_dict())
+            plugin_to_embedded = []
+            for idx, p in enumerate(self.available_plugins):
+                plugin_to_embedded.append(p.name + ": " + p.spec.description)
+            plugin_embeddings = self.llm_api.get_embedding_list(plugin_to_embedded)
+            for i, embedding in enumerate(plugin_embeddings):
+                p = self.available_plugins[i]
+                self.plugin_embedding_dict[p.name] = embedding
+                p.meta_data.embedding = embedding
+                p.meta_data.embedding_model = self.llm_api.embedding_service.config.embedding_model
+                p.meta_data.md5hash = md5((p.spec.name + p.spec.description).encode()).hexdigest()
+                write_yaml(p.meta_data.path, p.meta_data.to_dict())
+        else:
+            for idx, p in enumerate(self.available_plugins):
+                # check if the plugin has embedding
+                assert len(p.meta_data.embedding) > 0, f"Plugin {p.name} has no embedding. " + self.refresh_message
+                # check if the plugin is using the same embedding model as the current session
+                assert p.meta_data.embedding_model == self.llm_api.embedding_service.config.embedding_model, (
+                    f"Plugin {p.name} is using embedding model {p.meta_data.embedding_model}, "
+                    f"which is different from the one used by current session"
+                    f" ({self.llm_api.embedding_service.config.embedding_model}). "
+                    f"Please use the same embedding model or refresh the plugin embedding." + self.refresh_message
+                )
+                # check if the plugin has been modified
+                assert p.meta_data.md5hash == md5((p.spec.name + p.spec.description).encode()).hexdigest(), (
+                    f"Plugin {p.name} has been modified. " + self.refresh_message
+                )
+                self.plugin_embedding_dict[p.name] = p.meta_data.embedding
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
