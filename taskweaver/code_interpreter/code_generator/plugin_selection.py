@@ -89,6 +89,10 @@ class PluginSelector:
             else:
                 plugin_to_embedded.append((idx, p.name + ": " + p.spec.description))
 
+        if len(plugin_to_embedded) == 0:
+            print("All plugins are up-to-date.")
+            return
+
         plugin_embeddings = self.llm_api.get_embedding_list([text for idx, text in plugin_to_embedded])
 
         for i, embedding in enumerate(plugin_embeddings):
