@@ -35,7 +35,8 @@ def test_experience_generation():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     experience_manager = app_injector.create_object(ExperienceGenerator)
 
-    experience_manager.summarize_experience_in_batch(target_role="Planner", refresh=True)
+    experience_manager.refresh(target_role="Planner")
+    experience_manager.load_experience(target_role="Planner")
 
     exp_files = os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience"))
     assert len(exp_files) == 2
@@ -98,7 +99,7 @@ def test_experience_retrieval():
 
     user_query = "show top 10 data in ./data.csv"
 
-    experience_manager.summarize_experience_in_batch(target_role="Planner")
+    experience_manager.load_experience(target_role="Planner")
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]

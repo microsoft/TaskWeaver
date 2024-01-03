@@ -46,10 +46,10 @@ class ExperienceManager:
         )
         app_injector.binder.bind(AppConfigSource, to=app_config)
         self.experience_generator = app_injector.create_object(ExperienceGenerator)
-        self.experience_generator.summarize_experience_in_batch(args.target_role, refresh=False)
+        self.experience_generator.load_experience(args.target_role)
 
     def refresh(self):
-        self.experience_generator.summarize_experience_in_batch(args.target_role, refresh=True)
+        self.experience_generator.refresh(args.target_role)
         print("Refreshed experience list")
 
     def delete_experience(self, session_id: str):
