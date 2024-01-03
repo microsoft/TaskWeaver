@@ -41,7 +41,7 @@ class PluginManager:
         self.experience_generator = app_injector.create_object(PluginSelector)
 
     def refresh(self):
-        self.experience_generator.generate_plugin_embeddings(refresh=True)
+        self.experience_generator.refresh()
         print("Plugin embeddings refreshed.")
 
     def show(self):

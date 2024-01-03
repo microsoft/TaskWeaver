@@ -173,7 +173,7 @@ class PluginEntry:
             meta_data = PluginMetaData.from_dict(read_yaml(meta_file_path))
             meta_data.path = meta_file_path
         else:
-            meta_data = PluginMetaData(name=yaml_file_name.split(".")[0], path=meta_file_path)
+            meta_data = PluginMetaData(name=os.path.splitext(yaml_file_name)[0], path=meta_file_path)
         return PluginEntry.from_yaml_content(content, meta_data)
 
     @staticmethod

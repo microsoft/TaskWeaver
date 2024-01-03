@@ -62,7 +62,7 @@ class CodeGeneratorPluginOnly(Role):
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(plugin_registry, self.llm_api)
-            self.plugin_selector.generate_plugin_embeddings()
+            self.plugin_selector.load_plugin_embeddings()
             logger.info("Plugin embeddings generated")
             self.selected_plugin_pool = SelectedPluginPool()
 
