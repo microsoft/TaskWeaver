@@ -71,7 +71,7 @@ class PluginSelector:
         self.llm_api = llm_api
         self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
-    def generate_plugin_embeddings(self, refresh: bool = False):
+    def generate_plugin_embeddings(self, refresh: bool = False, dump_embeddings: bool = False):
         if refresh:
             self.plugin_embedding_dict = {}
             for p in self.available_plugins:
@@ -99,9 +99,10 @@ class PluginSelector:
         for i, embedding in enumerate(plugin_embeddings):
             p = self.available_plugins[plugin_to_embedded[i][0]]
             self.plugin_embedding_dict[p.name] = embedding
-            p.spec.embedding = embedding
-            p.spec.embedding_model = self.llm_api.embedding_service.config.embedding_model
-            write_yaml(p.spec.path, p.spec.to_dict())
+            if dump_embeddings:
+                p.spec.embedding = embedding
+                p.spec.embedding_model = self.llm_api.embedding_service.config.embedding_model
+                write_yaml(p.spec.path, p.spec.to_dict())
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))

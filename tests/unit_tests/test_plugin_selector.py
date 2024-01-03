@@ -24,7 +24,7 @@ def test_plugin_selector():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
     plugin_selector = app_injector.get(PluginSelector)
-    plugin_selector.generate_plugin_embeddings()
+    plugin_selector.generate_plugin_embeddings(refresh=True, dump_embeddings=False)
 
     query1 = "detect abnormal data points in ./data.csv."
     selected_plugins = plugin_selector.plugin_select(query1, top_k=3)
