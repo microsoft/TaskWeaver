@@ -1,5 +1,4 @@
 import threading
-import time
 from textwrap import dedent
 from typing import Any, List, Optional, Tuple
 
@@ -8,15 +7,11 @@ from colorama import ansi
 
 from taskweaver.app.app import TaskWeaverApp
 from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase, SessionEventType
+from taskweaver.session.session import Session
 
 
 def error_message(message: str) -> None:
     click.secho(click.style(f"Error: {message}", fg="red"))
-
-
-def assistant_message(message: str) -> None:
-    click.secho(click.style(" TaskWeaver ", fg="white", bg="yellow"), nl=False)
-    click.secho(click.style(f"▶  {message}", fg="yellow"))
 
 
 def plain_message(message: str, type: str, nl: bool = True) -> None:
@@ -54,22 +49,146 @@ def user_input_message(prompt: str = "   Human  ") -> str:
     session = prompt_toolkit.PromptSession[str](
         history=history,
         multiline=False,
-        wrap_lines=True,
         complete_while_typing=True,
         complete_in_thread=True,
         enable_history_search=True,
     )
 
-    user_input: str = session.prompt(
-        prompt_toolkit.formatted_text.FormattedText(
-            [
-                ("bg:ansimagenta fg:ansiwhite", f" {prompt} "),
-                ("fg:ansimagenta", "▶"),
-                ("", "  "),
-            ],
-        ),
-    )
-    return user_input
+    while True:
+        try:
+            user_input: str = session.prompt(
+                prompt_toolkit.formatted_text.FormattedText(
+                    [
+                        ("bg:ansimagenta fg:ansiwhite", f" {prompt} "),
+                        ("fg:ansimagenta", "▶"),
+                        ("", "  "),
+                    ],
+                ),
+            )
+            return user_input
+        except KeyboardInterrupt:
+            if session.default_buffer.text == "":
+                exit(0)
+            continue
+
+
+class TaskWeaverRoundUpdater(SessionEventHandlerBase):
+    def __init__(self):
+        self.exit_event = threading.Event()
+        self.lock = threading.Lock()
+        self.messages: List[Tuple[str, str]] = []
+        self.response: List[str] = []
+        self.result: Optional[str] = None
+
+    def handle_session(
+        self,
+        type: SessionEventType,
+        msg: str,
+        extra: Any,
+        **kwargs: Any,
+    ):
+        pass
+
+    def handle_round(
+        self,
+        type: RoundEventType,
+        msg: str,
+        extra: Any,
+        round_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    def handle_post(
+        self,
+        type: PostEventType,
+        msg: str,
+        extra: Any,
+        post_id: str,
+        round_id: str,
+        **kwargs: Any,
+    ):
+        pass
+
+    def handle_message(self, session: Session, message: str) -> Optional[str]:
+        def execution_thread():
+            try:
+                round = session.send_message(
+                    message,
+                    event_handler=self,
+                )
+                last_post = round.post_list[-1]
+                if last_post.send_to == "User":
+                    self.result = last_post.message
+            except Exception as e:
+                self.response.append("Error")
+                raise e
+            finally:
+                self.exit_event.set()
+
+        t_ui = threading.Thread(target=lambda: self._animate_thread(), daemon=True)
+        t_ex = threading.Thread(target=execution_thread, daemon=True)
+
+        t_ui.start()
+        t_ex.start()
+        exit_no_wait: bool = False
+        try:
+            while True:
+                self.exit_event.wait(0.1)
+                if self.exit_event.is_set():
+                    break
+        except KeyboardInterrupt:
+            error_message("Interrupted by user")
+            exit_no_wait = True
+
+            # keyboard interrupt leave the session in unknown state, exit directly
+            exit(1)
+        finally:
+            self.exit_event.set()
+            try:
+                t_ex.join(0 if exit_no_wait else 1)
+                t_ui.join(1)
+            except Exception:
+                pass
+
+        return self.result
+
+    def _animate_thread(self):
+        counter = 0
+        stage = "preparing"
+
+        def clear_line():
+            print(ansi.clear_line(), end="\r")
+
+        def process_messages(stage: str):
+            if len(self.messages) == 0:
+                return stage
+
+            clear_line()
+            for type, msg in self.messages:
+                if type == "stage":
+                    stage = msg
+                elif type == "error":
+                    error_message(msg)
+                else:
+                    plain_message(msg, type=type)
+            self.messages.clear()
+            return stage
+
+        while True:
+            with self.lock:
+                stage = process_messages(stage)
+
+            if len(self.response) > 0:
+                clear_line()
+                break
+            with self.lock:
+                thought_animate(stage + "...", frame=counter)
+                counter += 1
+
+            self.exit_event.wait(0.2)
+            if self.exit_event.is_set():
+                break
 
 
 class TaskWeaverChatApp(SessionEventHandlerBase):
@@ -140,7 +259,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             self._system_message("--- new session starts ---")
             self.session = self.app.get_session()
 
-        assistant_message(
+        self._assistant_message(
             "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",
         )
 
@@ -148,114 +267,14 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         click.secho(message, fg="bright_black")
 
     def _handle_message(self, input_message: str):
-        exit_event = threading.Event()
-        lock = threading.Lock()
-        messages: List[Tuple[str, str]] = []
-        response: List[str] = []
+        updater = TaskWeaverRoundUpdater()
+        result = updater.handle_message(self.session, input_message)
+        if result is not None:
+            self._assistant_message(result)
 
-        def execution_thread():
-            def event_handler(type: str, msg: str):
-                with lock:
-                    messages.append((type, msg))
-
-            event_handler("stage", "starting")
-            try:
-                self.session.send_message(
-                    input_message,
-                    event_handler=self,
-                )
-                response.append("Finished")
-                exit_event.set()
-            except Exception as e:
-                response.append("Error")
-                raise e
-
-        def ani_thread():
-            counter = 0
-            stage = "preparing"
-
-            def clear_line():
-                print(ansi.clear_line(), end="\r")
-
-            def process_messages(stage: str):
-                if len(messages) == 0:
-                    return stage
-
-                clear_line()
-                for type, msg in messages:
-                    if type == "stage":
-                        stage = msg
-                    elif type == "final_reply_message":
-                        assistant_message(msg)
-                    elif type == "error":
-                        error_message(msg)
-                    else:
-                        plain_message(msg, type=type)
-                messages.clear()
-                return stage
-
-            while True:
-                with lock:
-                    stage = process_messages(stage)
-
-                if len(response) > 0:
-                    clear_line()
-                    break
-                with lock:
-                    thought_animate(stage + "...", frame=counter)
-                    counter += 1
-                time.sleep(0.2)
-
-        t_ex = threading.Thread(target=execution_thread, daemon=True)
-        t_ui = threading.Thread(target=ani_thread, daemon=True)
-
-        t_ui.start()
-        t_ex.start()
-
-        try:
-            while True:
-                exit_event.wait(0.1)
-                if exit_event.is_set():
-                    break
-        except KeyboardInterrupt:
-            error_message("Interrupted in console, exiting...")
-            exit(0)
-
-        try:
-            t_ex.join(1)
-            t_ui.join(1)
-        except Exception:
-            pass
-
-    def handle_session(
-        self,
-        type: SessionEventType,
-        msg: str,
-        extra: Any,
-        **kwargs: Any,
-    ):
-        pass
-
-    def handle_round(
-        self,
-        type: RoundEventType,
-        msg: str,
-        extra: Any,
-        round_id: str,
-        **kwargs: Any,
-    ):
-        pass
-
-    def handle_post(
-        self,
-        type: PostEventType,
-        msg: str,
-        extra: Any,
-        post_id: str,
-        round_id: str,
-        **kwargs: Any,
-    ):
-        pass
+    def _assistant_message(self, message: str) -> None:
+        click.secho(click.style(" TaskWeaver ", fg="white", bg="yellow"), nl=False)
+        click.secho(click.style(f"▶  {message}", fg="yellow"))
 
 
 def chat_taskweaver(app_dir: Optional[str] = None):

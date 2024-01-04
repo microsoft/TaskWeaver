@@ -227,8 +227,6 @@ class Planner(Role):
                 send_from="Planner",
                 validation_func=check_post_validity,
             )
-            if response_post.send_to == "User":
-                self.event_emitter.emit_compat("final_reply_message", response_post.message)
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             response_post = Post.create(

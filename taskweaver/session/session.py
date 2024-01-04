@@ -148,7 +148,6 @@ class Session:
                     send_to="CodeInterpreter",
                 )
                 post = _send_message("CodeInterpreter", post)
-                self.event_emitter.emit_compat("final_reply_message", post.message)
 
             self.round_index += 1
             chat_round.change_round_state("finished")
