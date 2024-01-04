@@ -47,6 +47,9 @@ class PluginManager:
 
     def show(self):
         plugin_list = self.plugin_selector.available_plugins
+        if len(plugin_list) == 0:
+            print("No available plugins.")
+            return
         for p in plugin_list:
             print(f"* Plugin Name: {p.name}")
             print(f"* Plugin Description: {p.spec.description}")
