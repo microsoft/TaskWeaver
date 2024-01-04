@@ -40,33 +40,33 @@ def test_experience_generation():
 
     exp_files = os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience"))
     assert len(exp_files) == 2
-    assert "Planner_exp_test-session-1.yaml" in exp_files
+    assert "Planner_exp_test-exp-1.yaml" in exp_files
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]
     assert len(exp.experience_text) > 0
-    assert exp.session_id == "test-session-1"
+    assert exp.exp_id == "test-exp-1"
     assert len(exp.embedding) == 768
     assert exp.raw_experience_path == os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "data",
         "experience",
-        "raw_exp_test-session-1.yaml",
+        "raw_exp_test-exp-1.yaml",
     )
     assert exp.embedding_model == "all-mpnet-base-v2"
 
     with open(
-        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience/Planner_exp_test-session-1.yaml"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/experience/Planner_exp_test-exp-1.yaml"),
     ) as f:
         exp = yaml.safe_load(f)
     assert "experience_text" in exp
-    assert exp["session_id"] == "test-session-1"
+    assert exp["exp_id"] == "test-exp-1"
     assert len(exp["embedding"]) == 768
     assert exp["raw_experience_path"] == os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "data",
         "experience",
-        "raw_exp_test-session-1.yaml",
+        "raw_exp_test-exp-1.yaml",
     )
     assert exp["embedding_model"] == "all-mpnet-base-v2"
 
@@ -99,22 +99,23 @@ def test_experience_retrieval():
 
     user_query = "show top 10 data in ./data.csv"
 
+    experience_manager.refresh(target_role="Planner")
     experience_manager.load_experience(target_role="Planner")
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]
     assert len(exp.experience_text) > 0
-    assert exp.session_id == "test-session-1"
+    assert exp.exp_id == "test-exp-1"
     assert len(exp.embedding) == 768
     assert exp.raw_experience_path == os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "data",
         "experience",
-        "raw_exp_test-session-1.yaml",
+        "raw_exp_test-exp-1.yaml",
     )
     assert exp.embedding_model == "all-mpnet-base-v2"
 
     experiences = experience_manager.retrieve_experience(user_query=user_query)
 
     assert len(experiences) == 1
-    assert experiences[0][0].session_id == "test-session-1"
+    assert experiences[0][0].exp_id == "test-exp-1"

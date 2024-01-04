@@ -122,6 +122,10 @@ class Planner(Role):
             self.experience_generator = experience_generator
             self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
             self.experience_generator.load_experience(target_role="Planner")
+            self.logger.info(
+                "Experience loaded successfully, "
+                "there are {} experiences".format(len(self.experience_generator.experience_list)),
+            )
 
         self.logger.info("Planner initialized successfully")
 
@@ -182,16 +186,20 @@ class Planner(Role):
 
         return conversation
 
+    def _add_experience_to_prompt(self, selected_experiences: Optional[List[Experience]]):
+        if selected_experiences is not None and len(selected_experiences) != 0:
+            experience_instruction = self.prompt_data["experience_instruction"].format(
+                experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
+            )
+            self.instruction += "\n\n" + experience_instruction
+
     def compose_prompt(
         self,
         rounds: List[Round],
         selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        if selected_experiences is not None and len(selected_experiences) != 0:
-            self.experience_instruction = self.prompt_data["experience_instruction"].format(
-                experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
-            )
-            self.instruction += "\n\n" + self.experience_instruction
+        self._add_experience_to_prompt(selected_experiences)
+
         chat_history = [format_chat_message(role="system", message=self.instruction)]
 
         if self.config.use_example and len(self.examples) != 0:

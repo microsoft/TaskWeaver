@@ -17,14 +17,14 @@ from taskweaver.utils import read_yaml, write_yaml
 @dataclass
 class Experience:
     experience_text: str
-    session_id: str
+    exp_id: str
     raw_experience_path: Optional[str] = None
     embedding_model: Optional[str] = None
     embedding: List[float] = field(default_factory=list)
 
     def to_dict(self):
         return {
-            "session_id": self.session_id,
+            "exp_id": self.exp_id,
             "experience_text": self.experience_text,
             "raw_experience_path": self.raw_experience_path,
             "embedding_model": self.embedding_model,
@@ -34,9 +34,9 @@ class Experience:
     @staticmethod
     def from_dict(d: Dict[str, Any]):
         return Experience(
-            session_id=d["session_id"],
+            exp_id=d["exp_id"],
             experience_text=d["experience_text"],
-            raw_experience_path=d["raw_experience_path"],
+            raw_experience_path=d["raw_experience_path"] if "raw_experience_path" in d else None,
             embedding_model=d["embedding_model"] if "embedding_model" in d else None,
             embedding=d["embedding"] if "embedding" in d else [],
         )
@@ -76,6 +76,11 @@ class ExperienceGenerator:
 
         self.experience_list: List[Experience] = []
 
+        self.exception_message_for_refresh = (
+            "Please cd to the `script` directory and "
+            "run `python -m experience_mgt --refresh` to refresh the experience."
+        )
+
     @staticmethod
     def _preprocess_conversation_data(conv_data: dict, target_role: Literal["Planner", "CodeInterpreter"]):
         def remove_id_fields(d):
@@ -89,27 +94,27 @@ class ExperienceGenerator:
                 for item in d:
                     remove_id_fields(item)
 
-        def select_role(conv_data, target_role):
-            if target_role == "Planner":  # For Planner, keep all messages for global view
-                return
-            for round_data in conv_data:
-                for idx, post in enumerate(round_data["post_list"]):
-                    if post["send_from"] != target_role and post["send_to"] != target_role:
-                        del round_data["post_list"][idx]
+        # def select_role(conv_data, target_role):
+        #     if target_role == "Planner":  # For Planner, keep all messages for global view
+        #         return
+        #     for round_data in conv_data:
+        #         for idx, post in enumerate(round_data["post_list"]):
+        #             if post["send_from"] != target_role and post["send_to"] != target_role:
+        #                 del round_data["post_list"][idx]
 
         conv_data = conv_data["rounds"]
         remove_id_fields(conv_data)
-        select_role(conv_data, target_role)
+        # select_role(conv_data, target_role)
 
         return conv_data
 
     def summarize_experience(
         self,
-        session_id: str,
+        exp_id: str,
         prompt: Optional[str] = None,
         target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
     ):
-        raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{session_id}.yaml")
+        raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{exp_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
 
         conversation = self._preprocess_conversation_data(conversation, target_role)
@@ -132,21 +137,22 @@ class ExperienceGenerator:
             raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
 
         exp_files = os.listdir(self.config.experience_dir)
-        conv_session_ids = [
+
+        raw_exp_ids = [
             os.path.splitext(os.path.basename(exp_file))[0].split("_")[2]
             for exp_file in exp_files
             if exp_file.startswith("raw_exp")
         ]
 
-        handcrafted_session_ids = [
+        handcrafted_exp_ids = [
             os.path.splitext(os.path.basename(exp_file))[0].split("_")[2]
             for exp_file in exp_files
             if exp_file.startswith("handcrafted_exp")
         ]
 
-        session_ids = conv_session_ids + handcrafted_session_ids
+        exp_ids = raw_exp_ids + handcrafted_exp_ids
 
-        if len(session_ids) == 0:
+        if len(exp_ids) == 0:
             warnings.warn(
                 "No raw experience found. "
                 "Please type #SAVE AS EXP in the chat window to save raw experience"
@@ -155,53 +161,55 @@ class ExperienceGenerator:
             return
 
         to_be_embedded = []
-        for idx, session_id in enumerate(session_ids):
-            exp_file_name = f"{target_role}_exp_{session_id}.yaml"
-            # if the experience file already exists and the embedding is valid, skip
-            if exp_file_name in os.listdir(self.config.experience_dir):
+        for idx, exp_id in enumerate(exp_ids):
+            rebuild_flag = False
+            exp_file_name = f"{target_role}_exp_{exp_id}.yaml"
+            if exp_file_name not in os.listdir(self.config.experience_dir):
+                rebuild_flag = True
+            else:
                 exp_file_path = os.path.join(self.config.experience_dir, exp_file_name)
                 experience = read_yaml(exp_file_path)
                 if (
-                    experience["embedding_model"] == self.llm_api.embedding_service.config.embedding_model
-                    and len(experience["embedding"]) > 0
+                    experience["embedding_model"] != self.llm_api.embedding_service.config.embedding_model
+                    or len(experience["embedding"]) == 0
                 ):
-                    continue
-            else:
-                # otherwise, summarize the experience and save it
-                if session_id in conv_session_ids:
-                    summarized_experience = self.summarize_experience(session_id, prompt, target_role)
+                    rebuild_flag = True
+
+            if rebuild_flag:
+                if exp_id in raw_exp_ids:
+                    summarized_experience = self.summarize_experience(exp_id, prompt, target_role)
                     experience_obj = Experience(
                         experience_text=summarized_experience,
-                        session_id=session_id,
+                        exp_id=exp_id,
                         raw_experience_path=os.path.join(
                             self.config.experience_dir,
-                            f"raw_exp_{session_id}.yaml",
+                            f"raw_exp_{exp_id}.yaml",
                         ),
                     )
-                else:
+                elif exp_id in handcrafted_exp_ids:
                     handcrafted_exp_file_path = os.path.join(
                         self.config.experience_dir,
-                        f"handcrafted_exp_{session_id}.yaml",
+                        f"handcrafted_exp_{exp_id}.yaml",
                     )
                     experience_obj = Experience.from_dict(read_yaml(handcrafted_exp_file_path))
-                self.experience_list.append(experience_obj)
-                to_be_embedded.append(idx)
-                self.logger.info("Experience created. Experience files number: {}".format(len(session_ids)))
+                else:
+                    raise ValueError(f"Experience {exp_id} not found in raw or handcrafted experience.")
+
+                to_be_embedded.append(experience_obj)
 
         if len(to_be_embedded) == 0:
             return
         else:
             exp_embeddings = self.llm_api.get_embedding_list(
-                [exp.experience_text for i, exp in enumerate(self.experience_list) if i in to_be_embedded],
+                [exp.experience_text for exp in to_be_embedded],
             )
-            for i, idx in enumerate(to_be_embedded):
-                self.experience_list[idx].embedding = exp_embeddings[i]
-                self.experience_list[idx].embedding_model = self.llm_api.embedding_service.config.embedding_model
+            for i, exp in enumerate(to_be_embedded):
+                exp.embedding = exp_embeddings[i]
+                exp.embedding_model = self.llm_api.embedding_service.config.embedding_model
+                experience_file_path = os.path.join(self.config.experience_dir, f"{target_role}_exp_{exp.exp_id}.yaml")
+                write_yaml(experience_file_path, exp.to_dict())
 
-        for exp in self.experience_list:
-            experience_file_path = os.path.join(self.config.experience_dir, f"{target_role}_exp_{exp.session_id}.yaml")
-            write_yaml(experience_file_path, exp.to_dict())
-        self.logger.info("Experience obj saved.")
+            self.logger.info("Experience obj saved.")
 
     def load_experience(
         self,
@@ -218,25 +226,23 @@ class ExperienceGenerator:
         if len(exp_files) == 0:
             warnings.warn(
                 f"No experience found for {target_role}."
-                f" Please type #SAVE AS EXP in the chat window to save experience.",
+                f"Please type #SAVE AS EXP in the chat window to save raw experience or write handcrafted experience."
+                + self.exception_message_for_refresh,
             )
             return
 
         for exp_file in exp_files:
             exp_file_path = os.path.join(self.config.experience_dir, exp_file)
             experience = read_yaml(exp_file_path)
-            if (
-                experience["embedding_model"] != self.llm_api.embedding_service.config.embedding_model
-                or len(experience["embedding"]) == 0
-            ):
-                raise ValueError(
-                    "The embedding model of the experience is not the same as the current one."
-                    "Please re-summarize and generatr embedding for the experience.",
-                    "Please cd to the `script` directory and "
-                    "run `python -m experience_mgt --refresh` to refresh the experience.",
-                )
-            else:
-                self.experience_list.append(Experience(**experience))
+
+            assert len(experience["embedding"]) > 0, (
+                f"Experience {exp_file} has no embedding." + self.exception_message_for_refresh
+            )
+            assert experience["embedding_model"] == self.llm_api.embedding_service.config.embedding_model, (
+                f"Experience {exp_file} has different embedding model. " + self.exception_message_for_refresh
+            )
+
+            self.experience_list.append(Experience(**experience))
 
     def retrieve_experience(self, user_query: str) -> List[Tuple[Experience, float]]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
@@ -244,12 +250,6 @@ class ExperienceGenerator:
         similarities = []
 
         for experience in self.experience_list:
-            if experience.embedding_model != self.llm_api.embedding_service.config.embedding_model:
-                raise ValueError(
-                    "The embedding model of the experience is not the same as the current one."
-                    "Please re-summarize the experience.",
-                )
-
             similarity = cosine_similarity(
                 user_query_embedding.reshape(
                     1,
@@ -267,21 +267,24 @@ class ExperienceGenerator:
 
         selected_experiences = [(exp, sim) for exp, sim in experience_rank if sim >= self.config.retrieve_threshold]
         self.logger.info(f"Retrieved {len(selected_experiences)} experiences.")
-        self.logger.info(f"Retrieved experiences: {[exp.session_id for exp, sim in selected_experiences]}")
+        self.logger.info(f"Retrieved experiences: {[exp.exp_id for exp, sim in selected_experiences]}")
         return selected_experiences
 
-    def delete_experience(self, session_id: str, target_role: Literal["Planner", "CodeInterpreter"] = "Planner"):
-        exp_file_name = f"{target_role}_exp_{session_id}.yaml"
+    def _delete_exp_file(self, exp_file_name: str):
         if exp_file_name in os.listdir(self.config.experience_dir):
             os.remove(os.path.join(self.config.experience_dir, exp_file_name))
             self.logger.info(f"Experience {exp_file_name} deleted.")
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")
 
-    def delete_raw_experience(self, session_id: str):
-        exp_file_name = f"raw_exp_{session_id}.yaml"
-        if exp_file_name in os.listdir(self.config.experience_dir):
-            os.remove(os.path.join(self.config.experience_dir, exp_file_name))
-            self.logger.info(f"Raw Experience {exp_file_name} deleted.")
-        else:
-            self.logger.info(f"Raw Experience {exp_file_name} not found.")
+    def delete_experience(self, exp_id: str, target_role: Literal["Planner", "CodeInterpreter"]):
+        exp_file_name = f"{target_role}_exp_{exp_id}.yaml"
+        self._delete_exp_file(exp_file_name)
+
+    def delete_raw_experience(self, exp_id: str):
+        exp_file_name = f"raw_exp_{exp_id}.yaml"
+        self._delete_exp_file(exp_file_name)
+
+    def delete_handcrafted_experience(self, exp_id: str):
+        exp_file_name = f"handcrafted_exp_{exp_id}.yaml"
+        self._delete_exp_file(exp_file_name)
