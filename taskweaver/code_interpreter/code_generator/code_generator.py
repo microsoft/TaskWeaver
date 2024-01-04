@@ -91,7 +91,7 @@ class CodeGenerator(Role):
         if self.config.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(plugin_registry, self.llm_api)
             self.plugin_selector.load_plugin_embeddings()
-            logger.info("Plugin embeddings generated")
+            logger.info("Plugin embeddings loaded")
             self.selected_plugin_pool = SelectedPluginPool()
 
     def configure_verification(

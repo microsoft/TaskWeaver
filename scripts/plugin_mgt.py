@@ -20,9 +20,10 @@ parser.add_argument(
         "..",
         "project",
     ),
+    help="The project directory for the TaskWeaver.",
 )
-parser.add_argument("--refresh", action="store_true")
-parser.add_argument("--show", action="store_true")
+parser.add_argument("--refresh", action="store_true", help="Refresh plugin embeddings.")
+parser.add_argument("--show", action="store_true", help="Show plugin information.")
 
 args = parser.parse_args()
 
@@ -38,14 +39,14 @@ class PluginManager:
             app_base_path=args.project_dir,
         )
         app_injector.binder.bind(AppConfigSource, to=app_config)
-        self.experience_generator = app_injector.create_object(PluginSelector)
+        self.plugin_selector = app_injector.create_object(PluginSelector)
 
     def refresh(self):
-        self.experience_generator.refresh()
+        self.plugin_selector.refresh()
         print("Plugin embeddings refreshed.")
 
     def show(self):
-        plugin_list = self.experience_generator.available_plugins
+        plugin_list = self.plugin_selector.available_plugins
         for p in plugin_list:
             print(f"* Plugin Name: {p.name}")
             print(f"* Plugin Description: {p.spec.description}")
