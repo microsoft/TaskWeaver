@@ -122,16 +122,19 @@ class SessionEventEmitter:
 
     def emit_compat(self, t: str, msg: str, extra: Any = None):
         print(f"[{t}] {msg}")
-        self.emit(
-            TaskWeaverEvent(
-                EventScope.session,
-                SessionEventType(t),
-                None,
-                None,
-                msg,
-                extra,
-            ),
-        )
+        try:
+            self.emit(
+                TaskWeaverEvent(
+                    EventScope.session,
+                    SessionEventType(t),
+                    None,
+                    None,
+                    msg,
+                    extra,
+                ),
+            )
+        except ValueError:
+            pass
 
     def register(self, handler: SessionEventHandler):
         self.handlers.append(handler)

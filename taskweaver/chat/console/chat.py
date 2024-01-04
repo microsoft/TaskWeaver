@@ -15,7 +15,8 @@ def error_message(message: str) -> None:
 
 
 def assistant_message(message: str) -> None:
-    click.secho(click.style(f"TaskWeaver: {message}", fg="yellow"))
+    click.secho(click.style(" TaskWeaver ", fg="white", bg="yellow"), nl=False)
+    click.secho(click.style(f"▶  {message}", fg="yellow"))
 
 
 def plain_message(message: str, type: str, nl: bool = True) -> None:
@@ -41,7 +42,7 @@ def thought_animate(message: str, type: str = " 🐙 ", frame: int = 0):
     )
 
 
-def user_input_message(prompt: str = "Human") -> str:
+def user_input_message(prompt: str = "   Human  ") -> str:
     import os
 
     import prompt_toolkit
@@ -62,7 +63,9 @@ def user_input_message(prompt: str = "Human") -> str:
     user_input: str = session.prompt(
         prompt_toolkit.formatted_text.FormattedText(
             [
-                ("ansimagenta", f"{prompt}: "),
+                ("bg:ansimagenta fg:ansiwhite", f" {prompt} "),
+                ("fg:ansimagenta", "▶"),
+                ("", "  "),
             ],
         ),
     )
@@ -75,6 +78,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         self.session = self.app.get_session()
 
     def run(self):
+        self._reset_session(first_session=True)
         while True:
             user_input = user_input_message()
             self._process_user_input(user_input)
@@ -96,13 +100,14 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
                 click.clear()
                 return
             if lower_message == "/reset":
-                self.session = self.app.get_session()
+                self._reset_session()
                 return
             if lower_message.startswith("/load"):
                 file_to_load = msg[5:].strip()
                 self._load_file(file_to_load)
                 return
             error_message(f"Unknown command '{msg}', please try again")
+            return
 
         self._handle_message(msg)
 
@@ -122,6 +127,12 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         )
 
     def _load_file(self, file_to_load: str):
+        import os
+
+        file_path = os.path.realpath(file_to_load.strip())
+        if not os.path.exists(file_path):
+            error_message(f"File '{file_to_load}' not found")
+            return
         self._system_message(f"Loading file '{file_to_load}'")
 
     def _reset_session(self, first_session: bool = False):
@@ -134,7 +145,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         )
 
     def _system_message(self, message: str):
-        click.secho(message, fg="gray")
+        click.secho(message, fg="bright_black")
 
     def _handle_message(self, input_message: str):
         exit_event = threading.Event()
@@ -221,7 +232,6 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         type: SessionEventType,
         msg: str,
         extra: Any,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
@@ -232,7 +242,6 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         msg: str,
         extra: Any,
         round_id: str,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
@@ -244,7 +253,6 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         extra: Any,
         post_id: str,
         round_id: str,
-        session_id: str,
         **kwargs: Any,
     ):
         pass
