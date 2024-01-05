@@ -15,7 +15,6 @@ The following table lists the parameters in the configuration file:
 | `llm.api_version`                             | The version of the OpenAI API.                                             | `2023-07-01-preview`                                                                   |
 | `llm.response_format`                         | The response format of the OpenAI API, could be `json_object`, `text` or `null`. | `json_object`                                                                          |
 | `code_interpreter.code_verification_on`       | Whether to enable code verification.                                       | `false`                                                                                |
-| `code_interpreter.plugin_only`                | Whether to turn on the plugin only mode.                                   | `false`                                                                                |
 | `code_interpreter.allowed_modules`            | The list of allowed modules to import in code generation.                  | `"pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"` |
 | `logging.log_file`                            | The name of the log file.                                                  | `taskweaver.log`                                                                       |
 | `logging.log_folder`                          | The folder to store the log file.                                          | `logs`                                                                                 |
@@ -29,8 +28,9 @@ The following table lists the parameters in the configuration file:
 | `code_generator.auto_plugin_selection_topk`   | The number of auto selected plugins in each round.                         | `3`                                                                                    |
 | `session.max_internal_chat_round_num`         | The maximum number of internal chat rounds between Planner and Code Interpreter. | `10`                                                                                   |
 | `session.code_interpreter_only`               | Allow users to directly communicate with the Code Interpreter.             | `false`                                                                                |
-|`round_compressor.rounds_to_compress`          | The number of rounds to compress.                                          | `2`                                                                                    |
-|`round_compressor.rounds_to_retain`            | The number of rounds to retain.                                            | `3`                                                                                    |
+| `session.plugin_only`                         | Whether to turn on the plugin only mode.                                   | `false`                                                                                |
+| `round_compressor.rounds_to_compress`         | The number of rounds to compress.                                          | `2`                                                                                    |
+| `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                            | `3`                                                                                    |
 
 
 > 💡 $\{AppBaseDir\} is the project directory.
