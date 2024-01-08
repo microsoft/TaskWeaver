@@ -54,11 +54,12 @@ class MockApiServiceConfig(LLMServiceConfig):
             os.path.join(self.src.app_base_path, "cache", "mock.yaml"),
         )
 
+        os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
         # split the chat completion response into chunks and delay each chunk by this amount
         # if negative, return the whole response at once
         self.playback_delay: float = self._get_float(
             "playback_delay",
-            0.05,
+            -1,
         )
 
 
