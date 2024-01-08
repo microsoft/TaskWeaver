@@ -2,12 +2,24 @@
     <img src="./.asset/logo.color.svg" width="45" /> TaskWeaver
 </h1>
 
-A **code-first** agent framework for seamlessly planning and executing data analytics tasks. 
-This innovative framework interprets user requests through coded snippets and efficiently 
-coordinates a variety of plugins in the form of functions to execute 
-data analytics tasks.
+<div align="center">
 
-# News🆕
+[![Discord Follow](https://dcbadge.vercel.app/api/server/Z56MXmZgMb?style=flat)](https://discord.gg/Z56MXmZgMb) &ensp;
+![Python Version](https://img.shields.io/badge/Python-3776AB?&logo=python&logoColor=white-blue&label=3.10%20%7C%203.11)&ensp;
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)&ensp;
+![Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)
+
+</div>
+
+TaskWeaver is A **code-first** agent framework for seamlessly planning and executing data analytics tasks. This innovative framework interprets user requests through coded snippets and efficiently coordinates a variety of plugins in the form of functions to execute data analytics tasks in a stateful manner.
+
+
+<h1 align="center">
+    <img src="./.asset/taskweaver_arch.png"/> 
+</h1>
+
+
+## 🆕 News
 - 📅2024-01-01: Happy New Year 🎆 with TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb).
 - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.
 - 📅2023-12-21: TaskWeaver Website is now [available](https://microsoft.github.io/TaskWeaver/) with more documentations.
@@ -15,7 +27,7 @@ data analytics tasks.
 <!-- - [2023-11-30] TaskWeaver is released on GitHub🎈.  -->
 
 
-## Highlights
+## 💥 Highlights
 
 - [x] **Rich data structure** - TaskWeaver allows you to work with rich data structures in Python, such as DataFrames, instead of dealing with strings.
 - [x] **Customized algorithms** - TaskWeaver allows you to encapsulate your own algorithms into plugins and orchestrate them.
@@ -27,9 +39,9 @@ data analytics tasks.
 - [x] **Security consideration** - TaskWeaver supports a basic session management to keep different users' data separate. The code execution is separated into different processes to avoid mutal interference.
 - [x] **Easy extension** - TaskWeaver is easy to extend to accomplish more complex tasks with multiple agents as the plugins.
 
-## Quick Start
+## ✨ Quick Start
 
-### Installation
+### 🛠️ Step 1: Installation
 TaskWeaver requires **Python >= 3.10**. It can be installed by running the following command:
 ```bash
 # [optional to create conda environment]
@@ -44,7 +56,7 @@ pip install -r requirements.txt
 ```
 
 
-### Configure the LLMs
+### 🖊️ Step 2: Configure the LLMs
 Before running TaskWeaver, you need to provide your LLM configurations. Taking OpenAI as an example, you can configure `taskweaver_config.json` file as follows. 
 
 #### OpenAI
@@ -57,9 +69,9 @@ Before running TaskWeaver, you need to provide your LLM configurations. Taking O
 
 💡 TaskWeaver also supports other LLMs and advanced configurations, please check the [documents](https://microsoft.github.io/TaskWeaver/docs/overview) for more details. 
 
-### Start TaskWeaver
+### 🚩 Step 3: Start TaskWeaver
 
-#### 1. Command Line Interaction
+#### ⌨️ Command Line (CLI)
 ```bash
 # assume you are in the cloned TaskWeaver folder
 python -m taskweaver -p ./project/
@@ -79,26 +91,29 @@ TaskWeaver: I am TaskWeaver, an AI assistant. To get started, could you please e
 Human: ___
 ```
 
-#### 2. Web UI 
+####  or 💻 Web UI 
 TaskWeaver also supports WebUI for demo purpose, please refers to [web UI docs](https://microsoft.github.io/TaskWeaver/docs/usage/webui) for more details.
 
-#### 3. Import as a Library
+#### or 📋 Import as a Library
 TaskWeaver can be imported as a library to integrate with your existing project, more information can be found in [docs](https://microsoft.github.io/TaskWeaver/docs/usage/library)
 
-## Documentation
+## 📖 Documentation
 More documentations can be found on [TaskWeaver Website](https://microsoft.github.io/TaskWeaver).
 
 
+### ❓Get help 
+* ❔GitHub Issues (prefered)
+* [💬 Discord](https://discord.gg/Z56MXmZgMb) for discussion
 
 ---
 
 
-## Demo Examples
+## 🎬 Demo Examples
 
 The demos were made based on the [web UI](https://microsoft.github.io/TaskWeaver/docs/usage/webui), which is better for displaying the generated artifacts such as images. 
 The demos could also be conducted in the command line interface. 
 
-#### Example 1: Pull data from a database and apply an anomaly detection algorithm
+#### 1️⃣📉 Example 1: Pull data from a database and apply an anomaly detection algorithm
 In this example, we will show you how to use TaskWeaver to pull data from a database and apply an anomaly detection algorithm.
 
 [Anomaly Detection](https://github.com/microsoft/TaskWeaver/assets/7489260/248b9a0c-d504-4708-8c2e-e004689ee8c6)
@@ -122,7 +137,7 @@ pip install langchain
 pip install tabulate
 ```
 
-#### Example 2: Forecast QQQ's price in the next 7 days
+#### 2️⃣🏦 Example 2: Forecast QQQ's price in the next 7 days
 In this example, we will show you how to use TaskWeaver to forecast QQQ's price in the next 7 days. 
 
 [Nasdaq 100 Index Price Forecasting](https://github.com/microsoft/TaskWeaver/assets/7489260/1361ed83-16c3-4056-98fc-e0496ecab015)
@@ -140,7 +155,7 @@ For more examples, please refer to our [paper](http://export.arxiv.org/abs/2311.
 > Typically, more concrete prompts will help the model to generate better plans and code.
 
 
-## Citation
+## 📚 Citation
 Our paper could be found [here](http://export.arxiv.org/abs/2311.17541). 
 If you use TaskWeaver in your research, please cite our paper:
 ```
