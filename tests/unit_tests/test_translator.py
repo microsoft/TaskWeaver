@@ -6,6 +6,7 @@ from injector import Injector
 from taskweaver.logging import LoggingModule
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import PostTranslator
 
 response_str1 = (
@@ -52,14 +53,18 @@ def test_parse_llm():
             return True
         return False
 
-    response = translator.raw_text_to_post(
+    event_emitter = SessionEventEmitter()
+    event_emitter.start_round("test_round")
+
+    post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
+    translator.raw_text_to_post(
         llm_output=response_str1,
-        send_from="CodeInterpreter",
+        post_proxy=post_proxy,
         early_stop=early_stop,
     )
-
-    assert response.message is None
-    assert response.send_to is None
+    response = post_proxy.end()
+    assert response.message == ""
+    assert response.send_to is "Unknown"
     assert response.send_from == "CodeInterpreter"
     assert len(response.attachment_list) == 2
     assert response.attachment_list[0].type == AttachmentType.thought
@@ -68,10 +73,13 @@ def test_parse_llm():
     assert response.attachment_list[1].type == AttachmentType.python
     assert response.attachment_list[1].content == "print('This is the code')"
 
-    response = translator.raw_text_to_post(
+    post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
+    translator.raw_text_to_post(
         llm_output=response_str1,
-        send_from="CodeInterpreter",
+        post_proxy=post_proxy,
     )
+    response = post_proxy.end()
+
     assert len(response.attachment_list) == 6
     assert response.attachment_list[4].type == AttachmentType.execution_status
     assert response.attachment_list[4].content == "SUCCESS"

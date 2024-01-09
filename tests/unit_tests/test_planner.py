@@ -188,6 +188,7 @@ def test_skip_planning():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
     planner = app_injector.create_object(Planner)
+    planner.event_emitter.start_round("test_round")
 
     post1 = Post.create(
         message="count the rows of /home/data.csv",
