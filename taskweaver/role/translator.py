@@ -59,8 +59,12 @@ class PostTranslator:
                 ], f"Invalid send_to value: {value}"
                 post_proxy.update_send_to(value)  # type: ignore
             else:
-                type = AttachmentType(type_str)
-                post_proxy.update_attachment(value, type)
+                try:
+                    type = AttachmentType(type_str)
+                    post_proxy.update_attachment(value, type)
+                except Exception as e:
+                    self.logger.warning(f"Failed to parse attachment: {d} due to {str(e)}")
+                    continue
             parsed_type = (
                 type
                 if type is not None

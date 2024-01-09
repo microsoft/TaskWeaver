@@ -7,7 +7,7 @@ from taskweaver.llm.base import EmbeddingService, LLMServiceConfig
 
 class SentenceTransformerServiceConfig(LLMServiceConfig):
     def _configure(self) -> None:
-        self._set_name("sentence_transformer")
+        self._set_name("sentence_transformers")
 
         self.embedding_model_candidates = [
             "all-mpnet-base-v2",

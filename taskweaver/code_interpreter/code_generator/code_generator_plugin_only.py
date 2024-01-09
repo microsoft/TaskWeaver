@@ -84,7 +84,13 @@ class CodeGeneratorPluginOnly(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
-    def reply(self, memory: Memory, post_proxy: Optional[PostEventProxy] = None) -> Post:
+    def reply(
+        self,
+        memory: Memory,
+        post_proxy: Optional[PostEventProxy] = None,
+        prompt_log_path: Optional[str] = None,
+        use_back_up_engine: bool = False,
+    ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
@@ -105,6 +111,9 @@ class CodeGeneratorPluginOnly(Role):
             plugin_pool=self.plugin_pool,
         )
         post_proxy.update_send_to("Planner")
+
+        if prompt_log_path is not None:
+            self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
         llm_response = self.llm_api.chat_completion(
             messages=prompt,

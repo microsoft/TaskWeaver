@@ -1,6 +1,9 @@
 import os
+import re
 import sys
 from typing import Dict
+
+import requests
 
 try:
     import chainlit as cl
@@ -24,6 +27,59 @@ app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
 
 
+def file_display(files, session_cwd_path):
+    elements = []
+    for file_name, file_path in files:
+        # if image, no need to display as another file
+        if file_path.endswith((".png", ".jpg", ".jpeg", ".gif")):
+            image = cl.Image(
+                name=file_path,
+                display="inline",
+                path=file_path,
+                size="large",
+            )
+            elements.append(image)
+        else:
+            if file_path.endswith(".csv"):
+                import pandas as pd
+
+                data = (
+                    pd.read_csv(file_path)
+                    if os.path.isabs(file_path)
+                    else pd.read_csv(os.path.join(session_cwd_path, file_path))
+                )
+                row_count = len(data)
+                table = cl.Text(
+                    name=file_path,
+                    content=f"There are {row_count} in the data. The top {min(row_count, 5)} rows are:\n"
+                    + data.head(n=5).to_markdown(),
+                    display="inline",
+                )
+                elements.append(table)
+            else:
+                print(f"Unsupported file type: {file_name} for inline display.")
+            # download files from plugin context
+            file = cl.File(
+                name=file_name,
+                display="inline",
+                path=file_path if os.path.isabs(file_path) else os.path.join(session_cwd_path, file_path),
+            )
+            elements.append(file)
+    return elements
+
+
+def is_link_clickable(url):
+    if url:
+        try:
+            response = requests.get(url)
+            # If the response status code is 200, the link is clickable
+            return response.status_code == 200
+        except requests.exceptions.RequestException:
+            return False
+    else:
+        return False
+
+
 @cl.on_chat_start
 async def start():
     user_session_id = cl.user_session.get("id")
@@ -34,9 +90,21 @@ async def start():
 async def main(message: cl.Message):
     user_session_id = cl.user_session.get("id")
     session = app_session_dict[user_session_id]
+    session_cwd_path = session.execution_cwd
+
+    if message.elements:
+        upload_file_paths = []
+        for element in message.elements:
+            file_name = element.name
+            file_content = element.content
+            tw_file_path = os.path.join(session_cwd_path, file_name)
+            with open(tw_file_path, "wb") as f:
+                f.write(file_content)
+            upload_file_paths.append(tw_file_path)
+        message.content = f"Load the file(s) from {file_name}, {message.content}"
 
     def send_message_sync(msg: str) -> Round:
-        return session.send_message(msg)
+        return session.send_message(msg, event_handler=lambda _type, _msg: print(f"{_type}:\n{_msg}"))
 
     # display loader before sending message
     id = await cl.Message(content="").send()
@@ -79,29 +147,25 @@ async def main(message: cl.Message):
         ).send()
 
     if post.send_to == "User":
-        elements = None
+        files = []
         if len(artifact_paths) > 0:
-            elements = []
-            for path in artifact_paths:
-                # if path is image, display it
-                if path.endswith((".png", ".jpg", ".jpeg", ".gif")):
-                    image = cl.Image(
-                        name=path,
-                        display="inline",
-                        path=path,
-                        size="large",
-                    )
-                    elements.append(image)
-                elif path.endswith(".csv"):
-                    import pandas as pd
+            for file_path in artifact_paths:
+                # if path is image or csv (the top 5 rows), display it
+                file_name = os.path.basename(file_path)
+                files.append((file_name, file_path))
 
-                    data = pd.read_csv(path)
-                    row_count = len(data)
-                    table = cl.Text(
-                        name=path,
-                        content=f"There are {row_count} in the data. The top {min(row_count, 5)} rows are:\n"
-                        + data.head(n=5).to_markdown(),
-                        display="inline",
-                    )
-                    elements.append(table)
-        await cl.Message(content=f"{post.message}", elements=elements).send()
+        # Extract the file path from the message and display it
+        message = post.message
+        pattern = r"(!?)\[(.*?)\]\((.*?)\)"
+        matches = re.findall(pattern, message)
+        for match in matches:
+            img_prefix, file_name, file_path = match
+            if "://" in file_path:
+                if not is_link_clickable(file_path):
+                    message = message.replace(f"{img_prefix}[{file_name}]({file_path})", file_name)
+                continue
+            files.append((file_name, file_path))
+            message = message.replace(f"{img_prefix}[{file_name}]({file_path})", file_name)
+
+        elements = file_display(files, session_cwd_path)
+        await cl.Message(content=f"{message}", elements=elements if len(elements) > 0 else None).send()
