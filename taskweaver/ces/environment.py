@@ -16,7 +16,7 @@ from taskweaver.ces.common import EnvPlugin, ExecutionArtifact, ExecutionResult,
 logger = logging.getLogger(__name__)
 
 handler = logging.StreamHandler(sys.stdout)
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.WARNING)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -362,7 +362,7 @@ class Environment:
             while True:
                 message = kc.get_iopub_msg(timeout=180)
 
-                logger.info(json.dumps(message, indent=2, default=str))
+                logger.debug(json.dumps(message, indent=2, default=str))
 
                 assert message["parent_header"]["msg_id"] == result_msg_id
                 msg_type = message["msg_type"]
