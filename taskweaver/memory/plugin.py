@@ -168,7 +168,7 @@ class PluginEntry:
     def from_yaml_file(path: str) -> Optional["PluginEntry"]:
         content = read_yaml(path)
         yaml_file_name = os.path.basename(path)
-        meta_file_path = os.path.join(os.path.dirname(path), f"meta_{yaml_file_name}")
+        meta_file_path = os.path.join(os.path.dirname(path), ".meta", f"meta_{yaml_file_name}")
         if os.path.exists(meta_file_path):
             meta_data = PluginMetaData.from_dict(read_yaml(meta_file_path))
             meta_data.path = meta_file_path

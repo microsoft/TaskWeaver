@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List
 
 import numpy as np
@@ -75,6 +76,10 @@ class PluginSelector:
             "Please cd to the `script` directory and "
             "run `python -m plugin_mgt --refresh` to refresh the plugin embedding."
         )
+
+        self.meta_file_dir = os.path.join(os.path.dirname(plugin_registry.file_glob), ".meta")
+        if not os.path.exists(self.meta_file_dir):
+            os.makedirs(self.meta_file_dir)
 
     def refresh(self):
         plugins_to_embedded = []
