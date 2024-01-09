@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import requests
 
@@ -27,8 +27,8 @@ app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
 
 
-def file_display(files, session_cwd_path):
-    elements = []
+def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
+    elements: List[cl.Element] = []
     for file_name, file_path in files:
         # if image, no need to display as another file
         if file_path.endswith((".png", ".jpg", ".jpeg", ".gif")):
@@ -68,7 +68,7 @@ def file_display(files, session_cwd_path):
     return elements
 
 
-def is_link_clickable(url):
+def is_link_clickable(url: str):
     if url:
         try:
             response = requests.get(url)
@@ -104,7 +104,7 @@ async def main(message: cl.Message):
         message.content = f"Load the file(s) from {file_name}, {message.content}"
 
     def send_message_sync(msg: str) -> Round:
-        return session.send_message(msg, event_handler=lambda _type, _msg: print(f"{_type}:\n{_msg}"))
+        return session.send_message(msg)
 
     # display loader before sending message
     id = await cl.Message(content="").send()
