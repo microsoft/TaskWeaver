@@ -35,6 +35,7 @@ The following table lists the parameters in the configuration file:
 |`round_compressor.rounds_to_retain`            | The number of rounds to retain.                                                  | `3`                                                                                    |
 
 
+
 > 💡 $\{AppBaseDir\} is the project directory.
 
 > 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format` to `null`.

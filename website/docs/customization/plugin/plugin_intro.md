@@ -40,7 +40,7 @@ Here we exhibit an example of the anomaly detection plugin as the following code
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
 
-from taskWeaver.plugin import Plugin, register_plugin
+from taskweaver.plugin import Plugin, register_plugin
 
 
 @register_plugin
@@ -178,7 +178,27 @@ returns:
 
 Besides, we also set two optional fields as below:
 
-1. **code**: In cases where multiple plugins map to the same Python code (i.e., the plugin name is different from the
-   code name), it is essential to specify the code name (code file) in the plugin schema to ensure clarity and accuracy.
+1. **code**: Without specifying the code file name, the plugin schema will use the plugin name as the code file name.
+   For example, the plugin name is `anomaly_detection` and the code file name is `anomaly_detection.py`.
+   In cases where the plugin name is not the same as the code file name, you can specify the code name (code file) in
+    the plugin schema to ensure clarity and accuracy. For example, the plugin name is `anomaly_detection` and the code
+    file name is `anomaly_detection_code.py`. Then, you can specify the code name in the plugin schema as follows:
+   ```yaml
+   code: anomaly_detection_code
+   ```
+   Note that the code file name should be the same as the code name without the `.py` extension. 
 2. **configurations**: When using common code that requires some configuration parameter modifications for different
    plugins, it is important to specify these configuration parameters in the plugin schema.
+   The configuration parameters are specified in the plugin schema as follows:
+   ```yaml
+    configurations:
+      key1: value1
+      key2: value2
+    ```
+   These configuration parameters can be accessed in the plugin implementation as follows:
+   ```python
+   self.config.get("key1")
+   self.config.get("key2")
+   ```
+   
+
