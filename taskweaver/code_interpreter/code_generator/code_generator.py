@@ -12,6 +12,7 @@ from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, Rou
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
+from taskweaver.module.event_emitter import PostEventProxy
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -290,9 +291,11 @@ class CodeGenerator(Role):
     def reply(
         self,
         memory: Memory,
+        post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -313,19 +316,19 @@ class CodeGenerator(Role):
             else:
                 return False
 
-        response = self.post_translator.raw_text_to_post(
+        self.post_translator.raw_text_to_post(
             llm_output=self.llm_api.chat_completion(
                 prompt,
                 use_backup_engine=use_back_up_engine,
             )["content"],
-            send_from="CodeInterpreter",
+            post_proxy=post_proxy,
             early_stop=early_stop,
         )
-        response.send_to = "Planner"
+        post_proxy.update_send_to("Planner")
         generated_code = ""
-        for attachment in response.attachment_list:
+        for attachment in post_proxy.post.attachment_list:
             if attachment.type in [AttachmentType.sample, AttachmentType.text]:
-                response.message = attachment.content
+                post_proxy.update_message(attachment.content)
                 break
             elif attachment.type == AttachmentType.python:
                 generated_code = attachment.content
@@ -338,7 +341,7 @@ class CodeGenerator(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
 
-        return response
+        return post_proxy.post
 
     def format_plugins(
         self,

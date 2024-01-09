@@ -191,8 +191,9 @@ class PostEventProxy:
         self.post.message = msg
         self._emit(PostEventType.post_error, msg)
 
-    def end(self, msg: str):
+    def end(self, msg: str = ""):
         self._emit(PostEventType.post_end, msg)
+        return self.post
 
     def _emit(
         self,
@@ -221,22 +222,6 @@ class SessionEventEmitter:
         for handler in self.handlers:
             handler.handle(event)
 
-    def emit_compat(self, t: str, msg: str, extra: Any = None):
-        print(f"[{t}] {msg}")
-        try:
-            self.emit(
-                TaskWeaverEvent(
-                    EventScope.session,
-                    SessionEventType(t),
-                    None,
-                    None,
-                    msg,
-                    extra,
-                ),
-            )
-        except ValueError:
-            pass
-
     def start_round(self, round_id: str):
         self.current_round_id = round_id
         self.emit(
@@ -255,6 +240,17 @@ class SessionEventEmitter:
             self,
             self.current_round_id,
             Post.create(message="", send_from=send_from),
+        )
+
+    def emit_error(self, msg: str):
+        self.emit(
+            TaskWeaverEvent(
+                EventScope.round,
+                RoundEventType.round_error,
+                self.current_round_id,
+                None,
+                msg,
+            ),
         )
 
     def end_round(self, round_id: str):

@@ -162,7 +162,7 @@ class Session:
             self.logger.error(stack_trace_str)
             chat_round.change_round_state("failed")
             err_message = f"Cannot process your request due to Exception: {str(e)} \n {stack_trace_str}"
-            self.event_emitter.emit_compat("error", err_message)
+            self.event_emitter.emit_error(err_message)
 
         finally:
             self.internal_chat_num = 0

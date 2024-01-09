@@ -91,7 +91,10 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         round_id: str,
         **kwargs: Any,
     ):
-        pass
+        if type == RoundEventType.round_error:
+            with self.lock:
+                self.pending_updates.append(("end_post", ""))
+                self.pending_updates.append(("round_error", msg))
 
     def handle_post(
         self,
@@ -218,13 +221,15 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                         cur_key = opt
                         cur_message_buffer = ""
                     elif action == "attachment_add":
-                        cur_message_buffer += opt
+                        cur_message_buffer += str(opt)
                     elif action == "attachment_end":
                         if cur_key == "msg":
                             print(f" ├──● {cur_message_buffer}")
                         else:
                             print(f" ├─► [{cur_key}] {cur_message_buffer}")
                         # print(" │  ")
+                    elif action == "round_error":
+                        error_message(opt)
 
                 self.pending_updates.clear()
 

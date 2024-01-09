@@ -10,7 +10,7 @@ from injector import inject
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 
 
 class PostTranslator:
@@ -31,10 +31,10 @@ class PostTranslator:
     def raw_text_to_post(
         self,
         llm_output: str,
-        send_from: Literal["User", "Planner", "CodeInterpreter"],
+        post_proxy: PostEventProxy,
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
-    ) -> Post:
+    ) -> None:
         """
         Convert the raw text output of LLM to a Post object.
         :param llm_output_stream:
@@ -44,25 +44,23 @@ class PostTranslator:
         """
         # llm_output_list = [token for token in llm_output_stream]  # collect all the llm output via iterator
         # llm_output = "".join(llm_output_list)
-        post = Post.create(message=None, send_from=send_from, send_to=None)
         self.logger.info(f"LLM output: {llm_output}")
         for d in self.parse_llm_output_stream([llm_output]):
             type_str = d["type"]
             type: Optional[AttachmentType] = None
             value = d["content"]
             if type_str == "message":
-                post.message = value
+                post_proxy.update_message(value)
             elif type_str == "send_to":
                 assert value in [
                     "User",
                     "Planner",
                     "CodeInterpreter",
                 ], f"Invalid send_to value: {value}"
-                post.send_to = value  # type: ignore
+                post_proxy.update_send_to(value)  # type: ignore
             else:
                 type = AttachmentType(type_str)
-                post.add_attachment(Attachment.create(type=type, content=value))
-            self.event_emitter.emit_compat(type_str, value)
+                post_proxy.update_attachment(value, type)
             parsed_type = (
                 type
                 if type is not None
@@ -76,12 +74,8 @@ class PostTranslator:
             if early_stop is not None and early_stop(parsed_type, value):
                 break
 
-        if post.send_to is not None:
-            self.event_emitter.emit_compat(post.send_from + "->" + post.send_to, post.message)
-
         if validation_func is not None:
-            validation_func(post)
-        return post
+            validation_func(post_proxy.post)
 
     def post_to_raw_text(
         self,

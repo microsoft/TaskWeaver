@@ -9,9 +9,9 @@ from taskweaver.code_interpreter.code_generator.code_generator import format_out
 from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Memory, Post
+from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.role import Role
 
 
@@ -25,30 +25,38 @@ class CodeInterpreterConfig(ModuleConfig):
         self.code_verification_on = self._get_bool("code_verification_on", False)
         self.allowed_modules = self._get_list(
             "allowed_modules",
-            ["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"],
+            [
+                "pandas",
+                "matplotlib",
+                "numpy",
+                "sklearn",
+                "scipy",
+                "seaborn",
+                "datetime",
+                "typing",
+            ],
         )
 
 
 def update_verification(
-    response: Post,
+    response: PostEventProxy,
     status: Literal["NONE", "INCORRECT", "CORRECT"] = "NONE",
     error: str = "No verification is done.",
 ):
-    response.add_attachment(Attachment.create(AttachmentType.verification, status))
-    response.add_attachment(
-        Attachment.create(AttachmentType.code_error, error),
+    response.update_attachment(status, AttachmentType.verification)
+    response.update_attachment(
+        error,
+        AttachmentType.code_error,
     )
 
 
 def update_execution(
-    response: Post,
+    response: PostEventProxy,
     status: Literal["NONE", "SUCCESS", "FAILURE"] = "NONE",
     result: str = "No code is executed.",
 ):
-    response.add_attachment(Attachment.create(AttachmentType.execution_status, status))
-    response.add_attachment(
-        Attachment.create(AttachmentType.execution_result, result),
-    )
+    response.update_attachment(status, AttachmentType.execution_status)
+    response.update_attachment(result, AttachmentType.execution_result)
 
 
 class CodeInterpreter(Role):
@@ -82,43 +90,53 @@ class CodeInterpreter(Role):
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
-        response: Post = self.generator.reply(
+        post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
+        self.generator.reply(
             memory,
+            post_proxy,
             prompt_log_path,
             use_back_up_engine,
         )
-        if response.message is not None:
-            update_verification(response, "NONE", "No code verification is performed.")
-            update_execution(response, "NONE", "No code is executed.")
-            self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
-            return response
 
-        code = next((a for a in response.attachment_list if a.type == AttachmentType.python), None)
+        if post_proxy.post.message is not None and post_proxy.post.message != "":  # type: ignore
+            update_verification(
+                post_proxy,
+                "NONE",
+                "No code verification is performed.",
+            )
+            update_execution(post_proxy, "NONE", "No code is executed.")
+            return post_proxy.end()
+
+        code = next(
+            (a for a in post_proxy.post.attachment_list if a.type == AttachmentType.python),
+            None,
+        )
 
         if code is None:
             # no code is generated is usually due to the failure of parsing the llm output
-            update_verification(response, "NONE", "No code verification is performed.")
-            update_execution(response, "NONE", "No code is executed due to code generation failure.")
-            response.message = "Failed to generate code."
+            update_verification(
+                post_proxy,
+                "NONE",
+                "No code verification is performed.",
+            )
+            update_execution(
+                post_proxy,
+                "NONE",
+                "No code is executed due to code generation failure.",
+            )
+            post_proxy.update_message("Failed to generate code.")
             if self.retry_count < self.config.max_retry_count:
                 error_message = format_output_revision_message()
-                response.add_attachment(
-                    Attachment.create(
-                        AttachmentType.revise_message,
-                        error_message,
-                    ),
-                )
-                response.send_to = "CodeInterpreter"
-                self.event_emitter.emit_compat(
-                    "CodeInterpreter->CodeInterpreter",
+                post_proxy.update_attachment(
                     error_message,
+                    AttachmentType.revise_message,
                 )
+                post_proxy.update_send_to("CodeInterpreter")
                 self.retry_count += 1
             else:
                 self.retry_count = 0
-                self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
 
-            return response
+            return post_proxy.end()
 
         self.logger.info(f"Code to be verified: {code.content}")
         code_verify_errors = code_snippet_verification(
@@ -130,95 +148,85 @@ class CodeInterpreter(Role):
         )
 
         if code_verify_errors is None:
-            self.event_emitter.emit_compat("verification", "NONE")
-            update_verification(response, "NONE", "No code verification is performed.")
+            update_verification(
+                post_proxy,
+                "NONE",
+                "No code verification is performed.",
+            )
         elif len(code_verify_errors) > 0:
             self.logger.info(
                 f"Code verification finished with {len(code_verify_errors)} errors.",
             )
             code_error = "\n".join(code_verify_errors)
-            self.event_emitter.emit_compat("verification", f"INCORRECT: {code_error}")
-            update_verification(response, "INCORRECT", code_error)
-            response.message = code_error
+            update_verification(post_proxy, "INCORRECT", code_error)
+            post_proxy.update_message(code_error)
             if self.retry_count < self.config.max_retry_count:
-                response.add_attachment(
-                    Attachment.create(
-                        AttachmentType.revise_message,
-                        format_code_correction_message(),
-                    ),
-                )
-                response.send_to = "CodeInterpreter"
-                self.event_emitter.emit_compat(
-                    "CodeInterpreter->CodeInterpreter",
+                post_proxy.update_attachment(
                     format_code_correction_message(),
+                    AttachmentType.revise_message,
                 )
+                post_proxy.update_send_to("CodeInterpreter")
                 self.retry_count += 1
             else:
                 self.retry_count = 0
-                self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
 
             # add execution status and result
-            update_execution(response, "NONE", "No code is executed due to code verification failure.")
-            return response
+            update_execution(
+                post_proxy,
+                "NONE",
+                "No code is executed due to code verification failure.",
+            )
+            return post_proxy.end()
         elif len(code_verify_errors) == 0:
-            self.event_emitter.emit_compat("verification", "CORRECT")
-            update_verification(response, "CORRECT", "No error is found.")
+            update_verification(post_proxy, "CORRECT", "No error is found.")
 
         self.logger.info(f"Code to be executed: {code.content}")
 
         exec_result = self.executor.execute_code(
-            exec_id=response.id,
+            exec_id=post_proxy.post.id,
             code=code.content,
         )
-        self.event_emitter.emit_compat("status", "SUCCESS" if exec_result.is_success else "FAILURE")
+
         code_output = self.executor.format_code_output(
             exec_result,
             with_code=False,
             use_local_uri=self.config.use_local_uri,
         )
 
-        self.event_emitter.emit_compat("result", code_output)
         update_execution(
-            response,
+            post_proxy,
             status="SUCCESS" if exec_result.is_success else "FAILURE",
             result=code_output,
         )
 
         # add artifact paths
-        response.add_attachment(
-            Attachment.create(
-                AttachmentType.artifact_paths,
-                [
-                    (
-                        a.file_name
-                        if os.path.isabs(a.file_name) or not self.config.use_local_uri
-                        else os.path.join(self.executor.execution_cwd, a.file_name)
-                    )
-                    for a in exec_result.artifact
-                ],
-            ),
+        post_proxy.update_attachment(
+            [
+                (
+                    a.file_name
+                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
+                    else os.path.join(self.executor.execution_cwd, a.file_name)
+                )
+                for a in exec_result.artifact
+            ],  # type: ignore
+            AttachmentType.artifact_paths,
         )
 
-        response.message = self.executor.format_code_output(
-            exec_result,
-            with_code=True,  # the message to be sent to the user should contain the code
-            use_local_uri=self.config.use_local_uri,
+        post_proxy.update_message(
+            self.executor.format_code_output(
+                exec_result,
+                with_code=True,  # the message to be sent to the user should contain the code
+                use_local_uri=self.config.use_local_uri,
+            ),
         )
 
         if exec_result.is_success or self.retry_count >= self.config.max_retry_count:
             self.retry_count = 0
-            self.event_emitter.emit_compat("CodeInterpreter->Planner", response.message)
         else:
-            response.add_attachment(
-                Attachment.create(
-                    AttachmentType.revise_message,
-                    format_code_revision_message(),
-                ),
-            )
-            response.send_to = "CodeInterpreter"
-            self.event_emitter.emit_compat(
-                "CodeInterpreter->CodeInterpreter",
+            post_proxy.update_send_to("CodeInterpreter")
+            post_proxy.update_attachment(
                 format_code_revision_message(),
+                AttachmentType.revise_message,
             )
             self.retry_count += 1
-        return response
+        return post_proxy.end()

@@ -224,19 +224,11 @@ class Planner(Role):
         else:
             llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
         try:
-            response_post = self.planner_post_translator.raw_text_to_post(
+            self.planner_post_translator.raw_text_to_post(
+                post_proxy=new_post,
                 llm_output=llm_output,
-                send_from="Planner",
                 validation_func=check_post_validity,
             )
-            for a in response_post.attachment_list:
-                new_post.update_attachment(
-                    a.content,
-                    a.type,
-                    a.extra,
-                )
-            new_post.update_message(response_post.message)
-            new_post.update_send_to(response_post.send_to)
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             new_post.error(f"failed to parse LLM output due to {str(e)}")
@@ -258,8 +250,7 @@ class Planner(Role):
                 raise Exception(f"Planner failed to generate response because {str(e)}")
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
-        new_post.end("Planner finished")
-        return new_post.post
+        return new_post.end()
 
     def get_examples(self) -> List[Conversation]:
         example_conv_list = load_examples(self.config.example_base_path)
