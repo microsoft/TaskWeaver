@@ -49,12 +49,15 @@ class Session:
 
         self.session_var: Dict[str, str] = {}
 
+        self.event_emitter = self.session_injector.get(SessionEventEmitter)
+        self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
         self.planner = self.session_injector.create_object(
             Planner,
             {
                 "plugin_only": self.config.plugin_only_mode,
             },
         )
+        self.session_injector.binder.bind(Planner, self.planner)
         self.code_executor = self.session_injector.create_object(
             CodeExecutor,
             {
@@ -68,7 +71,6 @@ class Session:
             self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
         else:
             self.code_interpreter = self.session_injector.get(CodeInterpreter)
-        self.event_emitter = self.session_injector.get(SessionEventEmitter)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
@@ -94,6 +96,7 @@ class Session:
 
     def _send_text_message(self, message: str) -> Round:
         chat_round = self.memory.create_round(user_query=message)
+        self.event_emitter.start_round(chat_round.id)
 
         def _send_message(recipient: str, post: Post) -> Post:
             chat_round.add_post(post)
@@ -170,6 +173,7 @@ class Session:
                     f"{self.session_id}_{chat_round.id}.json",
                 ),
             )
+            self.event_emitter.end_round(chat_round.id)
             return chat_round
 
     def send_message(

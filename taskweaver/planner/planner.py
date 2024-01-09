@@ -9,7 +9,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
@@ -206,6 +206,8 @@ class Planner(Role):
         assert len(rounds) != 0, "No chat rounds found for planner"
         chat_history = self.compose_prompt(rounds)
 
+        new_post = self.event_emitter.create_post_proxy("Planner")
+
         def check_post_validity(post: Post):
             assert post.send_to is not None, "send_to field is None"
             assert post.send_to != "Planner", "send_to field should not be Planner"
@@ -227,25 +229,37 @@ class Planner(Role):
                 send_from="Planner",
                 validation_func=check_post_validity,
             )
+            for a in response_post.attachment_list:
+                new_post.update_attachment(
+                    a.content,
+                    a.type,
+                    a.extra,
+                )
+            new_post.update_message(response_post.message)
+            new_post.update_send_to(response_post.send_to)
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
-            response_post = Post.create(
-                message=f"Failed to parse Planner output due to {str(e)}."
+            new_post.error(f"failed to parse LLM output due to {str(e)}")
+            new_post.update_attachment(
+                llm_output,
+                AttachmentType.invalid_response,
+            )
+            new_post.update_message(
+                f"Failed to parse Planner output due to {str(e)}."
                 f"The output format should follow the below format:"
                 f"{self.prompt_data['planner_response_schema']}"
                 "Please try to regenerate the output.",
-                send_to="Planner",
-                send_from="Planner",
-                attachment_list=[Attachment.create(type=AttachmentType.invalid_response, content=llm_output)],
             )
+            new_post.update_send_to("Planner")
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
                 self.ask_self_cnt = 0
+                new_post.end("Planner failed to generate response")
                 raise Exception(f"Planner failed to generate response because {str(e)}")
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
-
-        return response_post
+        new_post.end("Planner finished")
+        return new_post.post
 
     def get_examples(self) -> List[Conversation]:
         example_conv_list = load_examples(self.config.example_base_path)

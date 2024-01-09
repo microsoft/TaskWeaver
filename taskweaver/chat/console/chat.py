@@ -1,4 +1,5 @@
 import threading
+import time
 from textwrap import dedent
 from typing import Any, List, Optional, Tuple
 
@@ -6,6 +7,7 @@ import click
 from colorama import ansi
 
 from taskweaver.app.app import TaskWeaverApp
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase, SessionEventType
 from taskweaver.session.session import Session
 
@@ -21,19 +23,6 @@ def plain_message(message: str, type: str, nl: bool = True) -> None:
             fg="bright_black",
         ),
         nl=nl,
-    )
-
-
-def thought_animate(message: str, type: str = " 🐙 ", frame: int = 0):
-    frame_inx = abs(frame % 20 - 10)
-    ani_frame = " " * frame_inx + "<=💡=>" + " " * (10 - frame_inx)
-    message = f"{message} {ani_frame}\r"
-    click.secho(
-        click.style(
-            f">>> [{type}] {message}",
-            fg="bright_black",
-        ),
-        nl=False,
     )
 
 
@@ -75,7 +64,12 @@ def user_input_message(prompt: str = "   Human  ") -> str:
 class TaskWeaverRoundUpdater(SessionEventHandlerBase):
     def __init__(self):
         self.exit_event = threading.Event()
+        self.update_cond = threading.Condition()
         self.lock = threading.Lock()
+
+        self.last_attachment_id = ""
+        self.pending_updates: List[Tuple[str, str]] = []
+
         self.messages: List[Tuple[str, str]] = []
         self.response: List[str] = []
         self.result: Optional[str] = None
@@ -108,7 +102,40 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         round_id: str,
         **kwargs: Any,
     ):
-        pass
+        if type == PostEventType.post_start:
+            with self.lock:
+                self.pending_updates.append(("start_post", extra["role"]))
+        elif type == PostEventType.post_end:
+            with self.lock:
+                self.pending_updates.append(("end_post", ""))
+        elif type == PostEventType.post_error:
+            with self.lock:
+                pass
+        elif type == PostEventType.post_attachment_update:
+            with self.lock:
+                id: str = extra["id"]
+                a_type: AttachmentType = extra["type"]
+                is_end: bool = extra["is_end"]
+                # a_extra: Any = extra["extra"]
+                if id != self.last_attachment_id:
+                    self.pending_updates.append(("attachment_start", a_type.name))
+                    self.last_attachment_id = id
+                self.pending_updates.append(("attachment_add", msg))
+                if is_end:
+                    self.last_attachment_id = ""
+                    self.pending_updates.append(("attachment_end", ""))
+        elif type == PostEventType.post_send_to_update:
+            with self.lock:
+                self.pending_updates.append(("send_to_update", extra["role"]))
+        elif type == PostEventType.post_message_update:
+            with self.lock:
+                if self.last_attachment_id != "msg":
+                    self.pending_updates.append(("attachment_start", "msg"))
+                    self.last_attachment_id = "msg"
+                self.pending_updates.append(("attachment_add", msg))
+                if extra["is_end"]:
+                    self.last_attachment_id = ""
+                    self.pending_updates.append(("attachment_end", ""))
 
     def handle_message(self, session: Session, message: str) -> Optional[str]:
         def execution_thread():
@@ -125,6 +152,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                 raise e
             finally:
                 self.exit_event.set()
+                with self.update_cond:
+                    self.update_cond.notify_all()
 
         t_ui = threading.Thread(target=lambda: self._animate_thread(), daemon=True)
         t_ex = threading.Thread(target=execution_thread, daemon=True)
@@ -145,6 +174,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             exit(1)
         finally:
             self.exit_event.set()
+            with self.update_cond:
+                self.update_cond.notify_all()
             try:
                 t_ex.join(0 if exit_no_wait else 1)
                 t_ui.join(1)
@@ -155,40 +186,70 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
     def _animate_thread(self):
         counter = 0
-        stage = "preparing"
+        status_msg = "preparing"
+        cur_message_buffer = ""
+        cur_key = ""
+        role = "TaskWeaver"
+        next_role = ""
 
         def clear_line():
             print(ansi.clear_line(), end="\r")
 
-        def process_messages(stage: str):
-            if len(self.messages) == 0:
-                return stage
+        def get_ani_frame(frame: int = 0):
+            frame_inx = abs(frame % 20 - 10)
+            ani_frame = " " * frame_inx + "<=💡=>" + " " * (10 - frame_inx)
+            return ani_frame
 
-            clear_line()
-            for type, msg in self.messages:
-                if type == "stage":
-                    stage = msg
-                elif type == "error":
-                    error_message(msg)
-                else:
-                    plain_message(msg, type=type)
-            self.messages.clear()
-            return stage
-
+        last_time = 0
         while True:
+            clear_line()
             with self.lock:
-                stage = process_messages(stage)
+                for action, opt in self.pending_updates:
+                    if action == "start_post":
+                        role = opt
+                        next_role = ""
+                        print(f" ╭───< {role} >")
+                    elif action == "end_post":
+                        print(f" ╰──● sending message to {next_role}")
+                    elif action == "send_to_update":
+                        next_role = opt
+                        # print(f" ├─► Reply to: {next_role}")
+                    elif action == "attachment_start":
+                        cur_key = opt
+                        cur_message_buffer = ""
+                    elif action == "attachment_add":
+                        cur_message_buffer += opt
+                    elif action == "attachment_end":
+                        if cur_key == "msg":
+                            print(f" ├──● {cur_message_buffer}")
+                        else:
+                            print(f" ├─► [{cur_key}] {cur_message_buffer}")
+                        # print(" │  ")
 
-            if len(self.response) > 0:
-                clear_line()
-                break
-            with self.lock:
-                thought_animate(stage + "...", frame=counter)
-                counter += 1
+                self.pending_updates.clear()
 
-            self.exit_event.wait(0.2)
             if self.exit_event.is_set():
                 break
+
+            click.secho(
+                click.style(
+                    f">>> [{role}] {status_msg} {get_ani_frame(counter)}\r",
+                    fg="bright_black",
+                ),
+                nl=False,
+            )
+
+            cur_time = time.time()
+            if cur_time - last_time < 0.2:
+                # skip animation update
+                continue
+
+            with self.lock:
+                counter += 1
+                last_time = cur_time
+
+            with self.update_cond:
+                self.update_cond.wait(0.2 - (cur_time - last_time))
 
 
 class TaskWeaverChatApp(SessionEventHandlerBase):
@@ -210,18 +271,19 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
 
         if msg.startswith("/"):
             lower_message = msg.lower()
-            if lower_message == "/exit":
+            lower_command = lower_message.lstrip("/").split(" ")[0]
+            if lower_command in ["exit", "bye", "quit"]:
                 exit(0)
-            if lower_message == "/help":
+            if lower_message in ["help", "h", "?"]:
                 self._print_help()
                 return
-            if lower_message == "/clear":
+            if lower_message == "clear":
                 click.clear()
                 return
-            if lower_message == "/reset":
+            if lower_message == "reset":
                 self._reset_session()
                 return
-            if lower_message.startswith("/load"):
+            if lower_command == "load":
                 file_to_load = msg[5:].strip()
                 self._load_file(file_to_load)
                 return
