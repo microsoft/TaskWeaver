@@ -216,9 +216,10 @@ class Planner(Role):
     ) -> Post:
         rounds = memory.get_role_rounds(role="Planner")
         assert len(rounds) != 0, "No chat rounds found for planner"
-        chat_history = self.compose_prompt(rounds)
-
         new_post = self.event_emitter.create_post_proxy("Planner")
+
+        new_post.update_status("composing prompt")
+        chat_history = self.compose_prompt(rounds)
 
         def check_post_validity(post: Post):
             assert post.send_to is not None, "send_to field is None"
@@ -230,6 +231,7 @@ class Planner(Role):
                 post.attachment_list[2].type == AttachmentType.current_plan_step
             ), "attachment type is not current_plan_step"
 
+        new_post.update_status("calling LLM endpoint")
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
             self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
             llm_stream = [
@@ -245,7 +247,11 @@ class Planner(Role):
         try:
 
             def stream_filter(s: Iterable[ChatMessageType]):
+                is_first_chunk = True
                 for c in s:
+                    if is_first_chunk:
+                        new_post.update_status("receiving LLM response")
+                        is_first_chunk = False
                     llm_output.append(c["content"])
                     yield c
 

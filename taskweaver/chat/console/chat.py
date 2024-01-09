@@ -140,6 +140,9 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                 if extra["is_end"]:
                     self.last_attachment_id = ""
                     self.pending_updates.append(("attachment_end", ""))
+        elif type == PostEventType.post_status_update:
+            with self.lock:
+                self.pending_updates.append(("status_update", msg))
 
     def handle_message(self, session: Session, message: str) -> Optional[str]:
         def execution_thread():
@@ -277,6 +280,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                     if action == "start_post":
                         role = opt
                         next_role = ""
+                        status_msg = "initializing"
                         click.secho(
                             style_line(
                                 " ╭───<",
@@ -287,6 +291,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                             + style_line(">"),
                         )
                     elif action == "end_post":
+                        status_msg = "finished"
                         click.secho(
                             style_line(" ╰──●")
                             + style_msg(" sending message to ")
@@ -321,6 +326,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                             )
                     elif action == "round_error":
                         error_message(opt)
+                    elif action == "status_update":
+                        status_msg = opt
 
                 self.pending_updates.clear()
 

@@ -35,6 +35,7 @@ class PostEventType(Enum):
     post_end = "post_end"
     post_error = "post_error"
 
+    post_status_update = "post_status_update"
     post_send_to_update = "post_send_to_update"
     post_message_update = "post_message_update"
     post_attachment_update = "post_attachment_update"
@@ -147,6 +148,9 @@ class PostEventProxy:
                 "role": send_to,
             },
         )
+
+    def update_status(self, status: str):
+        self._emit(PostEventType.post_status_update, status)
 
     def update_message(self, message: str, is_end: bool = True):
         assert not self.message_is_end, "Cannot update message when update is finished"
