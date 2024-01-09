@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 from datetime import datetime
+from hashlib import md5
 from typing import Any, Dict
 
 
@@ -22,6 +23,16 @@ def read_yaml(path: str) -> Dict[str, Any]:
             return yaml.safe_load(file)
     except Exception as e:
         raise ValueError(f"Yaml loading failed due to: {e}")
+
+
+def write_yaml(path: str, content: Dict[str, Any]):
+    import yaml
+
+    try:
+        with open(path, "w") as file:
+            yaml.safe_dump(content, file, sort_keys=False)
+    except Exception as e:
+        raise ValueError(f"Yaml writing failed due to: {e}")
 
 
 def validate_yaml(content: Any, schema: str) -> bool:
@@ -58,3 +69,7 @@ def json_dumps(obj: Any) -> str:
 
 def json_dump(obj: Any, fp: Any):
     json.dump(obj, fp, cls=EnhancedJSONEncoder)
+
+
+def generate_md5_hash(content: str) -> str:
+    return md5(content.encode()).hexdigest()
