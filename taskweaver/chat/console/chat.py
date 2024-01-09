@@ -1,6 +1,7 @@
+import os
 import threading
 import time
-from textwrap import dedent
+from textwrap import TextWrapper, dedent
 from typing import Any, List, Optional, Tuple
 
 import click
@@ -188,12 +189,42 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         return self.result
 
     def _animate_thread(self):
+        # get terminal width
+        terminal_column = os.get_terminal_size().columns
         counter = 0
         status_msg = "preparing"
         cur_message_buffer = ""
         cur_key = ""
         role = "TaskWeaver"
         next_role = ""
+
+        wrapper = TextWrapper(
+            width=terminal_column,
+            initial_indent=" ├─► ",
+            subsequent_indent=" │   ",
+            break_long_words=True,
+            break_on_hyphens=False,
+            replace_whitespace=False,
+            drop_whitespace=False,
+        )
+
+        def wrap_message(message: str, init_indent: str = " │   ", seq_indent: str = " │   "):
+            result: List[str] = []
+            is_first = True
+            for line in message.split("\n"):
+                if is_first:
+                    cur_init = init_indent
+                    is_first = False
+                else:
+                    cur_init = seq_indent
+                wrapper.initial_indent = cur_init
+                wrapper.subsequent_indent = seq_indent
+                if line == "":
+                    result.append(cur_init)
+                else:
+                    result.append(wrapper.fill(line))
+
+            return "\n".join(result)
 
         def clear_line():
             print(ansi.clear_line(), end="\r")
@@ -224,10 +255,10 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                         cur_message_buffer += str(opt)
                     elif action == "attachment_end":
                         if cur_key == "msg":
-                            print(f" ├──● {cur_message_buffer}")
+                            print(wrap_message(cur_message_buffer, " ├──● "))
                         else:
-                            print(f" ├─► [{cur_key}] {cur_message_buffer}")
-                        # print(" │  ")
+                            msg_sep = "\n" if cur_message_buffer.find("\n") >= 0 else " "
+                            print(wrap_message(f"[{cur_key}]{msg_sep}{cur_message_buffer}", " ├─► "))
                     elif action == "round_error":
                         error_message(opt)
 
