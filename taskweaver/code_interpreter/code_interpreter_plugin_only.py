@@ -1,5 +1,5 @@
 import json
-from typing import Optional
+from typing import List, Optional
 
 from injector import inject
 
@@ -9,6 +9,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import Role
 
 
@@ -26,12 +27,14 @@ class CodeInterpreterPluginOnly(Role):
         generator: CodeGeneratorPluginOnly,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
         self.generator = generator
         self.executor = executor
         self.logger = logger
         self.config = config
+        self.event_emitter = event_emitter
         self.retry_count = 0
         self.return_index = 0
 
@@ -40,23 +43,25 @@ class CodeInterpreterPluginOnly(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler: callable,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: Optional[bool] = False,
+        use_back_up_engine: bool = False,
     ) -> Post:
-        response: Post = self.generator.reply(
+        post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
+        self.generator.reply(
             memory,
-            event_handler,
-            prompt_log_path,
-            use_back_up_engine,
+            post_proxy=post_proxy,
+            prompt_log_path=prompt_log_path,
+            use_back_up_engine=use_back_up_engine,
         )
 
-        if response.message is not None:
-            return response
+        if post_proxy.post.message is not None and post_proxy.post.message != "":  # type: ignore
+            return post_proxy.end()
 
-        functions = json.loads(response.get_attachment(type=AttachmentType.function)[0])
+        functions = json.loads(
+            post_proxy.post.get_attachment(type=AttachmentType.function)[0],
+        )
         if len(functions) > 0:
-            code = []
+            code: List[str] = []
             for i, f in enumerate(functions):
                 function_name = f["name"]
                 function_args = json.loads(f["arguments"])
@@ -71,23 +76,28 @@ class CodeInterpreterPluginOnly(Role):
                     + ")"
                 )
                 code.append(function_call)
-            code.append(f'{", ".join([f"r{self.return_index + i}" for i in range(len(functions))])}')
+            code.append(
+                f'{", ".join([f"r{self.return_index + i}" for i in range(len(functions))])}',
+            )
             self.return_index += len(functions)
 
-            event_handler("code", "\n".join(code))
+            code_to_exec = "\n".join(code)
+            post_proxy.update_attachment(code_to_exec, AttachmentType.python)
             exec_result = self.executor.execute_code(
-                exec_id=response.id,
-                code="\n".join(code),
+                exec_id=post_proxy.post.id,
+                code=code_to_exec,
             )
 
-            response.message = self.executor.format_code_output(
-                exec_result,
-                with_code=True,
-                use_local_uri=self.config.use_local_uri,
+            post_proxy.update_message(
+                self.executor.format_code_output(
+                    exec_result,
+                    with_code=True,
+                    use_local_uri=self.config.use_local_uri,
+                ),
             )
-            event_handler("CodeInterpreter-> Planner", response.message)
         else:
-            response.message = "No code is generated because no function is selected."
-            event_handler("CodeInterpreter-> Planner", response.message)
+            post_proxy.update_message(
+                "No code is generated because no function is selected.",
+            )
 
-        return response
+        return post_proxy.end()

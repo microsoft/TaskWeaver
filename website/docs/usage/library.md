@@ -11,13 +11,10 @@ app = TaskWeaverApp(app_dir=app_dir)
 session = app.get_session()
 
 user_query = "hello, what can you do?"
-response_round = session.send_message(user_query,
-                                      event_handler=lambda _type, _msg: print(f"{_type}:\n{_msg}"))
+response_round = session.send_message(user_query)
 print(response_round.to_dict())
 ```
 **Note:**
-- `event_handler`: a callback function that is utilized to display the internal planning and execution steps of TaskWeaver.
-  It takes two arguments: the message type (e.g., `plan`) and the message body.
 - `response_round`: the response from TaskWeaver. which is an object of the `Round` class. 
   An example of the `Round` object is shown below:
 ```json

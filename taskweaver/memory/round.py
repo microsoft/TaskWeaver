@@ -19,7 +19,7 @@ class Round:
         post_list: a list of posts in the round.
     """
 
-    id: Optional[Union[str, None]]
+    id: str
     user_query: str
     state: RoundState
     post_list: List[Post]

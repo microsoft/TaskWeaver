@@ -4,6 +4,8 @@ import sys
 import warnings
 from typing import Any, Optional
 
+from taskweaver.module.event_emitter import SessionEventHandler
+
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 warnings.filterwarnings("ignore")
@@ -24,7 +26,7 @@ def format_output(response_obj: Any) -> str:
 def auto_evaluate_for_taskweaver(
     eval_case_file_path: str,
     interrupt_threshold: Optional[float] = None,
-    event_handler: Optional[callable] = None,
+    event_handler: Optional[SessionEventHandler] = None,
 ) -> [float, float]:
     with open(eval_case_file_path, "r") as f:
         eval_meta_data = yaml.safe_load(f)
@@ -44,7 +46,7 @@ def auto_evaluate_for_taskweaver(
 
         response_round = session.send_message(
             user_query,
-            event_handler=event_handler if event_handler is not None else lambda x, y: print(f"{x}:\n{y}"),
+            event_handler=event_handler,
         )
 
         post_index = eval_query.get("post_index", None)

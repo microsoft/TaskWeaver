@@ -1,7 +1,7 @@
 import json
 import os
 from json import JSONDecodeError
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from injector import inject
 
@@ -9,10 +9,11 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
+from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -65,20 +66,23 @@ class Planner(Role):
         self,
         config: PlannerConfig,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
-        round_compressor: Optional[RoundCompressor] = None,
+        round_compressor: Optional[RoundCompressor],
+        post_translator: PostTranslator,
         plugin_only: bool = False,
     ):
         self.config = config
         self.logger = logger
+        self.event_emitter = event_emitter
         self.llm_api = llm_api
         if plugin_only:
             self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
         else:
             self.available_plugins = plugin_registry.get_list()
 
-        self.planner_post_translator = PostTranslator(logger)
+        self.planner_post_translator = post_translator
 
         self.prompt_data = read_yaml(self.config.prompt_file_path)
 
@@ -145,11 +149,16 @@ class Planner(Role):
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
-                                message=post.get_attachment(type=AttachmentType.invalid_response)[0],
+                                message=post.get_attachment(
+                                    type=AttachmentType.invalid_response,
+                                )[0],
                             ),
                         )  # append the invalid response to chat history
                         conversation.append(
-                            format_chat_message(role="user", message="User: " + post.message),
+                            format_chat_message(
+                                role="user",
+                                message="User: " + post.message,
+                            ),
                         )  # append the self correction instruction message to chat history
 
                 else:
@@ -161,7 +170,10 @@ class Planner(Role):
                         conv_init_message = None
                     else:
                         conversation.append(
-                            format_chat_message(role="user", message=post.send_from + ": " + post.message),
+                            format_chat_message(
+                                role="user",
+                                message=post.send_from + ": " + post.message,
+                            ),
                         )
 
         return conversation
@@ -171,14 +183,18 @@ class Planner(Role):
 
         if self.config.use_example and len(self.examples) != 0:
             for conv_example in self.examples:
-                conv_example_in_prompt = self.compose_conversation_for_prompt(conv_example.rounds)
+                conv_example_in_prompt = self.compose_conversation_for_prompt(
+                    conv_example.rounds,
+                )
                 chat_history += conv_example_in_prompt
 
         summary = None
         if self.config.prompt_compression and self.round_compressor is not None:
             summary, rounds = self.round_compressor.compress_rounds(
                 rounds,
-                rounds_formatter=lambda _rounds: str(self.compose_conversation_for_prompt(_rounds)),
+                rounds_formatter=lambda _rounds: str(
+                    self.compose_conversation_for_prompt(_rounds),
+                ),
                 use_back_up_engine=True,
                 prompt_template=self.compression_template,
             )
@@ -195,12 +211,14 @@ class Planner(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
         rounds = memory.get_role_rounds(role="Planner")
         assert len(rounds) != 0, "No chat rounds found for planner"
+        new_post = self.event_emitter.create_post_proxy("Planner")
+
+        new_post.update_status("composing prompt")
         chat_history = self.compose_prompt(rounds)
 
         def check_post_validity(post: Post):
@@ -213,39 +231,57 @@ class Planner(Role):
                 post.attachment_list[2].type == AttachmentType.current_plan_step
             ), "attachment type is not current_plan_step"
 
+        new_post.update_status("calling LLM endpoint")
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
             self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
-            llm_output = json.dumps(self.config.dummy_plan)
+            llm_stream = [
+                format_chat_message("assistant", json.dumps(self.config.dummy_plan)),
+            ]
         else:
-            llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
+            llm_stream = self.llm_api.chat_completion_stream(
+                chat_history,
+                use_backup_engine=use_back_up_engine,
+            )
+
+        llm_output: List[str] = []
         try:
-            response_post = self.planner_post_translator.raw_text_to_post(
-                llm_output=llm_output,
-                send_from="Planner",
-                event_handler=event_handler,
+
+            def stream_filter(s: Iterable[ChatMessageType]):
+                is_first_chunk = True
+                for c in s:
+                    if is_first_chunk:
+                        new_post.update_status("receiving LLM response")
+                        is_first_chunk = False
+                    llm_output.append(c["content"])
+                    yield c
+
+            self.planner_post_translator.raw_text_to_post(
+                post_proxy=new_post,
+                llm_output=stream_filter(llm_stream),
                 validation_func=check_post_validity,
             )
-            if response_post.send_to == "User":
-                event_handler("final_reply_message", response_post.message)
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
-            response_post = Post.create(
-                message=f"Failed to parse Planner output due to {str(e)}."
+            new_post.error(f"failed to parse LLM output due to {str(e)}")
+            new_post.update_attachment(
+                "".join(llm_output),
+                AttachmentType.invalid_response,
+            )
+            new_post.update_message(
+                f"Failed to parse Planner output due to {str(e)}."
                 f"The output format should follow the below format:"
                 f"{self.prompt_data['planner_response_schema']}"
                 "Please try to regenerate the output.",
-                send_to="Planner",
-                send_from="Planner",
-                attachment_list=[Attachment.create(type=AttachmentType.invalid_response, content=llm_output)],
             )
+            new_post.update_send_to("Planner")
             self.ask_self_cnt += 1
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message
                 self.ask_self_cnt = 0
+                new_post.end("Planner failed to generate response")
                 raise Exception(f"Planner failed to generate response because {str(e)}")
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
-
-        return response_post
+        return new_post.end()
 
     def get_examples(self) -> List[Conversation]:
         example_conv_list = load_examples(self.config.example_base_path)
