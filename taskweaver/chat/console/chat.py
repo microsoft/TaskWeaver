@@ -1,8 +1,8 @@
-import os
+import shutil
 import threading
 import time
 from textwrap import TextWrapper, dedent
-from typing import Any, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 import click
 from colorama import ansi
@@ -190,13 +190,28 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
     def _animate_thread(self):
         # get terminal width
-        terminal_column = os.get_terminal_size().columns
+        terminal_column = shutil.get_terminal_size().columns
         counter = 0
         status_msg = "preparing"
         cur_message_buffer = ""
         cur_key = ""
         role = "TaskWeaver"
         next_role = ""
+
+        def style_line(s: str):
+            return click.style(s, fg="blue")
+
+        def style_role(s: str):
+            return click.style(s, fg="bright_yellow", underline=True)
+
+        def style_key(s: str):
+            return click.style(s, fg="bright_cyan")
+
+        def style_msg(s: str):
+            return click.style(s, fg="bright_black")
+
+        def style_msg_main(s: str):
+            return click.style(s, fg="white")
 
         wrapper = TextWrapper(
             width=terminal_column,
@@ -208,21 +223,41 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             drop_whitespace=False,
         )
 
-        def wrap_message(message: str, init_indent: str = " │   ", seq_indent: str = " │   "):
+        def wrap_message(
+            message: str,
+            init_indent: str = " │   ",
+            seq_indent: str = " │   ",
+            key: Optional[str] = None,
+            styler: Callable[[str], str] = style_msg,
+        ):
             result: List[str] = []
             is_first = True
+            seq_indent_style = style_line(seq_indent)
             for line in message.split("\n"):
                 if is_first:
                     cur_init = init_indent
+                    cur_init_style = style_line(cur_init)
+                    if key is not None:
+                        cur_init += f"[{key}]"
+                        cur_init_style += style_line("[") + style_key(key) + style_line("]")
                     is_first = False
                 else:
                     cur_init = seq_indent
+                    cur_init_style = seq_indent_style
                 wrapper.initial_indent = cur_init
                 wrapper.subsequent_indent = seq_indent
+
                 if line == "":
-                    result.append(cur_init)
+                    result.append(cur_init_style)
                 else:
-                    result.append(wrapper.fill(line))
+                    lines = wrapper.wrap(line)
+                    for i, l in enumerate(lines):
+                        if i == 0:
+                            result.append(cur_init_style + styler(l[len(cur_init) :]))
+                        else:
+                            result.append(
+                                seq_indent_style + styler(l[len(seq_indent) :]),
+                            )
 
             return "\n".join(result)
 
@@ -242,12 +277,25 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                     if action == "start_post":
                         role = opt
                         next_role = ""
-                        print(f" ╭───< {role} >")
+                        click.secho(
+                            style_line(
+                                " ╭───<",
+                            )
+                            + style_role(
+                                f" {role} ",
+                            )
+                            + style_line(">"),
+                        )
                     elif action == "end_post":
-                        print(f" ╰──● sending message to {next_role}")
+                        click.secho(
+                            style_line(" ╰──●")
+                            + style_msg(" sending message to ")
+                            + style_role(
+                                next_role,
+                            ),
+                        )
                     elif action == "send_to_update":
                         next_role = opt
-                        # print(f" ├─► Reply to: {next_role}")
                     elif action == "attachment_start":
                         cur_key = opt
                         cur_message_buffer = ""
@@ -255,10 +303,22 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                         cur_message_buffer += str(opt)
                     elif action == "attachment_end":
                         if cur_key == "msg":
-                            print(wrap_message(cur_message_buffer, " ├──● "))
+                            click.secho(
+                                wrap_message(
+                                    cur_message_buffer,
+                                    " ├──● ",
+                                    styler=style_msg_main,
+                                ),
+                            )
                         else:
                             msg_sep = "\n" if cur_message_buffer.find("\n") >= 0 else " "
-                            print(wrap_message(f"[{cur_key}]{msg_sep}{cur_message_buffer}", " ├─► "))
+                            click.secho(
+                                wrap_message(
+                                    f"{msg_sep}{cur_message_buffer}",
+                                    " ├─► ",
+                                    key=cur_key,
+                                ),
+                            )
                     elif action == "round_error":
                         error_message(opt)
 
@@ -268,10 +328,15 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                 break
 
             click.secho(
-                click.style(
-                    f">>> [{role}] {status_msg} {get_ani_frame(counter)}\r",
-                    fg="bright_black",
-                ),
+                click.style(" TaskWeaver ", fg="white", bg="yellow")
+                + click.style("▶ ", fg="yellow")
+                + style_line("[")
+                + style_role(role)
+                + style_line("] ")
+                + style_msg(status_msg)
+                + style_msg(get_ani_frame(counter))
+                + "\r",
+                # f">>> [{style_role(role)}] {status_msg} {get_ani_frame(counter)}\r",
                 nl=False,
             )
 
