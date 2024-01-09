@@ -1,12 +1,12 @@
 import io
-import itertools
 import json
 from json import JSONDecodeError
-from typing import Any, Callable, Dict, Iterator, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Union
 
 import ijson
 from injector import inject
 
+from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
@@ -30,7 +30,7 @@ class PostTranslator:
 
     def raw_text_to_post(
         self,
-        llm_output: str,
+        llm_output: Iterable[ChatMessageType],
         post_proxy: PostEventProxy,
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
@@ -42,10 +42,17 @@ class PostTranslator:
         :param early_stop:
         :return: Post
         """
+
         # llm_output_list = [token for token in llm_output_stream]  # collect all the llm output via iterator
         # llm_output = "".join(llm_output_list)
-        self.logger.info(f"LLM output: {llm_output}")
-        for d in self.parse_llm_output_stream([llm_output]):
+        def stream_filter(s: Iterable[ChatMessageType]) -> Iterator[str]:
+            full_llm_content = ""
+            for c in s:
+                full_llm_content += c["content"]
+                yield c["content"]
+            self.logger.info(f"LLM output: {llm_output}")
+
+        for d in self.parse_llm_output_stream(stream_filter(llm_output)):
             type_str = d["type"]
             type: Optional[AttachmentType] = None
             value = d["content"]
@@ -63,7 +70,9 @@ class PostTranslator:
                     type = AttachmentType(type_str)
                     post_proxy.update_attachment(value, type)
                 except Exception as e:
-                    self.logger.warning(f"Failed to parse attachment: {d} due to {str(e)}")
+                    self.logger.warning(
+                        f"Failed to parse attachment: {d} due to {str(e)}",
+                    )
                     continue
             parsed_type = (
                 type
@@ -131,8 +140,45 @@ class PostTranslator:
         self,
         llm_output: Iterator[str],
     ) -> Iterator[Dict[str, str]]:
-        json_data_stream = io.StringIO("".join(itertools.chain(llm_output)))
-        parser = ijson.parse(json_data_stream)
+        class StringIteratorIO(io.TextIOBase):
+            def __init__(self, iter: Iterator[str]):
+                self._iter = iter
+                self._left: str = ""
+
+            def readable(self):
+                return True
+
+            def _read1(self, n: Optional[int] = None):
+                while not self._left:
+                    try:
+                        self._left = next(self._iter)
+                    except StopIteration:
+                        break
+                ret = self._left[:n]
+                self._left = self._left[len(ret) :]
+                return ret
+
+            def read(self, n: Optional[int] = None):
+                l: List[str] = []
+                if n is None or n < 0:
+                    while True:
+                        m = self._read1()
+                        if not m:
+                            break
+                        l.append(m)
+                else:
+                    while n > 0:
+                        m = self._read1(n)
+                        if not m:
+                            break
+                        n -= len(m)
+                        l.append(m)
+                return "".join(l)
+
+        json_data_stream = StringIteratorIO(llm_output)
+        # use small buffer to get parse result as soon as acquired from LLM
+        parser = ijson.parse(json_data_stream, buf_size=5)
+
         element = {}
         try:
             for prefix, event, value in parser:

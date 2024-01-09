@@ -3,6 +3,7 @@ from typing import Iterator
 
 from injector import Injector
 
+from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import LoggingModule
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
@@ -58,7 +59,7 @@ def test_parse_llm():
 
     post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
     translator.raw_text_to_post(
-        llm_output=response_str1,
+        llm_output=[format_chat_message("assistant", response_str1)],
         post_proxy=post_proxy,
         early_stop=early_stop,
     )
@@ -75,7 +76,7 @@ def test_parse_llm():
 
     post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
     translator.raw_text_to_post(
-        llm_output=response_str1,
+        llm_output=[format_chat_message("assistant", response_str1)],
         post_proxy=post_proxy,
     )
     response = post_proxy.end()

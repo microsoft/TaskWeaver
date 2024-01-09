@@ -1,7 +1,7 @@
 import json
 import os
 from json import JSONDecodeError
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from injector import inject
 
@@ -149,11 +149,16 @@ class Planner(Role):
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
-                                message=post.get_attachment(type=AttachmentType.invalid_response)[0],
+                                message=post.get_attachment(
+                                    type=AttachmentType.invalid_response,
+                                )[0],
                             ),
                         )  # append the invalid response to chat history
                         conversation.append(
-                            format_chat_message(role="user", message="User: " + post.message),
+                            format_chat_message(
+                                role="user",
+                                message="User: " + post.message,
+                            ),
                         )  # append the self correction instruction message to chat history
 
                 else:
@@ -165,7 +170,10 @@ class Planner(Role):
                         conv_init_message = None
                     else:
                         conversation.append(
-                            format_chat_message(role="user", message=post.send_from + ": " + post.message),
+                            format_chat_message(
+                                role="user",
+                                message=post.send_from + ": " + post.message,
+                            ),
                         )
 
         return conversation
@@ -175,14 +183,18 @@ class Planner(Role):
 
         if self.config.use_example and len(self.examples) != 0:
             for conv_example in self.examples:
-                conv_example_in_prompt = self.compose_conversation_for_prompt(conv_example.rounds)
+                conv_example_in_prompt = self.compose_conversation_for_prompt(
+                    conv_example.rounds,
+                )
                 chat_history += conv_example_in_prompt
 
         summary = None
         if self.config.prompt_compression and self.round_compressor is not None:
             summary, rounds = self.round_compressor.compress_rounds(
                 rounds,
-                rounds_formatter=lambda _rounds: str(self.compose_conversation_for_prompt(_rounds)),
+                rounds_formatter=lambda _rounds: str(
+                    self.compose_conversation_for_prompt(_rounds),
+                ),
                 use_back_up_engine=True,
                 prompt_template=self.compression_template,
             )
@@ -220,20 +232,33 @@ class Planner(Role):
 
         if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
             self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
-            llm_output = json.dumps(self.config.dummy_plan)
+            llm_stream = [
+                format_chat_message("assistant", json.dumps(self.config.dummy_plan)),
+            ]
         else:
-            llm_output = self.llm_api.chat_completion(chat_history, use_backup_engine=use_back_up_engine)["content"]
+            llm_stream = self.llm_api.chat_completion_stream(
+                chat_history,
+                use_backup_engine=use_back_up_engine,
+            )
+
+        llm_output: List[str] = []
         try:
+
+            def stream_filter(s: Iterable[ChatMessageType]):
+                for c in s:
+                    llm_output.append(c["content"])
+                    yield c
+
             self.planner_post_translator.raw_text_to_post(
                 post_proxy=new_post,
-                llm_output=llm_output,
+                llm_output=stream_filter(llm_stream),
                 validation_func=check_post_validity,
             )
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             new_post.error(f"failed to parse LLM output due to {str(e)}")
             new_post.update_attachment(
-                llm_output,
+                "".join(llm_output),
                 AttachmentType.invalid_response,
             )
             new_post.update_message(

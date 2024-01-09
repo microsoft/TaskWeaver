@@ -317,10 +317,10 @@ class CodeGenerator(Role):
                 return False
 
         self.post_translator.raw_text_to_post(
-            llm_output=self.llm_api.chat_completion(
+            llm_output=self.llm_api.chat_completion_stream(
                 prompt,
                 use_backup_engine=use_back_up_engine,
-            )["content"],
+            ),
             post_proxy=post_proxy,
             early_stop=early_stop,
         )
