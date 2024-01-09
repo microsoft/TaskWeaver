@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 from typing import List
 
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
 from taskweaver.memory.type_vars import RoleName
+from taskweaver.utils import write_yaml
 
 
 class Memory:
@@ -41,3 +43,14 @@ class Memory:
                     new_round.add_post(post)
             rounds_from_role.append(new_round)
         return rounds_from_role
+
+    def save_experience(self, exp_dir: str):
+        raw_exp_path = os.path.join(exp_dir, f"raw_exp_{self.session_id}.yaml")
+        write_yaml(raw_exp_path, self.conversation.to_dict())
+
+    def from_yaml(self, session_id: str, path: str) -> Memory:
+        """Load the memory from a yaml file."""
+        conversation = Conversation.from_yaml(path)
+        self.conversation = conversation
+        self.session_id = session_id
+        return self

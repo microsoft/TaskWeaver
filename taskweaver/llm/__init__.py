@@ -48,10 +48,6 @@ class LLMApi(object):
             self.embedding_service = PlaceholderEmbeddingService(
                 "Azure ML does not support embeddings yet. Please configure a different embedding API.",
             )
-        elif self.config.embedding_api_type == "qwen":
-            self.embedding_service = PlaceholderEmbeddingService(
-                "QWen does not support embeddings yet. Please configure a different embedding API.",
-            )
         else:
             raise ValueError(
                 f"Embedding API type {self.config.embedding_api_type} is not supported",

@@ -20,6 +20,10 @@ class AppSessionConfig(ModuleConfig):
         self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
         self.plugin_only_mode = self._get_bool("plugin_only_mode", False)
+        self.experience_dir = self._get_path(
+            "experience_dir",
+            os.path.join(self.src.app_base_path, "experience"),
+        )
 
 
 class Session:
@@ -85,6 +89,9 @@ class Session:
         if not os.path.exists(self.execution_cwd):
             os.makedirs(self.execution_cwd)
 
+        if not os.path.exists(self.config.experience_dir):
+            os.makedirs(self.config.experience_dir)
+
         self.logger.info(f"Session {self.session_id} is initialized")
 
     def update_session_var(self, variables: Dict[str, str]):
@@ -92,6 +99,15 @@ class Session:
 
     def send_message(self, message: str, event_handler: callable = None) -> Round:
         event_handler = event_handler or (lambda *args: None)
+
+        if message == "#SAVE AS EXP":
+            send_from = "Planner" if not self.config.code_interpreter_only else "CodeInterpreter"
+            self.memory.save_experience(exp_dir=self.config.experience_dir)
+            event_handler("final_reply_message", "Experience saved.")
+            response_round = Round.create(user_query=message)
+            response_round.add_post(Post.create(message="Experience saved.", send_from=send_from, send_to="User"))
+            return response_round
+
         chat_round = self.memory.create_round(user_query=message)
 
         def _send_message(recipient: str, post: Post):
