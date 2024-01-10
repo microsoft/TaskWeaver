@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import secrets
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from taskweaver.memory.attachment import Attachment, AttachmentType
 from taskweaver.memory.type_vars import RoleName
@@ -34,15 +34,15 @@ class Post:
 
     @staticmethod
     def create(
-        message: Union[str | None],
+        message: Optional[str],
         send_from: RoleName,
-        send_to: RoleName,
+        send_to: RoleName = "Unknown",
         attachment_list: Optional[List[Attachment]] = None,
     ) -> Post:
         """create a post with the given message, send_from, send_to, and attachment_list."""
         return Post(
             id="post-" + create_id(),
-            message=message,
+            message=message is not None and message or "",
             send_from=send_from,
             send_to=send_to,
             attachment_list=attachment_list if attachment_list is not None else [],

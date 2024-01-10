@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-from typing import Dict
+from typing import Any, Dict, List, Tuple
 
 import requests
 
@@ -27,8 +27,8 @@ app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
 
 
-def file_display(files, session_cwd_path):
-    elements = []
+def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
+    elements: List[cl.Element] = []
     for file_name, file_path in files:
         # if image, no need to display as another file
         if file_path.endswith((".png", ".jpg", ".jpeg", ".gif")):
@@ -68,7 +68,7 @@ def file_display(files, session_cwd_path):
     return elements
 
 
-def is_link_clickable(url):
+def is_link_clickable(url: str):
     if url:
         try:
             response = requests.get(url)
@@ -91,7 +91,6 @@ async def main(message: cl.Message):
     user_session_id = cl.user_session.get("id")
     session = app_session_dict[user_session_id]
     session_cwd_path = session.execution_cwd
-
     if message.elements:
         upload_file_paths = []
         for element in message.elements:
@@ -100,16 +99,26 @@ async def main(message: cl.Message):
             tw_file_path = os.path.join(session_cwd_path, file_name)
             with open(tw_file_path, "wb") as f:
                 f.write(file_content)
-            upload_file_paths.append(tw_file_path)
-        message.content = f"Load the file(s) from {file_name}, {message.content}"
-
-    def send_message_sync(msg: str) -> Round:
-        return session.send_message(msg)  # , event_handler=lambda _type, _msg: print(f"{_type}:\n{_msg}"))
+            upload_file_paths.append(file_name)
+        message.content = f"Load the file(s) from {upload_file_paths}, {message.content}"
+        
+    def send_message_sync(msg: str, files: Any) -> Round:
+        return session.send_message(msg, files=files)
 
     # display loader before sending message
     id = await cl.Message(content="").send()
 
-    response_round = await cl.make_async(send_message_sync)(message.content)
+    response_round = await cl.make_async(send_message_sync)(
+        message.content,
+        [
+            {
+                "name": element.name if element.name else "file",
+                "content": element.content,
+            }
+            for element in message.elements
+            if element.type == "file" and element.content is not None
+        ],
+    )
 
     artifact_paths = []
     for post in response_round.post_list:
