@@ -16,7 +16,7 @@ pip install -r requirements.txt
 }
 ```
 
-2. Install the `chainlit` package by `pip install chainlit` if you don't have it in your env.
+2. Install the `chainlit` package by `pip install chainlit==0.7.700` if you don't have it in your env.
 
 3. Start the service by running the following command.
 
