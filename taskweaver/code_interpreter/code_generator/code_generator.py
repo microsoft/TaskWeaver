@@ -272,10 +272,10 @@ class CodeGenerator(Role):
 
     def select_plugins_for_prompt(
         self,
-        user_query: str,
+        query: str,
     ) -> List[PluginEntry]:
         selected_plugins = self.plugin_selector.plugin_select(
-            user_query,
+            query,
             self.config.auto_plugin_selection_topk,
         )
         self.selected_plugin_pool.add_selected_plugins(selected_plugins)
@@ -300,10 +300,10 @@ class CodeGenerator(Role):
         )
 
         # obtain the user query from the last round
-        user_query = rounds[-1].user_query
+        query = rounds[-1].post_list[-1].message
 
         if self.config.enable_auto_plugin_selection:
-            self.plugin_pool = self.select_plugins_for_prompt(user_query)
+            self.plugin_pool = self.select_plugins_for_prompt(query)
 
         prompt = self.compose_prompt(rounds, self.plugin_pool)
 
