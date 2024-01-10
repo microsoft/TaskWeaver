@@ -31,6 +31,28 @@ During the subsequent automatic plugin selection phase, newly chosen plugins are
 - `code_generator.enable_auto_plugin_selection`: Whether to enable auto plugin selection. The default value is `false`.
 - `code_generator.auto_plugin_selection_topk`:	The number of auto selected plugins in each round. The default value is `3`.
 
+
+## Auto Plugin Selection Preparation
+
+Before using the auto plugin selection mechanism, we need to run the following command to generate the plugin meta files with embeddings.
+
+```bash
+cd scripts
+python -m plugin_mgt --refresh
+```
+After that, you can find the `.meta` directory is generated in the `plugins` folder.
+Then you can start a new TaskWeaver session with the auto plugin selection mechanism enabled.
+Code Generator will automatically load the plugin meta files with embeddings.
+
+🎈Plugin meta files will be treated as invalid if:
+  - The plugin embedding vector is not generated.
+  - The plugin is modified.
+  - The plugin embedding model is changed.
+
+In this case, you cannot start the TaskWeaver and you need to run the above command again to refresh the plugin meta files.
+
+```bash
+
 ## Auto Plugin Selection Example
 
 We show the auto plugin selection mechanism in the following example.
