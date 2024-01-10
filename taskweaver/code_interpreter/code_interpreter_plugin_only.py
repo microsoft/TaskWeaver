@@ -47,6 +47,8 @@ class CodeInterpreterPluginOnly(Role):
         response: Post = self.generator.reply(
             memory,
             event_handler,
+            prompt_log_path,
+            use_back_up_engine,
         )
 
         if response.message is not None:

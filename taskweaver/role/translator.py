@@ -59,8 +59,12 @@ class PostTranslator:
                 ], f"Invalid send_to value: {value}"
                 post.send_to = value  # type: ignore
             else:
-                type = AttachmentType(type_str)
-                post.add_attachment(Attachment.create(type=type, content=value))
+                try:
+                    type = AttachmentType(type_str)
+                    post.add_attachment(Attachment.create(type=type, content=value))
+                except Exception as e:
+                    self.logger.warning(f"Failed to parse attachment: {d} due to {str(e)}")
+                    continue
             event_handler(type_str, value)
             parsed_type = (
                 type
