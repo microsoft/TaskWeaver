@@ -1,15 +1,17 @@
 import os
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from injector import inject
 
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
+from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Memory, Post, Round
+from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
+from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -47,15 +49,17 @@ class CodeGeneratorPluginOnly(Role):
         config: CodeGeneratorPluginOnlyConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
         self.config = config
         self.logger = logger
         self.llm_api = llm_api
+        self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger)
+        self.post_translator = PostTranslator(logger, event_emitter)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.plugin_pool = [p for p in plugin_registry.get_list() if p.plugin_only is True]
         self.instruction_template = self.prompt_data["content"]
@@ -68,7 +72,7 @@ class CodeGeneratorPluginOnly(Role):
 
     def select_plugins_for_prompt(
         self,
-        user_query,
+        user_query: str,
     ) -> List[PluginEntry]:
         selected_plugins = self.plugin_selector.plugin_select(
             user_query,
@@ -83,10 +87,11 @@ class CodeGeneratorPluginOnly(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler,
+        post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -105,11 +110,10 @@ class CodeGeneratorPluginOnly(Role):
             rounds=rounds,
             plugin_pool=self.plugin_pool,
         )
+        post_proxy.update_send_to("Planner")
 
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
-
-        post = Post.create(message=None, send_from="CodeInterpreter", send_to="Planner")
 
         llm_response = self.llm_api.chat_completion(
             messages=prompt,
@@ -119,17 +123,15 @@ class CodeGeneratorPluginOnly(Role):
             stream=False,
         )
         if llm_response["role"] == "assistant":
-            post.message = llm_response["content"]
-            event_handler("CodeInterpreter->Planner", post.message)
-            return post
+            post_proxy.update_message(llm_response["content"])
+            return post_proxy.end()
         elif llm_response["role"] == "function":
-            post.add_attachment(Attachment.create(type=AttachmentType.function, content=llm_response["content"]))
-            event_handler("function", llm_response["content"])
+            post_proxy.update_attachment(llm_response["content"], AttachmentType.function)
 
             if self.config.enable_auto_plugin_selection:
                 # here the code is in json format, not really code
                 self.selected_plugin_pool.filter_unused_plugins(code=llm_response["content"])
-            return post
+            return post_proxy.end()
         else:
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
@@ -138,7 +140,7 @@ def _compose_prompt(
     system_instructions: str,
     rounds: List[Round],
     plugin_pool: List[PluginEntry],
-) -> Tuple[List, List]:
+) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
     functions = [plugin.format_function_calling() for plugin in plugin_pool]
     prompt = [format_chat_message(role="system", message=system_instructions)]
     for _round in rounds:
