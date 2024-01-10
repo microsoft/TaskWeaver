@@ -91,7 +91,17 @@ async def main(message: cl.Message):
     user_session_id = cl.user_session.get("id")
     session = app_session_dict[user_session_id]
     session_cwd_path = session.execution_cwd
-
+    if message.elements:
+        upload_file_paths = []
+        for element in message.elements:
+            file_name = element.name
+            file_content = element.content
+            tw_file_path = os.path.join(session_cwd_path, file_name)
+            with open(tw_file_path, "wb") as f:
+                f.write(file_content)
+            upload_file_paths.append(file_name)
+        message.content = f"Load the file(s) from {upload_file_paths}, {message.content}"
+        
     def send_message_sync(msg: str, files: Any) -> Round:
         return session.send_message(msg, files=files)
 
