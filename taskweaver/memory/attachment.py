@@ -68,6 +68,7 @@ class Attachment:
         type: AttachmentType,
         content: str,
         id: Optional[str] = None,
+        extra: Optional[Any] = None,
     ) -> Attachment:
         import builtins
 
@@ -79,6 +80,7 @@ class Attachment:
             type=type,
             content=content,
             id=id,
+            extra=extra,
         )
 
     def __repr__(self) -> str:
@@ -102,4 +104,5 @@ class Attachment:
             type=type,
             content=content["content"],
             id=content["id"] if "id" in content else None,
+            extra=content["extra"] if "extra" in content else None,
         )

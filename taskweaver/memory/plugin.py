@@ -210,7 +210,7 @@ class PluginEntry:
             "plugin_only": self.plugin_only,
         }
 
-    def format_function_calling(self) -> Dict:
+    def format_function_calling(self) -> Dict[str, Any]:
         assert self.plugin_only is True, "Only `plugin_only` plugins can be called in this way."
 
         def map_type(t: str) -> str:
@@ -226,8 +226,8 @@ class PluginEntry:
                 return "null"
             raise Exception(f"unknown type {t}")
 
-        function = {"type": "function", "function": {}}
-        required_params = []
+        function: Dict[str, Any] = {"type": "function", "function": {}}
+        required_params: List[str] = []
         function["function"]["name"] = self.name
         function["function"]["description"] = self.spec.description
         function["function"]["parameters"] = {"type": "object", "properties": {}}
