@@ -1,6 +1,6 @@
 import os
 import shutil
-from typing import Dict, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
@@ -180,27 +180,33 @@ class Session:
         self,
         message: str,
         event_handler: Optional[SessionEventHandler] = None,
+        files: Optional[List[Dict[Literal["name", "path", "content"], Any]]] = None,
     ) -> Round:
+        message_prefix = ""
+        if files is not None:
+            file_names: List[str] = []
+            for file_info in files:
+                file_name = file_info["name"]
+                file_path = file_info.get("path", None)
+                file_content = file_info.get("content", None)
+                file_names.append(self._upload_file(file_name, file_path, file_content))
+            if len(file_names) > 0:
+                message_prefix += f"files added: {', '.join(file_names)}.\n"
+
         with self.event_emitter.handle_events_ctx(event_handler):
-            return self._send_text_message(message)
+            return self._send_text_message(message_prefix + message)
 
-    def send_file(
-        self,
-        file_name: str,
-        file_path: str,
-        event_handler: Optional[SessionEventHandler] = None,
-    ) -> Round:
-        with self.event_emitter.handle_events_ctx(event_handler):
-            file_full_path = self.get_full_path(self.execution_cwd, file_name)
-            if os.path.exists(file_full_path):
-                os.remove(file_full_path)
-                message = f'reload file "{file_name}"'
-            else:
-                message = f'load file "{file_name}"'
-
-            shutil.copyfile(file_path, file_full_path)
-
-            return self._send_text_message(message)
+    def _upload_file(self, name: str, path: Optional[str] = None, content: Optional[bytes] = None) -> str:
+        target_name = name.split("/")[-1]
+        target_path = self.get_full_path(self.execution_cwd, target_name)
+        if path is not None:
+            shutil.copyfile(path, target_path)
+            return target_name
+        if content is not None:
+            with open(target_path, "wb") as f:
+                f.write(content)
+            return target_name
+        raise ValueError("path or file_content")
 
     def get_full_path(self, *file_path: str, in_execution_cwd: bool = False) -> str:
         return str(

@@ -2,7 +2,7 @@ import shutil
 import threading
 import time
 from textwrap import TextWrapper, dedent
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import click
 from colorama import ansi
@@ -144,12 +144,18 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             with self.lock:
                 self.pending_updates.append(("status_update", msg))
 
-    def handle_message(self, session: Session, message: str) -> Optional[str]:
+    def handle_message(
+        self,
+        session: Session,
+        message: str,
+        files: List[Dict[Literal["name", "path", "content"], str]],
+    ) -> Optional[str]:
         def execution_thread():
             try:
                 round = session.send_message(
                     message,
                     event_handler=self,
+                    files=files,
                 )
                 last_post = round.post_list[-1]
                 if last_post.send_to == "User":
@@ -364,6 +370,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
     def __init__(self, app_dir: Optional[str] = None):
         self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
         self.session = self.app.get_session()
+        self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
 
     def run(self):
         self._reset_session(first_session=True)
@@ -382,16 +389,16 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             lower_command = lower_message.lstrip("/").split(" ")[0]
             if lower_command in ["exit", "bye", "quit"]:
                 exit(0)
-            if lower_message in ["help", "h", "?"]:
+            if lower_command in ["help", "h", "?"]:
                 self._print_help()
                 return
-            if lower_message == "clear":
+            if lower_command == "clear":
                 click.clear()
                 return
-            if lower_message == "reset":
+            if lower_command == "reset":
                 self._reset_session()
                 return
-            if lower_command == "load":
+            if lower_command in ["load", "file"]:
                 file_to_load = msg[5:].strip()
                 self._load_file(file_to_load)
                 return
@@ -419,10 +426,16 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         import os
 
         file_path = os.path.realpath(file_to_load.strip())
+        file_name = os.path.basename(file_path)
         if not os.path.exists(file_path):
             error_message(f"File '{file_to_load}' not found")
             return
-        self._system_message(f"Loading file '{file_to_load}'")
+        self.pending_files.append(
+            {"name": file_name, "path": file_path},
+        )
+        self._system_message(
+            f"Added '{file_name}' for loading, type message to send",
+        )
 
     def _reset_session(self, first_session: bool = False):
         if not first_session:
@@ -438,7 +451,12 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
 
     def _handle_message(self, input_message: str):
         updater = TaskWeaverRoundUpdater()
-        result = updater.handle_message(self.session, input_message)
+        result = updater.handle_message(
+            self.session,
+            input_message,
+            files=self.pending_files,
+        )
+        self.pending_files = []
         if result is not None:
             self._assistant_message(result)
 
