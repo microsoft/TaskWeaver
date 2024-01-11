@@ -35,6 +35,7 @@ ParserStateType = Literal[
     "number",
     "string",
     "literal",
+    "ws",
 ]
 
 
@@ -84,8 +85,14 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
         )
 
     def parse_ws(ch: str) -> bool:
+        is_in_ws = state_stack[-1][0] == "ws" if len(state_stack) > 0 else False
+
         if not is_ws(ch):
+            if is_in_ws:
+                add_event("ws", None, "", True)
+                state_stack.pop()
             return False
+        state_stack.append(("ws", None))
         add_event("ws", None, ch, False)
         return True
 
@@ -145,7 +152,6 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
             if ch == ",":
                 return True
             if ch == "}":
-                print(f"state check: {state_stack}")
                 add_event("end_map", None, ch, True)
                 state_stack.pop()  # pop the object begin state
                 return True
@@ -274,7 +280,7 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
         state_stack.pop()
         return False
 
-    def clear_ev_queue():
+    def process_ev_queue():
         result = ev_queue.copy()
         result = reduce_events(result)
         ev_queue.clear()
@@ -319,6 +325,14 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
                     buf = ch + buf
                     r = True
                     continue
+            elif cur_state == "ws":
+                r = parse_ws(ch)
+                if not r:
+                    # ws also need to peek next token to determine the end
+                    # restore token to buffer when finishes
+                    buf = ch + buf
+                    r = True
+                    continue
             else:
                 raise Exception(f"not implemented handling for {cur_state}: {ch}")
             if not r and not is_end:
@@ -327,4 +341,4 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
                 )
             if is_end:
                 break
-        yield from clear_ev_queue()
+        yield from process_ev_queue()
