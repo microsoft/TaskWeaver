@@ -93,7 +93,7 @@ class PluginSpec:
         return PluginSpec(
             name=d["name"],
             description=d["description"],
-            examples=d["examples"],
+            examples=d.get("examples", ""),
             args=[PluginParameter.from_dict(p) for p in d["parameters"]],
             returns=[PluginParameter.from_dict(p) for p in d["returns"]],
         )
@@ -110,7 +110,7 @@ class PluginSpec:
         plugin_description = f"- {self.name}: {self.description}"
         required_args = [f"{arg.name}: {arg.type}" for arg in self.args if arg.required]
         if required_args:
-            plugin_description += f"Arguments required " f"before calling this plugin: {', '.join(required_args)}\n"
+            plugin_description += f" Arguments required: {', '.join(required_args)}\n"
         return plugin_description
 
     def format_prompt(self) -> str:
@@ -143,7 +143,8 @@ class PluginSpec:
         def format_examples(examples: str) -> str:
             return examples.strip().replace("\n", "\n# ")
 
-        example_list = format_examples(self.examples)
+        examples = format_examples(self.examples)
+        examples = f"# Examples:\n# {examples}\n" if examples else ""
 
         param_list = ",".join([format_arg_val(p) for p in self.args])
 
@@ -164,10 +165,8 @@ class PluginSpec:
             return_type = rv.type
         else:
             return_type = "None"
-        return (
-            f"# {self.description}\nExamples:\n# {example_list}\n"
-            f"def {self.name}({param_list}) -> {return_type}:...\n"
-        )
+
+        return f"# {self.description}\n{examples}" f"def {self.name}({param_list}) -> {return_type}:...\n"
 
 
 @dataclass
