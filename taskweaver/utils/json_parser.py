@@ -378,3 +378,47 @@ def parse_json_stream(
             if is_end:
                 break
         yield from process_ev_queue()
+
+
+def parse_json(token_stream: Iterable[str], skip_after_root: bool = False) -> Any:
+    root_array: List[Any] = []
+    obj_stack: List[Tuple[Literal["object", "array", "key"], Any]] = [
+        ("array", root_array),
+    ]
+
+    def add_value(val: Any):
+        cur_obj_t, cur_obj_v = obj_stack[-1]
+        if cur_obj_t == "array":
+            assert type(cur_obj_v) is list
+            cur_obj_v.append(val)  # type: ignore
+        elif cur_obj_t == "key":
+            obj_stack.pop()
+            assert obj_stack[-1][0] == "object", f"unexpected stack state when adding key {obj_stack}"
+            obj_stack[-1][1][cur_obj_v] = val
+        else:
+            assert False, "object value need to have key"
+
+    for ev in parse_json_stream(token_stream, skip_after_root=skip_after_root):
+        if not ev.is_end:
+            continue
+        evt = ev.event
+        val = ev.value
+
+        if evt == "start_map":
+            obj_stack.append(("object", {}))
+        elif evt == "start_array":
+            obj_stack.append(("array", []))
+        elif evt == "map_key":
+            obj_stack.append(("key", val))
+        elif evt == "ws" or evt == "skip":
+            pass
+        elif evt == "end_map" or evt == "end_array":
+            obj_val = obj_stack.pop()[1]
+            add_value(obj_val)
+        elif evt == "boolean" or evt == "null" or evt == "number" or evt == "string":
+            add_value(val)
+        else:
+            assert f"unsupported parser event {evt}"
+    assert len(obj_stack) == 1
+    assert len(root_array) == 1
+    return root_array[0]
