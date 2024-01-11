@@ -91,69 +91,64 @@ async def main(message: cl.Message):
     user_session_id = cl.user_session.get("id")
     session = app_session_dict[user_session_id]
     session_cwd_path = session.execution_cwd
-    if message.elements:
-        upload_file_paths = []
-        for element in message.elements:
-            file_name = element.name
-            file_content = element.content
-            tw_file_path = os.path.join(session_cwd_path, file_name)
-            with open(tw_file_path, "wb") as f:
-                f.write(file_content)
-            upload_file_paths.append(file_name)
-        message.content = f"Load the file(s) from {upload_file_paths}, {message.content}"
-        
+
     def send_message_sync(msg: str, files: Any) -> Round:
         return session.send_message(msg, files=files)
 
     # display loader before sending message
-    id = await cl.Message(content="").send()
 
-    response_round = await cl.make_async(send_message_sync)(
-        message.content,
-        [
-            {
-                "name": element.name if element.name else "file",
-                "content": element.content,
-            }
-            for element in message.elements
-            if element.type == "file" and element.content is not None
-        ],
-    )
+    async with cl.Step(name="", show_input=True, root=True):
+        response_round = await cl.make_async(send_message_sync)(
+            message.content,
+            [
+                {
+                    "name": element.name if element.name else "file",
+                    "path": element.path,
+                }
+                for element in message.elements
+                if element.type == "file"
+            ],
+        )
 
-    artifact_paths = []
-    for post in response_round.post_list:
-        if post.send_from == "User":
-            continue
-        elements = []
-        for atta in post.attachment_list:
-            if atta.type in [
-                AttachmentType.python,
-                AttachmentType.execution_result,
-            ]:
+        artifact_paths = []
+        for post in response_round.post_list:
+            if post.send_from == "User":
                 continue
-            elif atta.type == AttachmentType.artifact_paths:
-                artifact_paths = atta.content
-            else:
+            elements = []
+            async with cl.Step(name=post.send_from, show_input=True) as post_step:
+                for atta in post.attachment_list:
+                    if atta.type in [
+                        # AttachmentType.python,
+                        AttachmentType.execution_result,
+                    ]:
+                        continue
+                    elif atta.type == AttachmentType.artifact_paths:
+                        artifact_paths = atta.content
+                    elif atta.type == AttachmentType.python:
+                        atta.content = "```{atta.content}```"
+                    else:
+                        newline = "\n" if "\n" in atta.content else " "
+                        attach_type = " ".join([item.capitalize() for item in atta.type.value.split("_")])
+                        elements.append(
+                            cl.Text(
+                                name="",
+                                content=f"**{attach_type}**:{newline}{atta.content}",
+                                display="inline",
+                            ),
+                        )
+                        post_step.elements = elements
+                        await post_step.update()
+
                 elements.append(
                     cl.Text(
-                        name=atta.type.value,
-                        content=atta.content.encode(),
+                        name="",
+                        content=f"**Send Message To {post.send_to}**: {post.message}",
                         display="inline",
                     ),
                 )
-        elements.append(
-            cl.Text(
-                name=f"{post.send_from} -> {post.send_to}",
-                content=post.message,
-                display="inline",
-            ),
-        )
-        await cl.Message(
-            content="---",
-            elements=elements,
-            parent_id=id,
-            author=post.send_from,
-        ).send()
+                post_step.elements = elements
+                post_step.output = " "
+                await post_step.update()
 
     if post.send_to == "User":
         files = []
@@ -177,4 +172,8 @@ async def main(message: cl.Message):
             message = message.replace(f"{img_prefix}[{file_name}]({file_path})", file_name)
 
         elements = file_display(files, session_cwd_path)
-        await cl.Message(content=f"{message}", elements=elements if len(elements) > 0 else None).send()
+        await cl.Message(
+            author="TaskWeaver",
+            content=f"{message}",
+            elements=elements if len(elements) > 0 else None,
+        ).send()
