@@ -119,7 +119,7 @@ planner_response_schema: |-
 code_interpreter_introduction : |-
   - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
   - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.
-  - CodeInterpreter has the following plugin functions:
+  - CodeInterpreter has the following plugin functions and their required parameters need to be provided before the execution:
   {plugin_description}
   - CodeInterpreter can only talk to the Planner.
   - CodeInterpreter can only follow one instruction at a time.

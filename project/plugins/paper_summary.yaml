@@ -5,7 +5,8 @@ description: >-
   summarize_paper function iteratively summarizes a given paper page by page,
   highlighting the key points, including the problem, main idea, contributions,
   experiments, results, and conclusions.
-  For example, result, description = summarize_paper("paper.pdf").
+examples: |-
+  result, description = summarize_paper("paper.pdf")
 
 parameters:
   - name: paper_file_path

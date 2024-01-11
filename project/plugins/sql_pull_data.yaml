@@ -6,7 +6,8 @@ description: >-
   This plugin takes user requests when obtaining data from database is explicitly mentioned.
   Otherwise, confirm with the user if they want to pull data from this database.
   The data from this database can only used for anomaly detection.
-  For example, df, description = sql_pull_data("pull data from time_series table").
+examples: |-
+  df, description = sql_pull_data("pull data from time_series table")
 
 parameters:
   - name: query

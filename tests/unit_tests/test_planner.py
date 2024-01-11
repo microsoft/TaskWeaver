@@ -4,6 +4,7 @@ from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginModule
 
 
@@ -37,19 +38,19 @@ def test_compose_prompt():
     )
     post2.add_attachment(
         Attachment.create(
-            "init_plan",
+            AttachmentType.init_plan,
             "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n3. report the result to the user <wide depend on 2>",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "plan",
+            AttachmentType.plan,
             "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data\n2. report the result to the user",
         ),
     )
     post2.add_attachment(
         Attachment.create(
-            "current_plan_step",
+            AttachmentType.current_plan_step,
             "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data",
         ),
     )
@@ -70,17 +71,17 @@ def test_compose_prompt():
 
     post4.add_attachment(
         Attachment.create(
-            "init_plan",
+            AttachmentType.init_plan,
             "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n3. report the result to the user <wide depend on 2>",
         ),
     )
     post4.add_attachment(
         Attachment.create(
-            "plan",
+            AttachmentType.plan,
             "1. instruct CodeInterpreter to load the data file and count the rows of the loaded data\n2. report the result to the user",
         ),
     )
-    post4.add_attachment(Attachment.create("current_plan_step", "2. report the result to the user"))
+    post4.add_attachment(Attachment.create(AttachmentType.current_plan_step, "2. report the result to the user"))
 
     round1 = Round.create(user_query="count the rows of ./data.csv", id="round-1")
     round1.add_post(post1)
@@ -107,6 +108,7 @@ def test_compose_prompt():
     assert messages[0]["content"].startswith(
         "You are the Planner who can coordinate CodeInterpreter to finish the user task.",
     )
+    assert "Arguments required: df: DataFrame, time_col_name: str, value_col_name: str" in messages[0]["content"]
     assert messages[1]["role"] == "user"
     assert messages[1]["content"] == "User: Let's start the new conversation!\ncount the rows of /home/data.csv"
     assert messages[2]["role"] == "assistant"

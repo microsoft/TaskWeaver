@@ -4,6 +4,10 @@ required: false
 plugin_only: true
 description: >-
   Search and compare prices from thousands of online shops. Only available in the US.
+examples: |-
+  df, description = klarna_search("phone")
+  df, description = klarna_search("phone", size=10)
+  df, description = klarna_search("phone", size=10, min_price=100, max_price=1000)
 
 parameters:
   - name: query
