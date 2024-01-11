@@ -38,7 +38,10 @@ ParserStateType = Literal[
 ]
 
 
-def reduce_events(events: Iterable[ParserEvent], skip_ws: bool = True) -> Iterable[ParserEvent]:
+def reduce_events(
+    events: Iterable[ParserEvent],
+    skip_ws: bool = True,
+) -> Iterable[ParserEvent]:
     reduced: List[ParserEvent] = []
     cur: Optional[ParserEvent] = None
     for ev in events:
@@ -67,17 +70,25 @@ def is_ws(ch: str):
     return ch == " " or ch == "\t" or ch == "\n" or ch == "\r"
 
 
-def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Iterable[ParserEvent]:
+def parse_json_stream(
+    token_stream: Iterable[str],
+    skip_ws: bool = False,
+    ijson_prefix: bool = False,
+) -> Iterable[ParserEvent]:
     buf: str = ""
     is_end: bool = False
-    prefix_stack: List[str] = []
+    prefix_stack: List[Tuple[bool, str]] = []
     state_stack: List[Tuple[ParserStateType, Any]] = [("root", (False, False))]
     ev_queue: List[ParserEvent] = []
 
     def add_event(ev: ParserEventType, value: Any, value_str: str, is_end: bool):
+        if ijson_prefix:
+            prefix = ".".join("item" if is_arr else val for is_arr, val in prefix_stack)
+        else:
+            prefix = "".join(f"[{val}]" if is_arr else f".{val}" for is_arr, val in prefix_stack)
         ev_queue.append(
             ParserEvent(
-                "".join(prefix_stack),
+                prefix,
                 ev,
                 value,
                 value_str,
@@ -187,7 +198,7 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
                 state_stack.pop()
                 return True
             state_stack[-1] = ("array", (idx, True, False))
-            prefix_stack.append(f"[{idx}]")
+            prefix_stack.append((True, str(idx)))
             if parse_value_begin(ch):
                 return True
             raise Exception(f"invalid value for index {idx}: {ch}")
@@ -243,7 +254,7 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
             add_event(ev, value_buf, "", True)
             state_stack.pop()
             if is_obj_key:
-                prefix_stack.append(value_buf)
+                prefix_stack.append((False, value_buf))
                 state_stack.append(("object_value", (value_buf, False, False)))
             return True
         if ch == "\\":
