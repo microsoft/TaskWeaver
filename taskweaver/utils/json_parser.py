@@ -27,11 +27,10 @@ class ParserEvent(NamedTuple):
 
 
 ParserStateType = Literal[
+    "root",
     "object",
-    "object_key",
     "object_value",
     "array",
-    "array_value",
     "number",
     "string",
     "literal",
@@ -72,7 +71,7 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
     buf: str = ""
     is_end: bool = False
     prefix_stack: List[str] = []
-    state_stack: List[Tuple[ParserStateType, Any]] = []
+    state_stack: List[Tuple[ParserStateType, Any]] = [("root", (False, False))]
     ev_queue: List[ParserEvent] = []
 
     def add_event(ev: ParserEventType, value: Any, value_str: str, is_end: bool):
@@ -101,7 +100,7 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
 
     def parse_str_begin(ch: str, is_obj_key: bool = False) -> bool:
         if ch == '"':
-            add_event("object_key" if is_obj_key else "string", "", "", False)  # type: ignore
+            add_event("map_key" if is_obj_key else "string", "", "", False)
             state_stack.append(("string", (False, "", "", is_obj_key)))
             return True
         return False
@@ -196,7 +195,7 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
 
     def parse_str_value(ch: str, cur_state_ext: Tuple[bool, str, str, bool]) -> bool:
         in_escape, escape_buf, value_buf, is_obj_key = cur_state_ext
-        ev: ParserEventType = "object_key" if is_obj_key else "string"  # type: ignore
+        ev: ParserEventType = "map_key" if is_obj_key else "string"
         if in_escape and escape_buf.startswith("u"):
             if ch in "0123456789abcdefABCDEF":
                 escape_buf += ch
@@ -283,6 +282,18 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
         state_stack.pop()
         return False
 
+    def parse_root(ch: str, cur_state_ext: Tuple[bool, bool]):
+        has_root_elem, is_end = cur_state_ext
+        if parse_ws(ch):
+            return True
+        if ch == "":
+            state_stack[-1] = ("root", (has_root_elem, True))
+            return True
+        if has_root_elem:
+            raise Exception(f"invalid token after root element: {ch}")
+        state_stack[-1] = ("root", (True, is_end))
+        return parse_value_begin(ch)
+
     def process_ev_queue():
         result = ev_queue.copy()
         result = reduce_events(result, skip_ws=skip_ws)
@@ -290,7 +301,6 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
         return result
 
     for chunk in itertools.chain(token_stream, [None]):
-        # chunk = next(token_stream)
         if chunk is None:
             is_end = True
         else:
@@ -298,12 +308,12 @@ def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Ite
         while True:
             if len(buf) == 0 and not is_end:
                 break
-            cur_state, cur_state_ext = state_stack[-1] if len(state_stack) > 0 else (None, None)
+            cur_state, cur_state_ext = state_stack[-1]
             ch = "" if buf == "" else buf[0]
             buf = buf if buf == "" else buf[1:]
             r = False
-            if cur_state is None:
-                r = parse_value_begin(ch)
+            if cur_state == "root":
+                r = parse_root(ch, cur_state_ext)
             elif cur_state == "object":
                 r = parse_obj_begin(ch)
             elif cur_state == "string":
