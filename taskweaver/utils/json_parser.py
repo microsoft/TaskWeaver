@@ -284,13 +284,15 @@ def parse_json_stream(
         raise Exception(f"invalid literal in parsing when expecting {literal}: {buf}")
 
     def parse_number(ch: str, cur_state_ext: Tuple[str, bool, bool, bool]):
+        # TODO: support rigir
         buf, in_exp, in_frac, in_exp_sign = cur_state_ext
         if ch.isdigit() or ch == "." or ch == "e" or ch == "E" or ch == "+" or ch == "-":
             buf += ch
             add_event("number", None, ch, False)
             state_stack[-1] = ("number", (buf, in_exp, in_frac, in_exp_sign))
             return True
-        num_val = float(buf)
+        is_float_mode = "." in buf or "e" in buf or "E" in buf
+        num_val = float(buf) if is_float_mode else int(buf)
         add_event("number", num_val, "", True)
         state_stack.pop()
         return False
