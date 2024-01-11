@@ -15,6 +15,7 @@ ParserEventType = Literal[
     "number",
     "string",
     "ws",
+    "skip",
 ]
 
 
@@ -74,6 +75,7 @@ def parse_json_stream(
     token_stream: Iterable[str],
     skip_ws: bool = False,
     ijson_prefix: bool = False,
+    skip_after_root: bool = False,
 ) -> Iterable[ParserEvent]:
     buf: str = ""
     is_end: bool = False
@@ -294,16 +296,27 @@ def parse_json_stream(
         return False
 
     def parse_root(ch: str, cur_state_ext: Tuple[bool, bool]):
-        has_root_elem, is_end = cur_state_ext
+        has_root_elem, has_skip_cnt = cur_state_ext
+
+        if has_skip_cnt and skip_after_root:
+            add_event("skip", None, ch, ch == "")
+            return True
+
         if parse_ws(ch):
             return True
         if ch == "":
-            state_stack[-1] = ("root", (has_root_elem, True))
             return True
         if has_root_elem:
+            if skip_after_root:
+                # detected content after first root element, skip if configured
+                state_stack[-1] = ("root", (True, True))
+                add_event("skip", None, ch, False)
+                return True
             raise Exception(f"invalid token after root element: {ch}")
-        state_stack[-1] = ("root", (True, is_end))
-        return parse_value_begin(ch)
+        else:
+            # first root element begins
+            state_stack[-1] = ("root", (True, has_skip_cnt))
+            return parse_value_begin(ch)
 
     def process_ev_queue():
         result = ev_queue.copy()
