@@ -39,10 +39,12 @@ ParserStateType = Literal[
 ]
 
 
-def reduce_events(events: Iterable[ParserEvent]) -> Iterable[ParserEvent]:
+def reduce_events(events: Iterable[ParserEvent], skip_ws: bool = True) -> Iterable[ParserEvent]:
     reduced: List[ParserEvent] = []
     cur: Optional[ParserEvent] = None
     for ev in events:
+        if skip_ws and ev.event == "ws":
+            continue
         if cur is None:
             cur = ev
             continue
@@ -66,7 +68,7 @@ def is_ws(ch: str):
     return ch == " " or ch == "\t" or ch == "\n" or ch == "\r"
 
 
-def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
+def parse_json_stream(token_stream: Iterable[str], skip_ws: bool = False) -> Iterable[ParserEvent]:
     buf: str = ""
     is_end: bool = False
     prefix_stack: List[str] = []
@@ -92,7 +94,8 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
                 add_event("ws", None, "", True)
                 state_stack.pop()
             return False
-        state_stack.append(("ws", None))
+        if not is_in_ws:
+            state_stack.append(("ws", None))
         add_event("ws", None, ch, False)
         return True
 
@@ -282,11 +285,10 @@ def parse_json_stream(token_stream: Iterable[str]) -> Iterable[ParserEvent]:
 
     def process_ev_queue():
         result = ev_queue.copy()
-        result = reduce_events(result)
+        result = reduce_events(result, skip_ws=skip_ws)
         ev_queue.clear()
         return result
 
-    # while True:
     for chunk in itertools.chain(token_stream, [None]):
         # chunk = next(token_stream)
         if chunk is None:
