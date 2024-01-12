@@ -40,7 +40,7 @@ class LLMApi(object):
             self._set_embedding_service(OllamaService)
         elif self.config.embedding_api_type == "google_genai":
             self._set_embedding_service(GoogleGenAIService)
-        elif self.config.embedding_api_type == "sentence_transformer":
+        elif self.config.embedding_api_type == "sentence_transformers":
             self._set_embedding_service(SentenceTransformerService)
         elif self.config.embedding_api_type == "qwen":
             self._set_embedding_service(QWenService)

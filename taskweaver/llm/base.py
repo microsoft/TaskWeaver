@@ -17,7 +17,7 @@ class LLMModuleConfig(ModuleConfig):
         )
         self.embedding_api_type = self._get_str(
             "embedding_api_type",
-            "sentence_transformer",
+            "sentence_transformers",
         )
         self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
         self.api_key: Optional[str] = self._get_str(

@@ -218,21 +218,27 @@ class ExperienceGenerator:
         if not os.path.exists(self.config.experience_dir):
             raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
 
-        exp_files = [
+        original_exp_files = [
             exp_file
             for exp_file in os.listdir(self.config.experience_dir)
-            if exp_file.startswith(f"{target_role}_exp_")
+            if exp_file.startswith("raw_exp_") or exp_file.startswith("handcrafted_exp_")
         ]
-        if len(exp_files) == 0:
+        exp_ids = [os.path.splitext(os.path.basename(exp_file))[0].split("_")[2] for exp_file in original_exp_files]
+        if len(exp_ids) == 0:
             warnings.warn(
                 f"No experience found for {target_role}."
-                f"Please type #SAVE AS EXP in the chat window to save raw experience or write handcrafted experience."
+                f"Please type /save in the chat window to save raw experience or write handcrafted experience."
                 + self.exception_message_for_refresh,
             )
             return
 
-        for exp_file in exp_files:
+        for exp_id in exp_ids:
+            exp_file = f"{target_role}_exp_{exp_id}.yaml"
             exp_file_path = os.path.join(self.config.experience_dir, exp_file)
+            assert os.path.exists(exp_file_path), (
+                f"Experience {exp_file} for {target_role} not found. " + self.exception_message_for_refresh
+            )
+
             experience = read_yaml(exp_file_path)
 
             assert len(experience["embedding"]) > 0, (

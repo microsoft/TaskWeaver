@@ -5,6 +5,7 @@ import json
 import os
 import secrets
 from datetime import datetime
+from hashlib import md5
 from typing import Any, Dict
 
 
@@ -68,3 +69,7 @@ def json_dumps(obj: Any) -> str:
 
 def json_dump(obj: Any, fp: Any):
     json.dump(obj, fp, cls=EnhancedJSONEncoder)
+
+
+def generate_md5_hash(content: str) -> str:
+    return md5(content.encode()).hexdigest()

@@ -1,3 +1,4 @@
+import os
 from typing import Dict, List
 
 import numpy as np
@@ -6,6 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.llm import LLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
+from taskweaver.utils import generate_md5_hash, write_yaml
 
 
 class SelectedPluginPool:
@@ -70,13 +72,60 @@ class PluginSelector:
         self.llm_api = llm_api
         self.plugin_embedding_dict: Dict[str, List[float]] = {}
 
-    def generate_plugin_embeddings(self):
-        plugin_intro_text_list: List[str] = []
-        for p in self.available_plugins:
-            plugin_intro_text_list.append(p.name + ": " + p.spec.description)
-        plugin_embeddings = self.llm_api.get_embedding_list(plugin_intro_text_list)
-        for i, p in enumerate(self.available_plugins):
-            self.plugin_embedding_dict[p.name] = plugin_embeddings[i]
+        self.exception_message_for_refresh = (
+            "Please cd to the `script` directory and "
+            "run `python -m plugin_mgt --refresh` to refresh the plugin embedding."
+        )
+
+        self.meta_file_dir = os.path.join(os.path.dirname(plugin_registry.file_glob), ".meta")
+        if not os.path.exists(self.meta_file_dir):
+            os.makedirs(self.meta_file_dir)
+
+    def refresh(self):
+        plugins_to_embedded = []
+        for idx, p in enumerate(self.available_plugins):
+            if (
+                len(p.meta_data.embedding) > 0
+                and p.meta_data.embedding_model == self.llm_api.embedding_service.config.embedding_model
+                and p.meta_data.md5hash == generate_md5_hash(p.spec.name + p.spec.description)
+            ):
+                continue
+            else:
+                plugins_to_embedded.append((idx, p.name + ": " + p.spec.description))
+
+        if len(plugins_to_embedded) == 0:
+            print("All plugins are up-to-date.")
+            return
+
+        plugin_embeddings = self.llm_api.get_embedding_list([text for idx, text in plugins_to_embedded])
+
+        for i, embedding in enumerate(plugin_embeddings):
+            p = self.available_plugins[plugins_to_embedded[i][0]]
+            p.meta_data.embedding = embedding
+            p.meta_data.embedding_model = self.llm_api.embedding_service.config.embedding_model
+            p.meta_data.md5hash = generate_md5_hash(p.spec.name + p.spec.description)
+            write_yaml(p.meta_data.path, p.meta_data.to_dict())
+
+    def load_plugin_embeddings(self):
+        for idx, p in enumerate(self.available_plugins):
+            # check if the plugin has embedding
+            assert len(p.meta_data.embedding) > 0, (
+                f"Plugin {p.name} has no embedding. " + self.exception_message_for_refresh
+            )
+            # check if the plugin is using the same embedding model as the current session
+            assert p.meta_data.embedding_model == self.llm_api.embedding_service.config.embedding_model, (
+                f"Plugin {p.name} is using embedding model {p.meta_data.embedding_model}, "
+                f"which is different from the one used by current session"
+                f" ({self.llm_api.embedding_service.config.embedding_model}). "
+                f"Please use the same embedding model or refresh the plugin embedding."
+                + self.exception_message_for_refresh
+            )
+            # check if the plugin has been modified
+            assert p.meta_data.md5hash == generate_md5_hash(p.spec.name + p.spec.description), (
+                f"Plugin {p.name} has been modified. " + self.exception_message_for_refresh
+            )
+
+            self.plugin_embedding_dict[p.name] = p.meta_data.embedding
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))

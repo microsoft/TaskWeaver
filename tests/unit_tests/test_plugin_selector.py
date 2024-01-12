@@ -16,7 +16,7 @@ def test_plugin_selector():
     app_config = AppConfigSource(
         config={
             "plugin.base_path": os.path.join(os.path.dirname(os.path.abspath(__file__)), "data/plugins"),
-            "llm.embedding_api_type": "sentence_transformer",
+            "llm.embedding_api_type": "sentence_transformers",
             "llm.embedding_model": "all-mpnet-base-v2",
             "llm.api_key": "test_key",
             "code_generator.enable_auto_plugin_selection": True,
@@ -24,7 +24,8 @@ def test_plugin_selector():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
     plugin_selector = app_injector.get(PluginSelector)
-    plugin_selector.generate_plugin_embeddings()
+    plugin_selector.refresh()
+    plugin_selector.load_plugin_embeddings()
 
     query1 = "detect abnormal data points in ./data.csv."
     selected_plugins = plugin_selector.plugin_select(query1, top_k=3)

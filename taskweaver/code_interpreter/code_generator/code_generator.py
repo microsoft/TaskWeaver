@@ -12,6 +12,7 @@ from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, Rou
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
+from taskweaver.module.event_emitter import PostEventProxy
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -60,6 +61,7 @@ class CodeGenerator(Role):
         logger: TelemetryLogger,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
+        post_translator: PostTranslator,
     ):
         self.config = config
         self.logger = logger
@@ -67,7 +69,7 @@ class CodeGenerator(Role):
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger)
+        self.post_translator = post_translator
         self.prompt_data = read_yaml(self.config.prompt_file_path)
 
         self.instruction_template = self.prompt_data["content"]
@@ -90,8 +92,8 @@ class CodeGenerator(Role):
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(plugin_registry, self.llm_api)
-            self.plugin_selector.generate_plugin_embeddings()
-            logger.info("Plugin embeddings generated")
+            self.plugin_selector.load_plugin_embeddings()
+            logger.info("Plugin embeddings loaded")
             self.selected_plugin_pool = SelectedPluginPool()
 
     def configure_verification(
@@ -272,10 +274,10 @@ class CodeGenerator(Role):
 
     def select_plugins_for_prompt(
         self,
-        user_query: str,
+        query: str,
     ) -> List[PluginEntry]:
         selected_plugins = self.plugin_selector.plugin_select(
-            user_query,
+            query,
             self.config.auto_plugin_selection_topk,
         )
         self.selected_plugin_pool.add_selected_plugins(selected_plugins)
@@ -289,10 +291,11 @@ class CodeGenerator(Role):
     def reply(
         self,
         memory: Memory,
-        event_handler: callable,
+        post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -300,10 +303,10 @@ class CodeGenerator(Role):
         )
 
         # obtain the user query from the last round
-        user_query = rounds[-1].user_query
+        query = rounds[-1].post_list[-1].message
 
         if self.config.enable_auto_plugin_selection:
-            self.plugin_pool = self.select_plugins_for_prompt(user_query)
+            self.plugin_pool = self.select_plugins_for_prompt(query)
 
         prompt = self.compose_prompt(rounds, self.plugin_pool)
 
@@ -313,20 +316,19 @@ class CodeGenerator(Role):
             else:
                 return False
 
-        response = self.post_translator.raw_text_to_post(
-            llm_output=self.llm_api.chat_completion(
+        self.post_translator.raw_text_to_post(
+            llm_output=self.llm_api.chat_completion_stream(
                 prompt,
                 use_backup_engine=use_back_up_engine,
-            )["content"],
-            send_from="CodeInterpreter",
-            event_handler=event_handler,
+            ),
+            post_proxy=post_proxy,
             early_stop=early_stop,
         )
-        response.send_to = "Planner"
+        post_proxy.update_send_to("Planner")
         generated_code = ""
-        for attachment in response.attachment_list:
+        for attachment in post_proxy.post.attachment_list:
             if attachment.type in [AttachmentType.sample, AttachmentType.text]:
-                response.message = attachment.content
+                post_proxy.update_message(attachment.content)
                 break
             elif attachment.type == AttachmentType.python:
                 generated_code = attachment.content
@@ -339,7 +341,7 @@ class CodeGenerator(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
 
-        return response
+        return post_proxy.post
 
     def format_plugins(
         self,
