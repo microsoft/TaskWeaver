@@ -245,6 +245,7 @@ class Planner(Role):
             llm_stream = self.llm_api.chat_completion_stream(
                 chat_history,
                 use_backup_engine=use_back_up_engine,
+                use_smoother=True,
             )
 
         llm_output: List[str] = []

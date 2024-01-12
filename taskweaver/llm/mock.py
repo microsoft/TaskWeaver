@@ -329,6 +329,6 @@ class MockApiService(CompletionService, EmbeddingService):
         while cur_pos < len(content):
             chunk_size = random.randint(2, 8)
             next_pos = min(cur_pos + chunk_size, len(content))
+            time.sleep(self.config.playback_delay)  # init delay
             yield format_chat_message(role, content[cur_pos:next_pos])
             cur_pos = next_pos
-            time.sleep(self.config.playback_delay)

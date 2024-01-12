@@ -1,4 +1,4 @@
-from typing import Any, Generator, List, Optional, Type
+from typing import Any, Callable, Generator, List, Optional, Type
 
 from injector import Injector, inject
 
@@ -112,18 +112,154 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
+        use_smoother: bool = True,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
-        return self.completion_service.chat_completion(
-            messages,
-            use_backup_engine,
-            stream,
-            temperature,
-            max_tokens,
-            top_p,
-            stop,
-            **kwargs,
-        )
+        def get_generator() -> Generator[ChatMessageType, None, None]:
+            return self.completion_service.chat_completion(
+                messages,
+                use_backup_engine,
+                stream,
+                temperature,
+                max_tokens,
+                top_p,
+                stop,
+                **kwargs,
+            )
+
+        if use_smoother:
+            return self._stream_smoother(get_generator)
+        return get_generator()
+
+    def _stream_smoother(
+        self,
+        stream_init: Callable[[], Generator[ChatMessageType, None, None]],
+    ) -> Generator[ChatMessageType, None, None]:
+        import random
+        import threading
+        import time
+
+        min_sleep_interval = 0.1
+        min_chunk_size = 2
+        min_update_interval = 1 / 30  # 30Hz
+
+        recv_start = time.time()
+        buffer_message: Optional[ChatMessageType] = None
+        buffer_content: str = ""
+        finished = False
+
+        update_lock = threading.Lock()
+        update_cond = threading.Condition()
+        cur_base_speed: float = 10.0
+
+        def speed_normalize(speed: float):
+            return min(max(speed, 5), 600)
+
+        def base_stream_puller():
+            nonlocal buffer_message, buffer_content, finished, cur_base_speed
+            stream = stream_init()
+
+            for msg in stream:
+                if msg["content"] == "":
+                    continue
+
+                with update_lock:
+                    buffer_message = msg
+                    buffer_content += msg["content"]
+                    cur_time = time.time()
+
+                    new_speed = min(2e3, len(buffer_content) / (cur_time - recv_start))
+                    weight = min(1.0, len(buffer_content) / 80)
+                    cur_base_speed = new_speed * weight + cur_base_speed * (1 - weight)
+
+                with update_cond:
+                    update_cond.notify()
+
+            with update_lock:
+                finished = True
+
+        thread = threading.Thread(target=base_stream_puller)
+        thread.start()
+
+        sent_content: str = ""
+        sent_start: float = time.time()
+        next_update_time = time.time()
+        cur_update_speed = cur_base_speed
+
+        while True:
+            if finished and len(buffer_content) - len(sent_content) < min_chunk_size * 5:
+                if buffer_message is not None and len(sent_content) < len(
+                    buffer_content,
+                ):
+                    new_pack = buffer_content[len(sent_content) :]
+                    sent_content += new_pack
+                    yield format_chat_message(
+                        role=buffer_message["role"],
+                        message=new_pack,
+                        name=buffer_message["name"] if "name" in buffer_message else None,
+                    )
+                break
+
+            if time.time() < next_update_time:
+                with update_cond:
+                    update_cond.wait(
+                        min(min_sleep_interval, next_update_time - time.time()),
+                    )
+                continue
+
+            with update_lock:
+                cur_buf_message = buffer_message
+                total_len = len(buffer_content)
+                sent_len = len(sent_content)
+                rem_len = total_len - sent_len
+
+            if cur_buf_message is None or len(buffer_content) - len(sent_content) < min_chunk_size:
+                # wait for more buffer
+                with update_cond:
+                    update_cond.wait(min_sleep_interval)
+                continue
+
+            if sent_start == 0.0:
+                # first chunk time
+                sent_start = time.time()
+
+            cur_base_speed_norm = speed_normalize(cur_base_speed)
+            cur_actual_speed_norm = speed_normalize(
+                sent_len / (time.time() - (sent_start if not finished else recv_start)),
+            )
+            target_speed = cur_base_speed_norm + (cur_base_speed_norm - cur_actual_speed_norm) * 0.25
+            cur_update_speed = speed_normalize(0.5 * cur_update_speed + target_speed * 0.5)
+
+            if cur_update_speed > min_chunk_size / min_update_interval:
+                chunk_time_target = min_update_interval
+                new_pack_size_target = chunk_time_target * cur_update_speed
+            else:
+                new_pack_size_target = min_chunk_size
+                chunk_time_target = new_pack_size_target / cur_update_speed
+
+            rand_min = max(
+                min(rem_len, min_chunk_size),
+                int(0.8 * new_pack_size_target),
+            )
+            rand_max = min(rem_len, int(1.2 * new_pack_size_target))
+            new_pack_size = random.randint(rand_min, rand_max) if rand_max - rand_min > 1 else rand_min
+
+            chunk_time = chunk_time_target / new_pack_size_target * new_pack_size
+
+            new_pack = buffer_content[sent_len : (sent_len + new_pack_size)]
+            sent_content += new_pack
+
+            yield format_chat_message(
+                role=cur_buf_message["role"],
+                message=new_pack,
+                name=cur_buf_message["name"] if "name" in cur_buf_message else None,
+            )
+
+            next_update_time = time.time() + chunk_time
+            with update_cond:
+                update_cond.wait(min(min_sleep_interval, chunk_time))
+
+        thread.join()
 
     def get_embedding(self, string: str) -> List[float]:
         return self.embedding_service.get_embeddings([string])[0]
