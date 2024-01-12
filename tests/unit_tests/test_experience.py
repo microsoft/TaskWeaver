@@ -24,7 +24,7 @@ def test_experience_generation():
             "project/taskweaver_config.json",
         ),
         config={
-            "llm.embedding_api_type": "sentence_transformer",
+            "llm.embedding_api_type": "sentence_transformers",
             "llm.embedding_model": "all-mpnet-base-v2",
             "experience.experience_dir": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -84,7 +84,7 @@ def test_experience_retrieval():
             "project/taskweaver_config.json",
         ),
         config={
-            "llm.embedding_api_type": "sentence_transformer",
+            "llm.embedding_api_type": "sentence_transformers",
             "llm.embedding_model": "all-mpnet-base-v2",
             "experience.experience_dir": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
