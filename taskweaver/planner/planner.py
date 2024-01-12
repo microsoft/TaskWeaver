@@ -124,7 +124,8 @@ class Planner(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            self.experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
+            experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
+            self.experience_generator.refresh(target_role="Planner", prompt=experience_prompt_template)
             self.experience_generator.load_experience(target_role="Planner")
             self.logger.info(
                 "Experience loaded successfully, "

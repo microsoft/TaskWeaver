@@ -155,7 +155,7 @@ class ExperienceGenerator:
         if len(exp_ids) == 0:
             warnings.warn(
                 "No raw experience found. "
-                "Please type #SAVE AS EXP in the chat window to save raw experience"
+                "Please type /save in the chat window to save raw experience"
                 "or write handcrafted experience.",
             )
             return
