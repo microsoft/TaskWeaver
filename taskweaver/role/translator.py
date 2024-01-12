@@ -1,7 +1,7 @@
 import io
 import json
 from json import JSONDecodeError
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, Union
 
 import ijson
 from injector import inject
@@ -52,26 +52,32 @@ class PostTranslator:
                 yield c["content"]
             self.logger.info(f"LLM output: {llm_output}")
 
-        for d in self.parse_llm_output_stream(stream_filter(llm_output)):
-            type_str = d["type"]
+        value_buf: str = ""
+        for type_str, value, is_end in self.parse_llm_output_stream(stream_filter(llm_output)):
+            value_buf += value
             type: Optional[AttachmentType] = None
-            value = d["content"]
             if type_str == "message":
-                post_proxy.update_message(value)
+                post_proxy.update_message(value_buf, is_end=is_end)
+                value_buf = ""
             elif type_str == "send_to":
-                assert value in [
-                    "User",
-                    "Planner",
-                    "CodeInterpreter",
-                ], f"Invalid send_to value: {value}"
-                post_proxy.update_send_to(value)  # type: ignore
+                if is_end:
+                    assert value in [
+                        "User",
+                        "Planner",
+                        "CodeInterpreter",
+                    ], f"Invalid send_to value: {value}"
+                    post_proxy.update_send_to(value)  # type: ignore
+                else:
+                    # collect the whole content before updating post
+                    pass
             else:
                 try:
                     type = AttachmentType(type_str)
-                    post_proxy.update_attachment(value, type)
+                    post_proxy.update_attachment(value_buf, type, is_end=is_end)
+                    value_buf = ""
                 except Exception as e:
                     self.logger.warning(
-                        f"Failed to parse attachment: {d} due to {str(e)}",
+                        f"Failed to parse attachment: {type_str}-{value_buf} due to {str(e)}",
                     )
                     continue
             parsed_type = (
@@ -84,7 +90,9 @@ class PostTranslator:
                 else None
             )
             assert parsed_type is not None, f"Invalid type: {type_str}"
-            if early_stop is not None and early_stop(parsed_type, value):
+
+            # check whether parsing should be triggered prematurely when each key parsing is finished
+            if is_end and early_stop is not None and early_stop(parsed_type, value):
                 break
 
         if validation_func is not None:
@@ -139,7 +147,7 @@ class PostTranslator:
     def parse_llm_output_stream(
         self,
         llm_output: Iterator[str],
-    ) -> Iterator[Dict[str, str]]:
+    ) -> Iterator[Tuple[str, str, bool]]:
         class StringIteratorIO(io.TextIOBase):
             def __init__(self, iter: Iterator[str]):
                 self._iter = iter
@@ -179,21 +187,22 @@ class PostTranslator:
         # use small buffer to get parse result as soon as acquired from LLM
         parser = ijson.parse(json_data_stream, buf_size=5)
 
-        element = {}
+        cur_type: Optional[str] = None
+        cur_content: Optional[str] = None
         try:
             for prefix, event, value in parser:
                 if prefix == "response.item" and event == "map_key" and value == "type":
-                    element["type"] = None
+                    cur_type = None
                 elif prefix == "response.item.type" and event == "string":
-                    element["type"] = value
+                    cur_type = value
                 elif prefix == "response.item" and event == "map_key" and value == "content":
-                    element["content"] = None
+                    cur_content = None
                 elif prefix == "response.item.content" and event == "string":
-                    element["content"] = value
+                    cur_content = value
 
-                if len(element) == 2 and None not in element.values():
-                    yield element
-                    element = {}
+                if cur_type is not None and cur_content is not None:
+                    yield cur_type, cur_content, True
+                    cur_type, cur_content = None, None
         except ijson.JSONError as e:
             self.logger.warning(
                 f"Failed to parse LLM output stream due to JSONError: {str(e)}",
