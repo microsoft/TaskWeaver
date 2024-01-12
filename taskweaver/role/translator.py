@@ -11,6 +11,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.utils import json_parser
 
 
 class PostTranslator:
@@ -34,6 +35,7 @@ class PostTranslator:
         post_proxy: PostEventProxy,
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
+        use_v2_parser: bool = False,
     ) -> None:
         """
         Convert the raw text output of LLM to a Post object.
@@ -53,7 +55,13 @@ class PostTranslator:
             self.logger.info(f"LLM output: {llm_output}")
 
         value_buf: str = ""
-        for type_str, value, is_end in self.parse_llm_output_stream(stream_filter(llm_output)):
+        filtered_stream = stream_filter(llm_output)
+        parser_stream = (
+            self.parse_llm_output_stream_v2(filtered_stream)
+            if use_v2_parser
+            else self.parse_llm_output_stream(filtered_stream)
+        )
+        for type_str, value, is_end in parser_stream:
             value_buf += value
             type: Optional[AttachmentType] = None
             if type_str == "message":
@@ -204,6 +212,76 @@ class PostTranslator:
                     yield cur_type, cur_content, True
                     cur_type, cur_content = None, None
         except ijson.JSONError as e:
+            self.logger.warning(
+                f"Failed to parse LLM output stream due to JSONError: {str(e)}",
+            )
+
+    def parse_llm_output_stream_v2(
+        self,
+        llm_output: Iterator[str],
+    ) -> Iterator[Tuple[str, str, bool]]:
+        parser = json_parser.parse_json_stream(llm_output, skip_after_root=True)
+        root_element_prefix = ".response"
+
+        list_begin, list_end = False, False
+        item_idx = 0
+
+        cur_content_sent: bool = False
+        cur_content_sent_end: bool = False
+        cur_type: Optional[str] = None
+        cur_content: Optional[str] = None
+
+        try:
+            for ev in parser:
+                if ev.prefix == root_element_prefix:
+                    if ev.event == "start_array":
+                        list_begin = True
+                    if ev.event == "end_array":
+                        list_end = True
+
+                if not list_begin or list_end:
+                    continue
+
+                cur_item_prefix = f"{root_element_prefix}[{item_idx}]"
+                if ev.prefix == cur_item_prefix:
+                    if ev.event == "start_map":
+                        cur_content_sent, cur_content_sent_end = False, False
+                        cur_type, cur_content = None, None
+                    if ev.event == "end_map":
+                        if cur_type is None or cur_content is None:
+                            raise Exception(
+                                f"Incomplete generate kv pair in index {item_idx}. "
+                                f"type: {cur_type} content {cur_content}",
+                            )
+
+                        if cur_content_sent and not cur_content_sent_end:
+                            # possible incomplete string, trigger end prematurely
+                            yield cur_type, "", True
+
+                        if not cur_content_sent:
+                            yield cur_type, cur_content, True
+
+                        cur_content_sent, cur_content_sent_end = False, False
+                        cur_type, cur_content = None, None
+                        item_idx += 1
+
+                if ev.prefix == cur_item_prefix + ".type":
+                    if ev.event == "string" and ev.is_end:
+                        cur_type = ev.value
+
+                if ev.prefix == cur_item_prefix + ".content":
+                    if ev.event == "string":
+                        if cur_type is not None:
+                            cur_content_sent = True
+                            yield cur_type, ev.value_str, ev.is_end
+
+                            assert not cur_content_sent_end, "Invalid state: already sent is_end marker"
+                            if ev.is_end:
+                                cur_content_sent_end = True
+                        if ev.is_end:
+                            cur_content = ev.value
+
+        except json_parser.StreamJsonParserError as e:
             self.logger.warning(
                 f"Failed to parse LLM output stream due to JSONError: {str(e)}",
             )
