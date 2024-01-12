@@ -35,7 +35,7 @@ class PostTranslator:
         post_proxy: PostEventProxy,
         early_stop: Optional[Callable[[Union[AttachmentType, Literal["message", "send_to"]], str], bool]] = None,
         validation_func: Optional[Callable[[Post], None]] = None,
-        use_v2_parser: bool = False,
+        use_v2_parser: bool = True,
     ) -> None:
         """
         Convert the raw text output of LLM to a Post object.
@@ -61,6 +61,7 @@ class PostTranslator:
             if use_v2_parser
             else self.parse_llm_output_stream(filtered_stream)
         )
+        cur_attachment: Optional[Attachment] = None
         for type_str, value, is_end in parser_stream:
             value_buf += value
             type: Optional[AttachmentType] = None
@@ -69,20 +70,30 @@ class PostTranslator:
                 value_buf = ""
             elif type_str == "send_to":
                 if is_end:
-                    assert value in [
+                    assert value_buf in [
                         "User",
                         "Planner",
                         "CodeInterpreter",
                     ], f"Invalid send_to value: {value}"
-                    post_proxy.update_send_to(value)  # type: ignore
+                    post_proxy.update_send_to(value_buf)  # type: ignore
+                    value_buf = ""
                 else:
                     # collect the whole content before updating post
                     pass
             else:
                 try:
                     type = AttachmentType(type_str)
-                    post_proxy.update_attachment(value_buf, type, is_end=is_end)
+                    if cur_attachment is not None:
+                        assert type == cur_attachment.type
+                    cur_attachment = post_proxy.update_attachment(
+                        value_buf,
+                        type,
+                        id=(cur_attachment.id if cur_attachment is not None else None),
+                        is_end=is_end,
+                    )
                     value_buf = ""
+                    if is_end:
+                        cur_attachment = None
                 except Exception as e:
                     self.logger.warning(
                         f"Failed to parse attachment: {type_str}-{value_buf} due to {str(e)}",

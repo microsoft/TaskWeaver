@@ -225,8 +225,12 @@ class Planner(Role):
             assert post.send_to is not None, "send_to field is None"
             assert post.send_to != "Planner", "send_to field should not be Planner"
             assert post.message is not None, "message field is None"
-            assert post.attachment_list[0].type == AttachmentType.init_plan, "attachment type is not init_plan"
-            assert post.attachment_list[1].type == AttachmentType.plan, "attachment type is not plan"
+            assert (
+                post.attachment_list[0].type == AttachmentType.init_plan
+            ), f"attachment type {post.attachment_list[0].type} is not init_plan"
+            assert (
+                post.attachment_list[1].type == AttachmentType.plan
+            ), f"attachment type {post.attachment_list[1].type} is not plan"
             assert (
                 post.attachment_list[2].type == AttachmentType.current_plan_step
             ), "attachment type is not current_plan_step"
