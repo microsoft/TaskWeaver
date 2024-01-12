@@ -327,7 +327,7 @@ class MockApiService(CompletionService, EmbeddingService):
         content = cached_value["content"]
         cur_pos = 0
         while cur_pos < len(content):
-            chunk_size = random.randint(3, 20)
+            chunk_size = random.randint(2, 8)
             next_pos = min(cur_pos + chunk_size, len(content))
             yield format_chat_message(role, content[cur_pos:next_pos])
             cur_pos = next_pos
