@@ -19,6 +19,10 @@ ParserEventType = Literal[
 ]
 
 
+class StreamJsonParserError(Exception):
+    pass
+
+
 class ParserEvent(NamedTuple):
     prefix: str
     event: ParserEventType
@@ -170,12 +174,12 @@ def parse_json_stream(
                 add_event("end_map", None, ch, True)
                 state_stack.pop()  # pop the object begin state
                 return True
-            raise Exception(f"invalid value after value of key {key}: {ch}")
+            raise StreamJsonParserError(f"invalid value after value of key {key}: {ch}")
         if value_to_begin:
             state_stack[-1] = ("object_value", (key, False, True))
             if parse_value_begin(ch):
                 return True
-            raise Exception(f"invalid value for key {key}: {ch}")
+            raise StreamJsonParserError(f"invalid value for key {key}: {ch}")
         if ch == ":":
             state_stack[-1] = ("object_value", (key, True, False))
             return True
@@ -203,7 +207,7 @@ def parse_json_stream(
             prefix_stack.append((True, str(idx)))
             if parse_value_begin(ch):
                 return True
-            raise Exception(f"invalid value for index {idx}: {ch}")
+            raise StreamJsonParserError(f"invalid value for index {idx}: {ch}")
         return False
 
     def parse_str_value(ch: str, cur_state_ext: Tuple[bool, str, str, bool]) -> bool:
@@ -213,7 +217,7 @@ def parse_json_stream(
             if ch in "0123456789abcdefABCDEF":
                 escape_buf += ch
             else:
-                raise Exception(f"invalid unicode escape sequence: \\{escape_buf}{ch}")
+                raise StreamJsonParserError(f"invalid unicode escape sequence: \\{escape_buf}{ch}")
             if len(escape_buf) == 5:
                 new_ch = chr(int(escape_buf[1:], 16))
                 value_buf += new_ch
@@ -247,7 +251,7 @@ def parse_json_stream(
             elif ch == '"':
                 new_ch = '"'
             else:
-                raise Exception(f"invalid escape sequence: \\{ch}")
+                raise StreamJsonParserError(f"invalid escape sequence: \\{ch}")
             value_buf += new_ch
             add_event(ev, None, new_ch, False)
             state_stack[-1] = ("string", (False, "", value_buf, is_obj_key))
@@ -281,7 +285,7 @@ def parse_json_stream(
             add_event(ev, None, ch, False)
             state_stack[-1] = ("literal", (buf, ev, literal, value))
             return True
-        raise Exception(f"invalid literal in parsing when expecting {literal}: {buf}")
+        raise StreamJsonParserError(f"invalid literal in parsing when expecting {literal}: {buf}")
 
     def parse_number(ch: str, cur_state_ext: Tuple[str, bool, bool, bool]):
         # TODO: support rigir
@@ -292,7 +296,10 @@ def parse_json_stream(
             state_stack[-1] = ("number", (buf, in_exp, in_frac, in_exp_sign))
             return True
         is_float_mode = "." in buf or "e" in buf or "E" in buf
-        num_val = float(buf) if is_float_mode else int(buf)
+        try:
+            num_val = float(buf) if is_float_mode else int(buf)
+        except ValueError:
+            raise StreamJsonParserError(f"invalid number literal {buf}")
         add_event("number", num_val, "", True)
         state_stack.pop()
         return False
@@ -314,7 +321,7 @@ def parse_json_stream(
                 state_stack[-1] = ("root", (True, True))
                 add_event("skip", None, ch, False)
                 return True
-            raise Exception(f"invalid token after root element: {ch}")
+            raise StreamJsonParserError(f"invalid token after root element: {ch}")
         else:
             # first root element begins
             state_stack[-1] = ("root", (True, has_skip_cnt))
@@ -372,14 +379,26 @@ def parse_json_stream(
                     r = True
                     continue
             else:
-                raise Exception(f"not implemented handling for {cur_state}: {ch}")
+                raise StreamJsonParserError(f"not implemented handling for {cur_state}: {ch}")
             if not r and not is_end:
-                raise Exception(
+                raise StreamJsonParserError(
                     f"failed to parse {cur_state}: {ch} \n State: {state_stack} Prefix: {prefix_stack}",
                 )
             if is_end:
                 break
         yield from process_ev_queue()
+
+    # post parsing checks
+    assert len(state_stack) > 0
+
+    final_root_type, final_root_state = state_stack[0]
+    assert final_root_type == "root"
+
+    if not final_root_state[0]:
+        raise StreamJsonParserError("empty string with no element found")
+
+    if len(state_stack) > 1:
+        raise StreamJsonParserError("incomplete JSON str ends prematurely")
 
 
 def parse_json(token_stream: Iterable[str], skip_after_root: bool = False) -> Any:
