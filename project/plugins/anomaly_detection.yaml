@@ -4,7 +4,8 @@ required: false
 description: >-
   anomaly_detection function identifies anomalies from an input DataFrame of
   time series. It will add a new column "Is_Anomaly", where each entry will be marked with "True" if the value is an anomaly or "False" otherwise.
-  For example, result_df, description = anomaly_detection(df, "datetime", "value").
+examples:
+  result_df, description = anomaly_detection(df, "datetime", "value")
 
 parameters:
   - name: df

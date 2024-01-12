@@ -92,8 +92,8 @@ class Planner(Role):
             self.logger.warning("No plugin is loaded for Planner.")
             self.plugin_description = "No plugin functions loaded."
         else:
-            self.plugin_description = "\t" + "\n\t".join(
-                [f"- {plugin.name}: " + f"{plugin.spec.description}" for plugin in self.available_plugins],
+            self.plugin_description = "    " + "\n    ".join(
+                [f"{plugin.spec.plugin_description()}" for plugin in self.available_plugins],
             )
         self.instruction_template = self.prompt_data["instruction_template"]
         self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(
