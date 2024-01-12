@@ -278,6 +278,27 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             ani_frame = " " * frame_inx + "<=💡=>" + " " * (10 - frame_inx)
             return ani_frame
 
+        def format_status_message(limit: int):
+            incomplete_suffix = "..."
+            incomplete_suffix_len = len(incomplete_suffix)
+            if len(cur_message_buffer) == 0:
+                if len(status_msg) > limit - 1:
+                    return f" {status_msg[(limit - incomplete_suffix_len - 1):]}{incomplete_suffix}"
+                return " " + status_msg
+
+            cur_key_display = style_line("[") + style_key(cur_key) + style_line("]")
+            cur_key_len = len(cur_key) + 2  # with extra bracket
+            cur_message_buffer_norm = cur_message_buffer.replace("\n", " ").replace(
+                "\r",
+                " ",
+            )
+
+            if len(cur_message_buffer_norm) < limit - cur_key_len - 1:
+                return f"{cur_key_display} {cur_message_buffer_norm}"
+
+            status_msg_len = limit - cur_key_len - incomplete_suffix_len
+            return f"{cur_key_display}{incomplete_suffix}{cur_message_buffer_norm[-status_msg_len:]}"
+
         last_time = 0
         while True:
             clear_line()
@@ -330,6 +351,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                                     key=cur_key,
                                 ),
                             )
+                        cur_message_buffer = ""
                     elif action == "round_error":
                         error_message(opt)
                     elif action == "status_update":
@@ -340,14 +362,28 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             if self.exit_event.is_set():
                 break
 
+            cur_message_prefix: str = " TaskWeaver "
+            cur_ani_frame = get_ani_frame(counter)
+            cur_message_display_len = (
+                terminal_column
+                - len(cur_message_prefix)
+                - 2  # separator for cur message prefix
+                - len(role)
+                - 2  # bracket for role
+                - len(cur_ani_frame)
+                - 2  # extra size for emoji in ani
+            )
+
+            cur_message_display = format_status_message(cur_message_display_len)
+
             click.secho(
-                click.style(" TaskWeaver ", fg="white", bg="yellow")
+                click.style(cur_message_prefix, fg="white", bg="yellow")
                 + click.style("▶ ", fg="yellow")
                 + style_line("[")
                 + style_role(role)
-                + style_line("] ")
-                + style_msg(status_msg)
-                + style_msg(get_ani_frame(counter))
+                + style_line("]")
+                + style_msg(cur_message_display)
+                + style_msg(cur_ani_frame)
                 + "\r",
                 # f">>> [{style_role(role)}] {status_msg} {get_ani_frame(counter)}\r",
                 nl=False,
