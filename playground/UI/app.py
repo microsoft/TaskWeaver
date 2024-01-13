@@ -87,8 +87,10 @@ def is_link_clickable(url: str):
 class ChainLitMessageUpdater(SessionEventHandlerBase):
     def __init__(self, root_step: cl.Step):
         self.root_step = root_step
-        self.cur_step: Optional[cl.Step] = None
+        self.reset_cur_step()
 
+    def reset_cur_step(self):
+        self.cur_step: Optional[cl.Step] = None
         self.cur_attachment_list: List[Tuple[str, AttachmentType, str, bool]] = []
         self.cur_post_status: str = "Updating"
         self.cur_send_to: RoleName = "Unknown"
@@ -119,17 +121,15 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         **kwargs: Any,
     ):
         if type == PostEventType.post_start:
+            self.reset_cur_step()
             self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
-            self.cur_attachment_list = []
-            self.cur_message = ""
-            self.cur_message_is_end = False
-            self.cur_send_to = "Unknown"
-            self.cur_message_sent = False
             cl.run_sync(self.cur_step.__aenter__())
         elif type == PostEventType.post_end:
             assert self.cur_step is not None
+            content = self.format_post_body(True)
+            cl.run_sync(self.cur_step.stream_token(content, True))
             cl.run_sync(self.cur_step.__aexit__(None, None, None))  # type: ignore
-            self.cur_step = None
+            self.reset_cur_step()
         elif type == PostEventType.post_error:
             pass
         elif type == PostEventType.post_attachment_update:
@@ -153,18 +153,9 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                 self.cur_message_is_end = True
         elif type == PostEventType.post_status_update:
             self.cur_post_status = msg
+
         if self.cur_step is not None:
-            content = "\n\n".join(
-                [
-                    *(
-                        self.format_attachment(a)
-                        for a in self.cur_attachment_list
-                        if a[1] not in [AttachmentType.artifact_paths, AttachmentType.artifact_paths]
-                    ),
-                    f"---\n**Send Message To {self.cur_send_to}**:" if self.cur_message else "",
-                    self.cur_message if self.cur_message and not self.cur_message_is_end else "",
-                ],
-            )
+            content = self.format_post_body(False)
             cl.run_sync(self.cur_step.stream_token(content, True))
             if self.cur_message_is_end and not self.cur_message_sent:
                 self.cur_message_sent = True
@@ -176,6 +167,37 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     ),
                 ]
                 cl.run_sync(self.cur_step.update())
+
+    def format_post_body(self, is_end: bool) -> str:
+        content_chunks: List[str] = []
+
+        for attachment in self.cur_attachment_list:
+            a_type = attachment[1]
+
+            # skip artifact paths always
+            if a_type in [AttachmentType.artifact_paths]:
+                continue
+
+            # skip Python in final result
+            if is_end and a_type in [AttachmentType.python]:
+                continue
+
+            content_chunks.append(self.format_attachment(attachment))
+
+        if self.cur_message != "":
+            if self.cur_send_to == "Unknown":
+                content_chunks.append("**Message**:")
+            else:
+                content_chunks.append(f"**Message To {self.cur_send_to}**:")
+
+            if not self.cur_message_sent:
+                content_chunks.append(self.cur_message)
+
+        if not is_end:
+            status_chunk = f"**Status**: {self.cur_post_status}"
+            content_chunks.append(status_chunk)
+
+        return "\n\n".join(content_chunks)
 
     def format_attachment(
         self,
