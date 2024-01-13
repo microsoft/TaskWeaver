@@ -243,14 +243,18 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
 
         if a_type in [AttachmentType.plan, AttachmentType.init_plan]:
             items: List[str] = []
-            for idx, row in enumerate(msg.split("\n")):
+            lines = msg.split("\n")
+            for idx, row in enumerate(lines):
                 item = row
                 if "." in row and row.split(".")[0].isdigit():
                     item = row.split(".", 1)[1].strip()
                 items.append(
                     div("tw-plan-item")(
                         div("tw-plan-idx")(str(idx + 1)),
-                        div("tw-plan-cnt")(txt(item)),
+                        div("tw-plan-cnt")(
+                            txt(item),
+                            span("tw-end-cursor")() if not is_end and idx == len(lines) - 1 else "",
+                        ),
                     ),
                 )
             atta_cnt.append(div("tw-plan")(*items))
@@ -265,6 +269,8 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
             return f"{header}\n\n```python\n{msg}\n```"
         else:
             atta_cnt.append(txt(msg))
+            if not is_end:
+                atta_cnt.append(span("tw-end-cursor")())
 
         return div("tw-atta")(
             header,

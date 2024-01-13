@@ -116,6 +116,7 @@ div.markdown-body div.tw-plan-item {
     stroke-dashoffset: -125px;
   }
 }
+
 @keyframes tw-updating-status-ani-circle {
   0% {
     transform: rotate(0deg);
@@ -125,6 +126,7 @@ div.markdown-body div.tw-plan-item {
     transform: rotate(360deg);
   }
 }
+
 .markdown-body .tw-status-updating {
   width: 20px;
   height: 20px;
@@ -133,9 +135,11 @@ div.markdown-body div.tw-plan-item {
   animation: 1.4s linear 0s infinite normal none running
     tw-updating-status-ani-circle;
 }
+
 .markdown-body .tw-status-updating svg {
   display: block;
 }
+
 .markdown-body .tw-status-updating svg circle {
   stroke: currentColor;
   stroke-dasharray: 80px, 200px;
@@ -146,4 +150,38 @@ div.markdown-body div.tw-plan-item {
   cx: 44;
   cy: 44;
   animation: tw-updating-status-ani-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes tw-blinking-dot {
+  0% {
+    opacity: 0.2;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.2;
+  }
+}
+
+span.tw-end-cursor {
+  content: '';
+  display: inline-flex;
+  width: 10px;
+  border-radius: 5px;
+  margin-left: 10px;
+}
+
+span.tw-end-cursor::after {
+  content: '';
+  position: relative;
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #a0c0ff;
+  margin: auto;
+  animation: tw-blinking-dot 0.7s ease-in-out infinite;
 }
