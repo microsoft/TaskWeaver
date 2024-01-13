@@ -1,3 +1,4 @@
+import functools
 import os
 import re
 import sys
@@ -29,6 +30,28 @@ from taskweaver.session.session import Session
 project_path = os.path.join(repo_path, "project")
 app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
+
+
+def elem(name: str, cls: str = "", attr: Dict[str, str] = {}):
+    attr_str = ""
+    if len(attr) > 0:
+        attr_str += "".join(f' {k}="{v}"' for k, v in attr.items())
+    if cls:
+        attr_str += f' class="{cls}"'
+
+    def inner(*children: str):
+        children_str = "".join(children)
+        return f"<{name}{attr_str}>{children_str}</{name}>"
+
+    return inner
+
+
+def txt(content: str):
+    return content.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+
+
+div = functools.partial(elem, "div")
+span = functools.partial(elem, "span")
 
 
 def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
@@ -194,8 +217,14 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                 content_chunks.append(self.cur_message)
 
         if not is_end:
-            status_chunk = f"**Status**: {self.cur_post_status}"
-            content_chunks.append(status_chunk)
+            content_chunks.append(
+                div("tw-status")(
+                    span("tw-status-updating")(
+                        elem("svg", attr={"viewBox": "22 22 44 44"})(elem("circle")()),
+                    ),
+                    span("tw-status-msg")(txt(self.cur_post_status + "...")),
+                ),
+            )
 
         return "\n\n".join(content_chunks)
 
@@ -204,9 +233,43 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         attachment: Tuple[str, AttachmentType, str, bool],
     ) -> str:
         id, a_type, msg, is_end = attachment
-        newline = "\n" if "\n" in msg else " "
-        attach_type = " ".join([item.capitalize() for item in a_type.value.split("_")])
-        return f"**{attach_type}**:{newline}{msg}"
+        header = div("tw-atta-header")(
+            div("tw-atta-key")(
+                " ".join([item.capitalize() for item in a_type.value.split("_")]),
+            ),
+            div("tw-atta-id")(id),
+        )
+        atta_cnt: List[str] = []
+
+        if a_type in [AttachmentType.plan, AttachmentType.init_plan]:
+            items: List[str] = []
+            for idx, row in enumerate(msg.split("\n")):
+                item = row
+                if "." in row and row.split(".")[0].isdigit():
+                    item = row.split(".", 1)[1].strip()
+                items.append(
+                    div("tw-plan-item")(
+                        div("tw-plan-idx")(str(idx + 1)),
+                        div("tw-plan-cnt")(txt(item)),
+                    ),
+                )
+            atta_cnt.append(div("tw-plan")(*items))
+        elif a_type in [AttachmentType.execution_result]:
+            atta_cnt.append(
+                elem("pre", "tw-execution-result")(
+                    elem("code")(txt(msg)),
+                ),
+            )
+        elif a_type in [AttachmentType.python]:
+            # use raw Markdown syntax for supporting syntax highlight upon render
+            return f"{header}\n\n```python\n{msg}\n```"
+        else:
+            atta_cnt.append(txt(msg))
+
+        return div("tw-atta")(
+            header,
+            div("tw-atta-cnt")(*atta_cnt),
+        )
 
 
 @cl.on_chat_start
