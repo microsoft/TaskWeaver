@@ -1,14 +1,19 @@
 import os
 import re
 import sys
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+
+from taskweaver.memory.type_vars import RoleName
+from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase
 
 try:
     import chainlit as cl
 
-    print("If UI is not started, please go to the folder playground/UI and run `chainlit run app.py` to start the UI")
+    print(
+        "If UI is not started, please go to the folder playground/UI and run `chainlit run app.py` to start the UI",
+    )
 except Exception:
     raise Exception(
         "Package chainlit is required for using UI. Please install it manually by running: "
@@ -19,7 +24,6 @@ repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
 from taskweaver.app.app import TaskWeaverApp
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.memory.round import Round
 from taskweaver.session.session import Session
 
 project_path = os.path.join(repo_path, "project")
@@ -80,6 +84,105 @@ def is_link_clickable(url: str):
         return False
 
 
+class ChainLitMessageUpdater(SessionEventHandlerBase):
+    def __init__(self, root_step: cl.Step):
+        self.root_step = root_step
+        self.cur_step: Optional[cl.Step] = None
+
+        self.cur_attachment_list: List[Tuple[str, AttachmentType, str, bool]] = []
+        self.cur_post_status: str = "Updating"
+        self.cur_send_to: RoleName = "Unknown"
+        self.cur_message: str = ""
+        self.cur_message_is_end: bool = False
+
+    def handle_round(
+        self,
+        type: RoundEventType,
+        msg: str,
+        extra: Any,
+        round_id: str,
+        **kwargs: Any,
+    ):
+        if type == RoundEventType.round_error:
+            self.root_step.is_error = True
+            self.root_step.output = msg
+            cl.run_sync(self.root_step.update())
+
+    def handle_post(
+        self,
+        type: PostEventType,
+        msg: str,
+        extra: Any,
+        post_id: str,
+        round_id: str,
+        **kwargs: Any,
+    ):
+        if type == PostEventType.post_start:
+            self.cur_step = cl.Step(name=extra["role"], show_input=True, root=False)
+            self.cur_attachment_list = []
+            self.cur_message = ""
+            self.cur_message_is_end = False
+            self.cur_send_to = "Unknown"
+            cl.run_sync(self.cur_step.__aenter__())
+        elif type == PostEventType.post_end:
+            assert self.cur_step is not None
+            cl.run_sync(self.cur_step.__aexit__(None, None, None))  # type: ignore
+            self.cur_step = None
+        elif type == PostEventType.post_error:
+            pass
+        elif type == PostEventType.post_attachment_update:
+            assert self.cur_step is not None, "cur_step should not be None"
+            id: str = extra["id"]
+            a_type: AttachmentType = extra["type"]
+            is_end: bool = extra["is_end"]
+            # a_extra: Any = extra["extra"]
+            if len(self.cur_attachment_list) == 0 or id != self.cur_attachment_list[-1][0]:
+                self.cur_attachment_list.append((id, a_type, msg, is_end))
+
+            else:
+                prev_msg = self.cur_attachment_list[-1][2]
+                self.cur_attachment_list[-1] = (id, a_type, prev_msg + msg, is_end)
+
+            # # add extra elements to message accordingly
+            # if is_end:
+            #     new_message = cl.Text(
+            #         content=self.format_attachment(self.cur_attachment_list[-1]),
+            #         display="inline",
+            #     )
+            #     self.cur_text_obj = new_message
+            #     self.cur_step.elements = [*(self.cur_step.elements or []), new_message]
+            #     cl.run_sync(self.cur_step.update())
+        elif type == PostEventType.post_send_to_update:
+            self.cur_send_to = extra["role"]
+        elif type == PostEventType.post_message_update:
+            self.cur_message += msg
+            if extra["is_end"]:
+                self.cur_message_is_end = True
+        elif type == PostEventType.post_status_update:
+            self.cur_post_status = msg
+        if self.cur_step is not None:
+            content = "\n\n".join(
+                [
+                    *(
+                        self.format_attachment(a)
+                        for a in self.cur_attachment_list
+                        if a[1] not in [AttachmentType.artifact_paths, AttachmentType.artifact_paths]
+                    ),
+                    f"---\n**Send Message To {self.cur_send_to}**: {self.cur_message}" if self.cur_message else "",
+                ],
+            )
+            cl.run_sync(self.cur_step.stream_token(content, True))
+
+    def format_attachment(
+        self,
+        attachment: Tuple[str, AttachmentType, str, bool],
+    ) -> str:
+        id, a_type, msg, is_end = attachment
+        newline = "\n" if "\n" in msg else " "
+        attach_type = " ".join([item.capitalize() for item in a_type.value.split("_")])
+        return f"**{attach_type}**:{newline}{msg}"
+
+
 @cl.on_chat_start
 async def start():
     user_session_id = cl.user_session.get("id")
@@ -88,19 +191,16 @@ async def start():
 
 @cl.on_message
 async def main(message: cl.Message):
-    user_session_id = cl.user_session.get("id")
-    session = app_session_dict[user_session_id]
+    user_session_id = cl.user_session.get("id")  # type: ignore
+    session: Session = app_session_dict[user_session_id]  # type: ignore
     session_cwd_path = session.execution_cwd
-
-    def send_message_sync(msg: str, files: Any) -> Round:
-        return session.send_message(msg, files=files)
 
     # display loader before sending message
 
-    async with cl.Step(name="", show_input=True, root=True):
-        response_round = await cl.make_async(send_message_sync)(
+    async with cl.Step(name="", show_input=True, root=True) as root_step:
+        response_round = await cl.make_async(session.send_message)(
             message.content,
-            [
+            files=[
                 {
                     "name": element.name if element.name else "file",
                     "path": element.path,
@@ -108,50 +208,19 @@ async def main(message: cl.Message):
                 for element in message.elements
                 if element.type == "file"
             ],
+            event_handler=ChainLitMessageUpdater(root_step),
         )
 
-        artifact_paths = []
-        for post in response_round.post_list:
-            if post.send_from == "User":
-                continue
-            elements = []
-            async with cl.Step(name=post.send_from, show_input=True) as post_step:
-                for atta in post.attachment_list:
-                    if atta.type in [
-                        # AttachmentType.python,
-                        AttachmentType.execution_result,
-                    ]:
-                        continue
-                    elif atta.type == AttachmentType.artifact_paths:
-                        artifact_paths = atta.content
-                    elif atta.type == AttachmentType.python:
-                        atta.content = "```{atta.content}```"
-                    else:
-                        newline = "\n" if "\n" in atta.content else " "
-                        attach_type = " ".join([item.capitalize() for item in atta.type.value.split("_")])
-                        elements.append(
-                            cl.Text(
-                                name="",
-                                content=f"**{attach_type}**:{newline}{atta.content}",
-                                display="inline",
-                            ),
-                        )
-                        post_step.elements = elements
-                        await post_step.update()
+    artifact_paths = [
+        p
+        for p in response_round.post_list
+        for a in p.attachment_list
+        if a.type == AttachmentType.artifact_paths
+        for p in a.content
+    ]
 
-                elements.append(
-                    cl.Text(
-                        name="",
-                        content=f"**Send Message To {post.send_to}**: {post.message}",
-                        display="inline",
-                    ),
-                )
-                post_step.elements = elements
-                post_step.output = " "
-                await post_step.update()
-
-    if post.send_to == "User":
-        files = []
+    for post in [p for p in response_round.post_list if p.send_to == "User"]:
+        files: List[Tuple[str, str]] = []
         if len(artifact_paths) > 0:
             for file_path in artifact_paths:
                 # if path is image or csv (the top 5 rows), display it
@@ -159,21 +228,35 @@ async def main(message: cl.Message):
                 files.append((file_name, file_path))
 
         # Extract the file path from the message and display it
-        message = post.message
+        user_msg_content = post.message
         pattern = r"(!?)\[(.*?)\]\((.*?)\)"
-        matches = re.findall(pattern, message)
+        matches = re.findall(pattern, user_msg_content)
         for match in matches:
             img_prefix, file_name, file_path = match
             if "://" in file_path:
                 if not is_link_clickable(file_path):
-                    message = message.replace(f"{img_prefix}[{file_name}]({file_path})", file_name)
+                    user_msg_content = user_msg_content.replace(
+                        f"{img_prefix}[{file_name}]({file_path})",
+                        file_name,
+                    )
                 continue
             files.append((file_name, file_path))
-            message = message.replace(f"{img_prefix}[{file_name}]({file_path})", file_name)
+            user_msg_content = user_msg_content.replace(
+                f"{img_prefix}[{file_name}]({file_path})",
+                file_name,
+            )
 
         elements = file_display(files, session_cwd_path)
         await cl.Message(
             author="TaskWeaver",
-            content=f"{message}",
+            content=f"{user_msg_content}",
             elements=elements if len(elements) > 0 else None,
         ).send()
+
+
+if __name__ == "__main__":
+    from chainlit.cli import run_chainlit
+
+    # change current directory to the directory of this file for loading resources
+    os.path.curdir = os.path.dirname(__file__)
+    run_chainlit(__file__)
