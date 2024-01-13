@@ -94,6 +94,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         self.cur_send_to: RoleName = "Unknown"
         self.cur_message: str = ""
         self.cur_message_is_end: bool = False
+        self.cur_message_sent: bool = False
 
     def handle_round(
         self,
@@ -123,6 +124,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
             self.cur_message = ""
             self.cur_message_is_end = False
             self.cur_send_to = "Unknown"
+            self.cur_message_sent = False
             cl.run_sync(self.cur_step.__aenter__())
         elif type == PostEventType.post_end:
             assert self.cur_step is not None
@@ -143,15 +145,6 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                 prev_msg = self.cur_attachment_list[-1][2]
                 self.cur_attachment_list[-1] = (id, a_type, prev_msg + msg, is_end)
 
-            # # add extra elements to message accordingly
-            # if is_end:
-            #     new_message = cl.Text(
-            #         content=self.format_attachment(self.cur_attachment_list[-1]),
-            #         display="inline",
-            #     )
-            #     self.cur_text_obj = new_message
-            #     self.cur_step.elements = [*(self.cur_step.elements or []), new_message]
-            #     cl.run_sync(self.cur_step.update())
         elif type == PostEventType.post_send_to_update:
             self.cur_send_to = extra["role"]
         elif type == PostEventType.post_message_update:
@@ -168,10 +161,21 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                         for a in self.cur_attachment_list
                         if a[1] not in [AttachmentType.artifact_paths, AttachmentType.artifact_paths]
                     ),
-                    f"---\n**Send Message To {self.cur_send_to}**: {self.cur_message}" if self.cur_message else "",
+                    f"---\n**Send Message To {self.cur_send_to}**:" if self.cur_message else "",
+                    self.cur_message if self.cur_message and not self.cur_message_is_end else "",
                 ],
             )
             cl.run_sync(self.cur_step.stream_token(content, True))
+            if self.cur_message_is_end and not self.cur_message_sent:
+                self.cur_message_sent = True
+                self.cur_step.elements = [
+                    *(self.cur_step.elements or []),
+                    cl.Text(
+                        content=self.cur_message,
+                        display="inline",
+                    ),
+                ]
+                cl.run_sync(self.cur_step.update())
 
     def format_attachment(
         self,
