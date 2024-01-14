@@ -52,6 +52,7 @@ def txt(content: str):
 
 div = functools.partial(elem, "div")
 span = functools.partial(elem, "span")
+blinking_cursor = span("tw-end-cursor")()
 
 
 def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
@@ -214,7 +215,9 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                 content_chunks.append(f"**Message To {self.cur_send_to}**:")
 
             if not self.cur_message_sent:
-                content_chunks.append(self.cur_message)
+                content_chunks.append(
+                    self.cur_message + (" " + blinking_cursor if not is_end and not self.cur_message_is_end else ""),
+                )
 
         if not is_end:
             content_chunks.append(
@@ -253,7 +256,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                         div("tw-plan-idx")(str(idx + 1)),
                         div("tw-plan-cnt")(
                             txt(item),
-                            span("tw-end-cursor")() if not is_end and idx == len(lines) - 1 else "",
+                            blinking_cursor if not is_end and idx == len(lines) - 1 else "",
                         ),
                     ),
                 )
@@ -270,7 +273,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         else:
             atta_cnt.append(txt(msg))
             if not is_end:
-                atta_cnt.append(span("tw-end-cursor")())
+                atta_cnt.append(blinking_cursor)
 
         return div("tw-atta")(
             header,
