@@ -32,12 +32,14 @@ app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
 
 
-def elem(name: str, cls: str = "", **attr: str):
-    attr_str = ""
-    if len(attr) > 0:
-        attr_str += "".join(f' {k}="{v}"' for k, v in attr.items())
+def elem(name: str, cls: str = "", attr: Dict[str, str] = {}, **attr_dic: str):
+    all_attr = {**attr, **attr_dic}
     if cls:
-        attr_str += f' class="{cls}"'
+        all_attr.update({"class": cls})
+
+    attr_str = ""
+    if len(all_attr) > 0:
+        attr_str += "".join(f' {k}="{v}"' for k, v in all_attr.items())
 
     def inner(*children: str):
         children_str = "".join(children)
@@ -270,9 +272,12 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     elem("code")(txt(msg)),
                 ),
             )
-        elif a_type in [AttachmentType.python]:
-            # use raw Markdown syntax for supporting syntax highlight upon render
-            return f"{header}\n\n```python\n{msg}\n```"
+        elif a_type in [AttachmentType.python, AttachmentType.sample]:
+            atta_cnt.append(
+                elem("pre", "tw-python", {"data-lang": "python"})(
+                    elem("code", "language-python")(txt(msg, br=False)),
+                ),
+            )
         else:
             atta_cnt.append(txt(msg))
             if not is_end:
