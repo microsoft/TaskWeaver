@@ -91,6 +91,7 @@ div.markdown-body div.tw-plan-item {
   white-space: nowrap;
   background-color: #eee;
   min-width: 120px;
+  margin: 10px;
 }
 
 .markdown-body .tw-status-msg {
