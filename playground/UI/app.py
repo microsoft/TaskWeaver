@@ -32,7 +32,7 @@ app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
 app_session_dict: Dict[str, Session] = {}
 
 
-def elem(name: str, cls: str = "", attr: Dict[str, str] = {}):
+def elem(name: str, cls: str = "", **attr: str):
     attr_str = ""
     if len(attr) > 0:
         attr_str += "".join(f' {k}="{v}"' for k, v in attr.items())
@@ -46,8 +46,11 @@ def elem(name: str, cls: str = "", attr: Dict[str, str] = {}):
     return inner
 
 
-def txt(content: str):
-    return content.replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+def txt(content: str, br: bool = True):
+    content = content.replace("<", "&lt;").replace(">", "&gt;")
+    if br:
+        content = content.replace("\n", "<br>")
+    return content
 
 
 div = functools.partial(elem, "div")
@@ -216,14 +219,14 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
 
             if not self.cur_message_sent:
                 content_chunks.append(
-                    self.cur_message + (" " + blinking_cursor if not is_end and not self.cur_message_is_end else ""),
+                    self.format_message(self.cur_message, self.cur_message_is_end),
                 )
 
         if not is_end:
             content_chunks.append(
                 div("tw-status")(
                     span("tw-status-updating")(
-                        elem("svg", attr={"viewBox": "22 22 44 44"})(elem("circle")()),
+                        elem("svg", viewBox="22 22 44 44")(elem("circle")()),
                     ),
                     span("tw-status-msg")(txt(self.cur_post_status + "...")),
                 ),
@@ -279,6 +282,41 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
             header,
             div("tw-atta-cnt")(*atta_cnt),
         )
+
+    def format_message(self, message: str, is_end: bool) -> str:
+        content = txt(message, br=False)
+        begin_regex = re.compile(r"^```(\w*)$\n", re.MULTILINE)
+        end_regex = re.compile(r"^```$\n?", re.MULTILINE)
+
+        if not is_end:
+            end_tag = " " + blinking_cursor
+        else:
+            end_tag = ""
+
+        while True:
+            start_label = begin_regex.search(content)
+            if not start_label:
+                break
+            start_pos = content.index(start_label[0])
+            lang_tag = start_label[1]
+            content = "".join(
+                [
+                    content[:start_pos],
+                    f'<pre data-lang="{lang_tag}"><code class="language-{lang_tag}">',
+                    content[start_pos + len(start_label[0]) :],
+                ],
+            )
+
+            end_pos = end_regex.search(content)
+            if not end_pos:
+                content += end_tag + "</code></pre>"
+                end_tag = ""
+                break
+            end_pos_pos = content.index(end_pos[0])
+            content = f"{content[:end_pos_pos]}</code></pre>{content[end_pos_pos + len(end_pos[0]):]}"
+
+        content += end_tag
+        return content
 
 
 @cl.on_chat_start
