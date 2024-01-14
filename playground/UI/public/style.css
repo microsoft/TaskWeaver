@@ -9,22 +9,26 @@ img[alt='logo'] {
   margin-bottom: 10px;
   max-width: 800px;
 }
+.markdown-body {
+  padding-left: 10px;
+  padding-right: 10px;
+}
 
 .tw-atta {
   display: block;
-  border: solid 2px #eee;
+  border: solid 2px #aaa5;
   border-radius: 10px;
-  background-color: #fafaff;
+  background-color: #fff4;
   overflow: hidden;
-  box-shadow: 0 0 10px 2px #f0f0f0;
+  box-shadow: 0 0 10px 2px #ccc5;
   margin: 10px 0;
 }
 
 .tw-atta-header {
   height: 20px;
-  border-bottom: solid 2px #eee;
+  border-bottom: solid 2px #aaa5;
   padding: 5px 10px;
-  background-color: #c0e0ff;
+  background-color: #5090ff55;
   font-weight: 500;
   display: flex;
 }
@@ -33,7 +37,7 @@ img[alt='logo'] {
   flex: 1;
 }
 .tw-atta-id {
-  color: #ccc;
+  opacity: 0.3;
   font-size: 0.8em;
 }
 
