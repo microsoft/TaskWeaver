@@ -6,9 +6,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
-from taskweaver.memory.type_vars import RoleName
-from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase
-
 try:
     import chainlit as cl
 
@@ -25,6 +22,8 @@ repo_path = os.path.join(os.path.dirname(__file__), "../../")
 sys.path.append(repo_path)
 from taskweaver.app.app import TaskWeaverApp
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.memory.type_vars import RoleName
+from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase
 from taskweaver.session.session import Session
 
 project_path = os.path.join(repo_path, "project")
