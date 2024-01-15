@@ -20,10 +20,11 @@ TaskWeaver is A **code-first** agent framework for seamlessly planning and execu
 
 
 ## 🆕 News
-- 📅2024-01-01: Happy New Year 🎆 with TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb).
+- 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️
+- 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb).
 - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.
 - 📅2023-12-21: TaskWeaver Website is now [available](https://microsoft.github.io/TaskWeaver/) with more documentations.
-- 📅2023-12-12: A simple UI demo is available in playground/UI folder, try it [here](https://microsoft.github.io/TaskWeaver/docs/usage/webui)!
+<!-- - 📅2023-12-12: A simple UI demo is available in playground/UI folder, try it [here](https://microsoft.github.io/TaskWeaver/docs/usage/webui)! -->
 <!-- - [2023-11-30] TaskWeaver is released on GitHub🎈.  -->
 
 

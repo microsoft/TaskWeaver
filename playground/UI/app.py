@@ -6,6 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import requests
 
+# change current directory to the directory of this file for loading resources
+os.chdir(os.path.dirname(__file__))
+
 try:
     import chainlit as cl
 
@@ -397,6 +400,4 @@ async def main(message: cl.Message):
 if __name__ == "__main__":
     from chainlit.cli import run_chainlit
 
-    # change current directory to the directory of this file for loading resources
-    os.path.curdir = os.path.dirname(__file__)
     run_chainlit(__file__)
