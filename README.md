@@ -104,6 +104,7 @@ More documentations can be found on [TaskWeaver Website](https://microsoft.githu
 ### ❓Get help 
 * ❔GitHub Issues (prefered)
 * [💬 Discord](https://discord.gg/Z56MXmZgMb) for discussion
+* For other communications, please contact taskweaver@microsoft.com
 
 ---
 
@@ -175,3 +176,6 @@ trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
+
+## Disclaimer
+The recommended models in this Repo are just examples, used to explore the potential of agent systems with the paper at [TaskWeaver: A Code-First Agent Framework](https://export.arxiv.org/abs/2311.17541). Users can replace the models in this Repo according to their needs. When using the recommended models in this Repo, you need to comply with the licenses of these models respectively. Microsoft shall not be held liable for any infringement of third-party rights resulting from your usage of this repo. Users agree to defend, indemnify and hold Microsoft harmless from and against all damages, costs, and attorneys' fees in connection with any claims arising from this Repo. If anyone believes that this Repo infringes on your rights, please notify the project owner email.
