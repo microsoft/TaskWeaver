@@ -1,6 +1,7 @@
 from random import randint
 from typing import Iterator
 
+import pytest
 from injector import Injector
 
 from taskweaver.llm.util import format_chat_message
@@ -47,8 +48,13 @@ def test_parse_llm_stream():
     attachment_list = list(attachments)
     assert len(attachment_list) == 8
 
+    attachments = translator.parse_llm_output_stream_v2(response_str())
+    attachment_list = list(a for a in attachments if a[2])  # only count is_end is true
+    assert len(attachment_list) == 8
 
-def test_parse_llm():
+
+@pytest.mark.parametrize("use_v2_parser", [True, False])
+def test_parse_llm(use_v2_parser: bool):
     def early_stop(type: AttachmentType, text: str) -> bool:
         if type in [AttachmentType.python, AttachmentType.sample, AttachmentType.text]:
             return True
@@ -62,6 +68,7 @@ def test_parse_llm():
         llm_output=[format_chat_message("assistant", response_str1)],
         post_proxy=post_proxy,
         early_stop=early_stop,
+        use_v2_parser=use_v2_parser,
     )
     response = post_proxy.end()
     assert response.message == ""
@@ -78,6 +85,7 @@ def test_parse_llm():
     translator.raw_text_to_post(
         llm_output=[format_chat_message("assistant", response_str1)],
         post_proxy=post_proxy,
+        use_v2_parser=use_v2_parser,
     )
     response = post_proxy.end()
 
@@ -89,23 +97,50 @@ def test_parse_llm():
 
 
 def test_post_to_raw_text():
-    post = Post.create(message="This is the message", send_from="CodeInterpreter", send_to="Planner")
+    post = Post.create(
+        message="This is the message",
+        send_from="CodeInterpreter",
+        send_to="Planner",
+    )
 
-    prompt = translator.post_to_raw_text(post=post, if_format_message=True, if_format_send_to=True)
+    prompt = translator.post_to_raw_text(
+        post=post,
+        if_format_message=True,
+        if_format_send_to=True,
+    )
     assert prompt == (
         '{"response": [{"type": "send_to", "content": "Planner"}, {"type": "message", '
         '"content": "This is the message"}]}'
     )
 
-    prompt = translator.post_to_raw_text(post=post, if_format_message=False, if_format_send_to=False)
+    prompt = translator.post_to_raw_text(
+        post=post,
+        if_format_message=False,
+        if_format_send_to=False,
+    )
     assert prompt == '{"response": []}'
 
-    post.add_attachment(Attachment.create(type="thought", content="This is the thought"))
-    post.add_attachment(Attachment.create(type="python", content="print('This is the code')"))
+    post.add_attachment(
+        Attachment.create(type="thought", content="This is the thought"),
+    )
+    post.add_attachment(
+        Attachment.create(type="python", content="print('This is the code')"),
+    )
     post.add_attachment(Attachment.create(type="text", content="This is the text"))
-    post.add_attachment(Attachment.create(type="sample", content="print('This is the sample code')"))
+    post.add_attachment(
+        Attachment.create(type="sample", content="print('This is the sample code')"),
+    )
     post.add_attachment(Attachment.create(type="execution_status", content="SUCCESS"))
-    post.add_attachment(Attachment.create(type="execution_result", content="This is the execution result"))
+    post.add_attachment(
+        Attachment.create(
+            type="execution_result",
+            content="This is the execution result",
+        ),
+    )
 
-    prompt = translator.post_to_raw_text(post=post, if_format_message=True, if_format_send_to=True)
+    prompt = translator.post_to_raw_text(
+        post=post,
+        if_format_message=True,
+        if_format_send_to=True,
+    )
     assert prompt == response_str1
