@@ -86,7 +86,7 @@ instruction_template: |-
           5. report the result to the user <interactively depends on 4>
   
   ## Planning Refinement
-    - Planner should try to merge adjacent sequential dependency steps, unless the merged step becomes too complicated.
+    - Planner should try to merge adjacent steps that have sequential dependency or no dependency, unless the merged step becomes too complicated.
     - Planner should not merge steps with interactive dependency or no dependency.
     - The final plan must not contain dependency annotations.
 

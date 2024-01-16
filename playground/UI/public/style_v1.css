@@ -1,0 +1,192 @@
+img[alt='logo'] {
+  max-height: 40px !important;
+  display: inline-block;
+}
+
+.post {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  max-width: 800px;
+}
+.markdown-body {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.tw-atta {
+  display: block;
+  border: solid 2px #aaa5;
+  border-radius: 10px;
+  background-color: #fff4;
+  overflow: hidden;
+  box-shadow: 0 0 10px 2px #ccc5;
+  margin: 10px 0;
+}
+
+.tw-atta-header {
+  height: 20px;
+  border-bottom: solid 2px #aaa5;
+  padding: 5px 10px;
+  background-color: #5090ff55;
+  font-weight: 500;
+  display: flex;
+}
+
+.tw-atta-key {
+  flex: 1;
+}
+.tw-atta-id {
+  opacity: 0.3;
+  font-size: 0.8em;
+}
+
+.tw-atta-cnt {
+  padding: 10px 20px;
+}
+
+.markdown-body .tw-plan {
+  position: relative;
+}
+div.markdown-body div.tw-plan::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: calc(100% + 20px);
+  position: absolute;
+  background-color: #eee;
+  top: -10px;
+  left: 15px;
+}
+
+div.markdown-body div.tw-plan-item {
+  display: flex;
+}
+
+.markdown-body div.tw-plan-idx {
+  flex: 0 0 20px;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border-radius: 12px;
+  text-align: center;
+  line-height: 20px;
+  border: solid 2px #a0c0ff;
+  background-color: #c0e0ff;
+  margin: 5px !important;
+  margin-top: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.markdown-body div.tw-plan-cnt {
+  margin: 5px 10px;
+  margin-top: 5px;
+}
+
+.markdown-body .tw-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #555;
+  white-space: nowrap;
+  background-color: #eee;
+  min-width: 120px;
+  margin: 10px;
+}
+
+.markdown-body .tw-status-msg {
+  margin: 10px;
+  padding: 0;
+  height: 20px;
+}
+
+/* Updater spinner (adopted from MUI for align with Chainlit) */
+@keyframes tw-updating-status-ani-dash {
+  0% {
+    stroke-dasharray: 1px, 200px;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 100px, 200px;
+    stroke-dashoffset: -15px;
+  }
+
+  100% {
+    stroke-dasharray: 100px, 200px;
+    stroke-dashoffset: -125px;
+  }
+}
+
+@keyframes tw-updating-status-ani-circle {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.markdown-body .tw-status-updating {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  color: #aaa;
+  animation: 1.4s linear 0s infinite normal none running
+    tw-updating-status-ani-circle;
+}
+
+.markdown-body .tw-status-updating svg {
+  display: block;
+}
+
+.markdown-body .tw-status-updating svg circle {
+  stroke: currentColor;
+  stroke-dasharray: 80px, 200px;
+  stroke-dashoffset: 0;
+  stroke-width: 4;
+  fill: none;
+  r: 20;
+  cx: 44;
+  cy: 44;
+  animation: tw-updating-status-ani-dash 1.4s ease-in-out infinite;
+}
+
+@keyframes tw-blinking-dot {
+  0% {
+    opacity: 0.2;
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.2;
+  }
+}
+
+span.tw-end-cursor {
+  content: '';
+  display: inline-flex;
+  width: 10px;
+  border-radius: 5px;
+  margin-left: 10px;
+}
+
+span.tw-end-cursor::after {
+  content: '';
+  position: relative;
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: #a0c0ff;
+  margin: auto;
+  animation: tw-blinking-dot 0.7s ease-in-out infinite;
+}
