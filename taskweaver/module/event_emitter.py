@@ -169,6 +169,10 @@ class PostEventProxy:
         if id is not None:
             attachment = self.post.attachment_list[-1]
             assert id == attachment.id
+            if type is not None:
+                assert type == attachment.type
+            attachment.content += message
+            attachment.extra = extra
         else:
             assert type is not None, "type is required when creating new attachment"
             attachment = Attachment.create(
@@ -184,7 +188,7 @@ class PostEventProxy:
             {
                 "type": type,
                 "extra": extra,
-                "id": id,
+                "id": attachment.id,
                 "is_end": is_end,
             },
         )

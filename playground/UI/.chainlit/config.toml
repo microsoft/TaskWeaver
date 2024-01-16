@@ -19,7 +19,7 @@ cache = false
 prompt_playground = true
 
 # Process and display HTML in messages. This can be a security risk (see https://stackoverflow.com/questions/19603097/why-is-it-dangerous-to-render-user-generated-html-or-javascript)
-unsafe_allow_html = false
+unsafe_allow_html = true
 
 # Process and display mathematical expressions. This can clash with "$" characters in messages.
 latex = false
@@ -47,7 +47,7 @@ show_readme_as_default = true
 default_collapse_content = false
 
 # The default value for the expand messages settings.
-default_expand_messages = false
+default_expand_messages = true
 
 # Hide the chain of thought details from the user in the UI.
 hide_cot = false
@@ -57,7 +57,7 @@ hide_cot = false
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-custom_css = "/public/style.css"
+custom_css = "/public/style_v1.css"
 
 # Override default MUI light theme. (Check theme.ts)
 [UI.theme.light]

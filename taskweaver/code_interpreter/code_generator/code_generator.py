@@ -320,6 +320,7 @@ class CodeGenerator(Role):
             llm_output=self.llm_api.chat_completion_stream(
                 prompt,
                 use_backup_engine=use_back_up_engine,
+                use_smoother=True,
             ),
             post_proxy=post_proxy,
             early_stop=early_stop,
