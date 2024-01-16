@@ -58,13 +58,6 @@ class PlannerConfig(ModuleConfig):
             self.dummy_plan = json.load(f)
 
         self.use_experience = self._get_bool("use_experience", False)
-        self.exp_prompt_path = self._get_path(
-            "exp_prompt_path",
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "planner_exp_prompt.yaml",
-            ),
-        )
 
 
 class Planner(Role):
@@ -124,9 +117,8 @@ class Planner(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            experience_prompt_template = read_yaml(self.config.exp_prompt_path)["content"]
-            self.experience_generator.refresh(target_role="Planner", prompt=experience_prompt_template)
-            self.experience_generator.load_experience(target_role="Planner")
+            self.experience_generator.refresh(target_role="All")
+            self.experience_generator.load_experience(target_role="All")
             self.logger.info(
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
