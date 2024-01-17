@@ -26,6 +26,7 @@ So, you need to configure the GPT model (similar with configuring the main proje
 
 
 ## vision_web_explorer
+This plugin by default is **not** enabled. If you want to use this plugin, you need to enable it in the `vision_web_explorer.yaml` file.
 In this plugin, we use Selenium driver to open a web browser and navigate to a website. 
 So, you need to install the following python packages:
 ```bash
