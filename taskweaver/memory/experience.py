@@ -112,7 +112,7 @@ class ExperienceGenerator:
         self,
         exp_id: str,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter"] = "Planner",
+        target_role: Literal["Planner", "CodeInterpreter", "All"] = "All",
     ):
         raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{exp_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
@@ -130,7 +130,7 @@ class ExperienceGenerator:
 
     def refresh(
         self,
-        target_role: Literal["Planner", "CodeInterpreter"],
+        target_role: Literal["Planner", "CodeInterpreter", "All"],
         prompt: Optional[str] = None,
     ):
         if not os.path.exists(self.config.experience_dir):
@@ -213,7 +213,7 @@ class ExperienceGenerator:
 
     def load_experience(
         self,
-        target_role: Literal["Planner", "CodeInterpreter"],
+        target_role: Literal["Planner", "CodeInterpreter", "All"],
     ):
         if not os.path.exists(self.config.experience_dir):
             raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
