@@ -599,21 +599,21 @@ class VisionPlanner:
 class VisionWebBrowser(Plugin):
     vision_planner: VisionPlanner = None
 
-    def _init(self, driver):
+    def _init(self):
+        driver = None
         try:
             GPT4V_KEY = self.config.get("api_key")
             GPT4V_ENDPOINT = self.config.get("endpoint")
             driver = SeleniumDriver(chrome_driver_path=self.config.get("driver_path"), mobile_emulation=False)
             self.vision_planner = VisionPlanner(api_key=GPT4V_KEY, endpoint=GPT4V_ENDPOINT, driver=driver)
         except Exception as e:
-            print(e)
             if driver is not None:
                 driver.quit()
-            raise Exception("Failed to initialize the plugin.")
+            raise Exception(f"Failed to initialize the plugin due to: {e}")
 
     def __call__(self, request: str, additional_info: str = None):
         if self.vision_planner is None:
-            self._init(driver=None)
+            self._init()
         try:
             done_message = self.vision_planner.get_objective_done(request, additional_info)
         except Exception as e:
