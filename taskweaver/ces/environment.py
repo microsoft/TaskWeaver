@@ -11,7 +11,7 @@ from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
 from jupyter_client.manager import KernelManager
 from jupyter_client.multikernelmanager import MultiKernelManager
 
-from taskweaver.ces.common import EnvPlugin, ExecutionArtifact, ExecutionResult, get_id
+from taskweaver.ces.common import ClientExecutionEventHandler, EnvPlugin, ExecutionArtifact, ExecutionResult, get_id
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +186,8 @@ class Environment:
         session_id: str,
         code: str,
         exec_id: Optional[str] = None,
+        allow_input: bool = False,
+        on_event: Optional[ClientExecutionEventHandler] = None,
     ) -> ExecutionResult:
         exec_id = get_id(prefix="exec") if exec_id is None else exec_id
         session = self._get_session(session_id)
@@ -202,6 +204,8 @@ class Environment:
             session.kernel_id,
             exec_id=exec_id,
             code=code,
+            allow_input=allow_input and (on_event is not None),
+            on_event=on_event,
         )
         exec_extra_result = self._execute_control_code_on_kernel(
             session.kernel_id,
@@ -344,71 +348,101 @@ class Environment:
         silent: bool = False,
         store_history: bool = True,
         exec_type: ExecType = "user",
+        allow_input: bool = False,
+        on_event: Optional[ClientExecutionEventHandler] = None,
     ) -> EnvExecution:
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         km = self.multi_kernel_manager.get_kernel(kernel_id)
         kc = km.client()
-        kc.start_channels()
+        kc.start_channels(stdin=True)
         kc.wait_for_ready(10)
-        result_msg_id = kc.execute(
-            code=code,
-            silent=silent,
-            store_history=store_history,
-            allow_stdin=False,
-            stop_on_error=True,
-        )
+
+        async def input_even_handler(message: Dict[str, Any]):
+            content = message["content"]
+            is_password: bool = content.get("password", False)
+            prompt_msg: str = content["prompt"]
+            input_value: str = ""
+            try:
+                if on_event is None:
+                    return None
+                raw_input_value = on_event(
+                    "input",
+                    prompt_msg,
+                    {"is_password": is_password},
+                )
+                if raw_input_value is None:
+                    logger.warning("No input value received.")
+                else:
+                    input_value = raw_input_value
+            except Exception as e:
+                logger.warning("Error when handling input event: %s", e)
+
+            if not (kc.stdin_channel.msg_ready() or kc.shell_channel.msg_ready()):
+                kc.input(input_value)
+
+        def event_handler(message: Dict[str, Any]):
+            logger.debug(json.dumps(message, indent=2, default=str))
+
+            msg_type = message["msg_type"]
+            if msg_type == "status":
+                if message["content"]["execution_state"] == "idle":
+                    return
+            elif msg_type == "stream":
+                stream_name = message["content"]["name"]
+                stream_text = message["content"]["text"]
+
+                if stream_name == "stdout":
+                    exec_result.stdout.append(stream_text)
+                elif stream_name == "stderr":
+                    exec_result.stderr.append(stream_text)
+                else:
+                    assert False, f"Unsupported stream name: {stream_name}"
+
+            elif msg_type == "execute_result":
+                execute_result = message["content"]["data"]
+                exec_result.result = execute_result
+            elif msg_type == "error":
+                error_name = message["content"]["ename"]
+                error_value = message["content"]["evalue"]
+                error_traceback_lines = message["content"]["traceback"]
+                if error_traceback_lines is None:
+                    error_traceback_lines = [f"{error_name}: {error_value}"]
+                error_traceback = "\n".join(error_traceback_lines)
+                exec_result.error = error_traceback
+            elif msg_type == "execute_input":
+                pass
+            elif msg_type == "display_data":
+                data: Dict[ResultMimeType, Any] = message["content"]["data"]
+                metadata: Dict[str, Any] = message["content"]["metadata"]
+                transient: Dict[str, Any] = message["content"]["transient"]
+                exec_result.displays.append(
+                    DisplayData(data=data, metadata=metadata, transient=transient),
+                )
+            elif msg_type == "update_display_data":
+                data: Dict[ResultMimeType, Any] = message["content"]["data"]
+                metadata: Dict[str, Any] = message["content"]["metadata"]
+                transient: Dict[str, Any] = message["content"]["transient"]
+                exec_result.displays.append(
+                    DisplayData(data=data, metadata=metadata, transient=transient),
+                )
+            else:
+                assert False, f"Unsupported message from kernel: {msg_type}, the jupyter_client might be outdated."
+
         try:
             # TODO: interrupt kernel if it takes too long
-            while True:
-                message = kc.get_iopub_msg(timeout=180)
-
-                logger.debug(json.dumps(message, indent=2, default=str))
-
-                assert message["parent_header"]["msg_id"] == result_msg_id
-                msg_type = message["msg_type"]
-                if msg_type == "status":
-                    if message["content"]["execution_state"] == "idle":
-                        break
-                elif msg_type == "stream":
-                    stream_name = message["content"]["name"]
-                    stream_text = message["content"]["text"]
-
-                    if stream_name == "stdout":
-                        exec_result.stdout.append(stream_text)
-                    elif stream_name == "stderr":
-                        exec_result.stderr.append(stream_text)
-                    else:
-                        assert False, f"Unsupported stream name: {stream_name}"
-
-                elif msg_type == "execute_result":
-                    execute_result = message["content"]["data"]
-                    exec_result.result = execute_result
-                elif msg_type == "error":
-                    error_name = message["content"]["ename"]
-                    error_value = message["content"]["evalue"]
-                    error_traceback_lines = message["content"]["traceback"]
-                    if error_traceback_lines is None:
-                        error_traceback_lines = [f"{error_name}: {error_value}"]
-                    error_traceback = "\n".join(error_traceback_lines)
-                    exec_result.error = error_traceback
-                elif msg_type == "execute_input":
-                    pass
-                elif msg_type == "display_data":
-                    data: Dict[ResultMimeType, Any] = message["content"]["data"]
-                    metadata: Dict[str, Any] = message["content"]["metadata"]
-                    transient: Dict[str, Any] = message["content"]["transient"]
-                    exec_result.displays.append(
-                        DisplayData(data=data, metadata=metadata, transient=transient),
-                    )
-                elif msg_type == "update_display_data":
-                    data: Dict[ResultMimeType, Any] = message["content"]["data"]
-                    metadata: Dict[str, Any] = message["content"]["metadata"]
-                    transient: Dict[str, Any] = message["content"]["transient"]
-                    exec_result.displays.append(
-                        DisplayData(data=data, metadata=metadata, transient=transient),
-                    )
-                else:
-                    assert False, f"Unsupported message from kernel: {msg_type}, the jupyter_client might be outdated."
+            raw_exec_result = kc.execute_interactive(
+                code=code,
+                silent=silent,
+                store_history=store_history,
+                user_expressions=None,
+                allow_stdin=allow_input,
+                stop_on_error=True,
+                timeout=180,
+                output_hook=event_handler,
+                stdin_hook=input_even_handler,
+            )
+            # exec_result.result = raw_exec_result["content"]["data"]
+            logger.debug("Execution result: " + json.dumps(raw_exec_result, indent=2, default=str))
         finally:
             kc.stop_channels()
         return exec_result

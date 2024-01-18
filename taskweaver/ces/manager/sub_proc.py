@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from typing import Dict, Optional
 
-from taskweaver.ces.common import Client, ExecutionResult, Manager
+from taskweaver.ces.common import Client, ClientExecutionEventHandler, ExecutionResult, Manager
 from taskweaver.ces.environment import Environment
 
 
@@ -24,7 +24,11 @@ class SubProcessClient(Client):
         self.session_dir = session_dir
 
     def start(self) -> None:
-        self.mgr.env.start_session(self.session_id, session_dir=self.session_dir, cwd=self.cwd)
+        self.mgr.env.start_session(
+            self.session_id,
+            session_dir=self.session_dir,
+            cwd=self.cwd,
+        )
 
     def stop(self) -> None:
         self.mgr.env.stop_session(self.session_id)
@@ -48,8 +52,20 @@ class SubProcessClient(Client):
     def update_session_var(self, session_var_dict: Dict[str, str]) -> None:
         self.mgr.env.update_session_var(self.session_id, session_var_dict)
 
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        return self.mgr.env.execute_code(self.session_id, code=code, exec_id=exec_id)
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        allow_input: bool = False,
+        on_event: Optional[ClientExecutionEventHandler] = None,
+    ) -> ExecutionResult:
+        return self.mgr.env.execute_code(
+            self.session_id,
+            code=code,
+            exec_id=exec_id,
+            allow_input=allow_input,
+            on_event=on_event,
+        )
 
 
 class SubProcessManager(Manager):

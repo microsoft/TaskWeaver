@@ -4,7 +4,7 @@ import dataclasses
 import secrets
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 from taskweaver.plugin.context import ArtifactType
 
@@ -69,6 +69,18 @@ class ExecutionResult:
     artifact: List[ExecutionArtifact] = dataclasses.field(default_factory=list)
 
 
+ClientExecutionEventType = Literal[
+    "msg",
+    "log",
+    "input",
+    "confirm",
+    "stdout",
+    "stderr",
+]
+
+ClientExecutionEventHandler = Callable[[ClientExecutionEventType, str, Optional[Dict[str, Any]]], Optional[str]]
+
+
 class Client(ABC):
     """
     Client is the interface for the execution client.
@@ -100,7 +112,13 @@ class Client(ABC):
         ...
 
     @abstractmethod
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        allow_input: bool = False,
+        on_event: Optional[ClientExecutionEventHandler] = None,
+    ) -> ExecutionResult:
         ...
 
 
