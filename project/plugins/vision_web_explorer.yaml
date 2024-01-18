@@ -1,5 +1,5 @@
 name: vision_web_explorer
-enabled: false
+enabled: true
 required: false
 plugin_only: true
 description: >-

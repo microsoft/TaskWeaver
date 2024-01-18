@@ -31,6 +31,7 @@ In this plugin, we use Selenium driver to open a web browser and navigate to a w
 So, you need to install the following python packages:
 ```bash
 pip install selenium
+pip install pillow
 ```
 
 We use the Chrome driver in this example. You can download the driver from [here](https://chromedriver.chromium.org/downloads). 

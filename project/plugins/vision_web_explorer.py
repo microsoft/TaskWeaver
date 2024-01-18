@@ -5,11 +5,9 @@ from io import BytesIO
 from typing import Any, Dict, List, Tuple
 
 import requests
-from PIL import Image
-
-from taskweaver.plugin import Plugin, register_plugin
 
 try:
+    from PIL import Image
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
@@ -19,6 +17,7 @@ try:
 except ImportError:
     raise ImportError("Please install selenium first.")
 
+from taskweaver.plugin import Plugin, register_plugin
 from taskweaver.plugin.context import PluginContext
 
 
@@ -216,10 +215,12 @@ class SeleniumDriver:
                 print(e)
 
         remove_labels_script = """
-        var labels = document.querySelectorAll('div[label-element-number]');
-        labels.forEach(function(label) {
-          label.parentNode.removeChild(label);
-        });
+        (function() {
+            var labels = document.querySelectorAll('div[label-element-number]');
+            labels.forEach(function(label) {
+              label.parentNode.removeChild(label);
+            });
+        })();
         """
         self.driver.execute_script(remove_labels_script)
 
