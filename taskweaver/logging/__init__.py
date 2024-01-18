@@ -58,7 +58,7 @@ class TelemetryLogger:
         if not self.is_remote:
             import json
 
-            with open(file_path, "w") as log_file:
+            with open(file_path, "w", encoding="utf-8") as log_file:
                 json.dump(dumped_obj, log_file)
         else:
             self.telemetry_logging(
@@ -90,7 +90,7 @@ class LoggingModule(Module):
             if not os.path.exists(config.log_full_path):
                 os.makedirs(os.path.dirname(config.log_full_path), exist_ok=True)
                 open(config.log_full_path, "w").close()
-            file_handler = logging.FileHandler(config.log_full_path)
+            file_handler = logging.FileHandler(config.log_full_path, encoding="utf-8")
             file_handler.setLevel(logging.INFO)
             log_format = "%(asctime)s - %(levelname)s - %(message)s"
             formatter = logging.Formatter(log_format)
