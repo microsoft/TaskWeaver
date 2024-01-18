@@ -35,6 +35,8 @@ class QWenServiceConfig(LLMServiceConfig):
             shared_embedding_model if shared_embedding_model is not None else self.model,
         )
 
+        self.stream = self._get_bool("stream", True)
+
 
 class QWenService(CompletionService, EmbeddingService):
     dashscope = None
@@ -73,17 +75,31 @@ class QWenService(CompletionService, EmbeddingService):
             top_p=top_p,
             temperature=temperature,
             stop=stop,
-            stream=True,
-            incremental_output=True,
+            stream=self.config.stream,
+            incremental_output=True if self.config.stream else False,
         )
 
-        for msg_chunk in response:
-            if msg_chunk.status_code == HTTPStatus.OK:
-                yield msg_chunk.output.choices[0]["message"]
+        if self.config.stream:
+            for msg_chunk in response:
+                if msg_chunk.status_code == HTTPStatus.OK:
+                    yield msg_chunk.output.choices[0]["message"]
 
+                else:
+                    raise Exception(
+                        f"QWen API call failed with status code {response.status_code} and error {response.error}",
+                    )
+        else:
+            if response.status_code == HTTPStatus.OK:
+                return response
             else:
                 raise Exception(
-                    f"QWen API call failed with status code {response.status_code} and error message {response.error}",
+                    "Request id: %s, Status code: %s, error code: %s, error message: %s"
+                    % (
+                        response.request_id,
+                        response.status_code,
+                        response.code,
+                        response.message,
+                    ),
                 )
 
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
