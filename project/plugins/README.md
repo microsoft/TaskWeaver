@@ -49,6 +49,7 @@ Replace {RESOURCE_NAME} and {DEPLOYMENT_NAME} with your own values.
 
 A video demo using this plugin for web browsing:
 
-[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/51049f4c-6ca4-4f30-98a9-5d2b40d8a047)
+[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/7f819524-2c5b-46a8-9c0c-e001a2c7131b)
+
 
 
