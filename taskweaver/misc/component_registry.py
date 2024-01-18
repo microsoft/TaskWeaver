@@ -6,6 +6,10 @@ from typing import Dict, Generic, List, Optional, Tuple, TypeVar
 component_type = TypeVar("component_type")
 
 
+class ComponentDisabledException(Exception):
+    pass
+
+
 class ComponentRegistry(ABC, Generic[component_type]):
     def __init__(self, file_glob: str, ttl: Optional[timedelta] = None) -> None:
         super().__init__()
@@ -42,6 +46,8 @@ class ComponentRegistry(ABC, Generic[component_type]):
         for path in glob.glob(self._file_glob):
             try:
                 name, component = self._load_component(path)
+            except ComponentDisabledException:
+                continue
             except Exception as e:
                 if show_error:
                     print(f"failed to loading component from {path}, skipping: {e}")
