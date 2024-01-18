@@ -2,7 +2,7 @@ import base64
 import json
 import time
 from io import BytesIO
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import requests
 
@@ -18,7 +18,6 @@ except ImportError:
     raise ImportError("Please install selenium first.")
 
 from taskweaver.plugin import Plugin, register_plugin
-from taskweaver.plugin.context import PluginContext
 
 
 # Function to encode the image
@@ -598,9 +597,9 @@ class VisionPlanner:
 
 @register_plugin
 class VisionWebBrowser(Plugin):
-    def __init__(self, name: str, ctx: PluginContext, config: Dict[str, Any]):
-        super().__init__(name, ctx, config)
-        driver = None
+    vision_planner: VisionPlanner = None
+
+    def _init(self, driver):
         try:
             GPT4V_KEY = self.config.get("api_key")
             GPT4V_ENDPOINT = self.config.get("endpoint")
@@ -613,6 +612,8 @@ class VisionWebBrowser(Plugin):
             raise Exception("Failed to initialize the plugin.")
 
     def __call__(self, request: str, additional_info: str = None):
+        if self.vision_planner is None:
+            self._init(driver=None)
         try:
             done_message = self.vision_planner.get_objective_done(request, additional_info)
         except Exception as e:
