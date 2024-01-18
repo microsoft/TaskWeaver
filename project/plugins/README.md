@@ -47,3 +47,9 @@ For Azure OpenAI GPT model, you can find the manual [here](https://learn.microso
 The `endpoint` is "https://{RESOURCE_NAME}.openai.azure.com/openai/deployments/{DEPLOYMENT_NAME}/chat/completions?api-version=2023-12-01-preview".
 Replace {RESOURCE_NAME} and {DEPLOYMENT_NAME} with your own values.
 
+A video demo using this plugin for web browsing:
+
+[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/7f819524-2c5b-46a8-9c0c-e001a2c7131b)
+
+
+
