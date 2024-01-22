@@ -109,7 +109,7 @@ class CodeGenerator(Role):
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
 
-        self.logger.info("Planner initialized successfully")
+        self.logger.info("CodeInterpreter initialized successfully")
 
     def configure_verification(
         self,
@@ -137,21 +137,17 @@ class CodeGenerator(Role):
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
         return "\n".join(requirements)
 
-    def _add_experience_to_prompt(self, selected_experiences: Optional[List[Experience]]):
-        if selected_experiences is not None and len(selected_experiences) != 0:
-            experience_instruction = self.prompt_data["experience_instruction"].format(
-                experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
-            )
-            self.instruction += "\n\n" + experience_instruction
-
     def compose_prompt(
         self,
         rounds: List[Round],
         plugins: List[PluginEntry],
         selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        self._add_experience_to_prompt(selected_experiences)
-        chat_history = [format_chat_message(role="system", message=self.instruction)]
+        experiences = self.experience_generator.format_experience_in_prompt(
+            self.prompt_data["experience_instruction"],
+            selected_experiences,
+        )
+        chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
 
         if self.examples is None:
             self.examples = self.load_examples()

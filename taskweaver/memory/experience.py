@@ -82,7 +82,10 @@ class ExperienceGenerator:
         )
 
     @staticmethod
-    def _preprocess_conversation_data(conv_data: dict, target_role: Literal["Planner", "CodeInterpreter"]):
+    def _preprocess_conversation_data(
+        conv_data: dict,
+        target_role: Literal["Planner", "CodeInterpreter", "All"],
+    ):
         def remove_id_fields(d):
             if isinstance(d, dict):
                 for key in list(d.keys()):
@@ -94,17 +97,8 @@ class ExperienceGenerator:
                 for item in d:
                     remove_id_fields(item)
 
-        # def select_role(conv_data, target_role):
-        #     if target_role == "Planner":  # For Planner, keep all messages for global view
-        #         return
-        #     for round_data in conv_data:
-        #         for idx, post in enumerate(round_data["post_list"]):
-        #             if post["send_from"] != target_role and post["send_to"] != target_role:
-        #                 del round_data["post_list"][idx]
-
         conv_data = conv_data["rounds"]
         remove_id_fields(conv_data)
-        # select_role(conv_data, target_role)
 
         return conv_data
 
@@ -294,3 +288,18 @@ class ExperienceGenerator:
     def delete_handcrafted_experience(self, exp_id: str):
         exp_file_name = f"handcrafted_exp_{exp_id}.yaml"
         self._delete_exp_file(exp_file_name)
+
+    @staticmethod
+    def format_experience_in_prompt(
+        prompt_template: str,
+        selected_experiences: Optional[List[Experience]] = None,
+    ):
+        if selected_experiences is not None and len(selected_experiences) > 0:
+            return prompt_template.format(
+                experiences="===================\n"
+                + "\n===================\n".join(
+                    [exp.experience_text for exp, sim in selected_experiences],
+                ),
+            )
+        else:
+            return ""

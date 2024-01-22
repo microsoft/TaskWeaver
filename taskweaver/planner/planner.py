@@ -191,21 +191,16 @@ class Planner(Role):
 
         return conversation
 
-    def _add_experience_to_prompt(self, selected_experiences: Optional[List[Experience]]):
-        if selected_experiences is not None and len(selected_experiences) != 0:
-            experience_instruction = self.prompt_data["experience_instruction"].format(
-                experiences="\n===================".join([exp.experience_text for exp, sim in selected_experiences]),
-            )
-            self.instruction += "\n\n" + experience_instruction
-
     def compose_prompt(
         self,
         rounds: List[Round],
         selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        self._add_experience_to_prompt(selected_experiences)
-
-        chat_history = [format_chat_message(role="system", message=self.instruction)]
+        experiences = self.experience_generator.format_experience_in_prompt(
+            self.prompt_data["experience_instruction"],
+            selected_experiences,
+        )
+        chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
 
         if self.config.use_example and len(self.examples) != 0:
             for conv_example in self.examples:

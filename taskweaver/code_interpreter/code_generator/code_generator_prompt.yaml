@@ -62,7 +62,7 @@ requirements: |-
     {CODE_GENERATION_REQUIREMENTS}
 
 experience_instruction: |-
-  # Experience And Lessons
-  Before starting generating Python code, please refer to the following experiences and lessons learned from the previous tasks.
-  {experiences}
-  You need to borrow the experience and lessons learned from the previous tasks in your generated Python code.
+    ## Experience And Lessons
+    Before generating Python code, please refer to the experiences and lessons learned from the previous tasks:
+    {experiences}
+    You must use the experiences and lessons learned to generate the Python code.
