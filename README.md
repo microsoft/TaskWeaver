@@ -145,7 +145,7 @@ In this example, we will show you how to use TaskWeaver to forecast QQQ's price 
 
 [Nasdaq 100 Index Price Forecasting](https://github.com/microsoft/TaskWeaver/assets/7489260/1361ed83-16c3-4056-98fc-e0496ecab015)
 
-If you want to follow this example, you need to you have two requirements installed:
+If you want to follow this example, you need to have two requirements installed:
 ```bash
 pip install yfinance
 pip install statsmodels
