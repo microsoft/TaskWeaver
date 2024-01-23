@@ -1,8 +1,9 @@
 # Experience
 
-We build up a long-term memory for TaskWarrior, so that we can learn from the previous experience and improve our future performance.
+We build up a long-term memory for TaskWeaver, so that we can learn from the previous experience and improve our future performance.
 It can summarize the mistakes it made in the past and help us avoid making the same mistakes again.
 In addition, it also can remember the user preferences and use them to guide the future conversation.
+
 
 ## How to use
 
@@ -178,12 +179,12 @@ In addition, it also can remember the user preferences and use them to guide the
 3. We `/save` the chat history and restart TaskWeaver. We can see the experience summarized from the last chat history is below:
 ```yaml
 exp_id: 20231228-073922-9b411afd
-experience_text: "User Query: get the mean value of d:/demo_data.csv\n\nError Resolution:\n\
-  - Error 1: The initial code failed to execute because it tried to calculate the\
-  \ mean value of all columns, including non-numeric columns.\n  - Resolution 1: The\
-  \ code was revised to check for non-numeric columns and only calculate the mean\
-  \ value for numeric columns.\n\nPreferences:\n- Preference 1: The user prefers to\
-  \ calculate the mean value of the \"Count\" column in the data."
+experience_text: "User Query: get the mean value of d:/demo_data.csv
+  Error Resolution:
+  - Error 1: The initial code failed to execute because it tried to calculate the mean value of all columns, including non-numeric columns.
+  - Resolution 1: The code was revised to check for non-numeric columns and only calculate the mean value for numeric columns.
+  Preferences:
+  - Preference 1: The user prefers to calculate the mean value of the "Count" column in the data."
 raw_experience_path: D:\project\experience\raw_exp_20231228-073922-9b411afd.yaml
 embedding_model: text-embedding-ada-002
 embedding: ...

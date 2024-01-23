@@ -20,7 +20,8 @@ TaskWeaver is A **code-first** agent framework for seamlessly planning and execu
 
 
 ## 🆕 News
-- 📅2024-01-17: TaskWeaver now has a plugin `vision_web_explorer` that can open a web browser and explore websites.🌐
+- 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉
+- 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐
 - 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️
 - 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb).
 - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.
