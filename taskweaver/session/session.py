@@ -48,6 +48,8 @@ class Session:
         self.workspace = workspace.get_session_dir(self.session_id)
         self.execution_cwd = os.path.join(self.workspace, "cwd")
 
+        self.init()
+
         self.round_index = 0
         self.memory = Memory(session_id=self.session_id)
 
@@ -78,8 +80,6 @@ class Session:
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
-
-        self.init()
 
         self.logger.dump_log_file(
             self,

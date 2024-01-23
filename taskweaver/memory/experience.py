@@ -1,6 +1,5 @@
 import json
 import os
-import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
@@ -147,7 +146,7 @@ class ExperienceGenerator:
         exp_ids = raw_exp_ids + handcrafted_exp_ids
 
         if len(exp_ids) == 0:
-            warnings.warn(
+            self.logger.warning(
                 "No raw experience found. "
                 "Please type /save in the chat window to save raw experience"
                 "or write handcrafted experience.",
@@ -219,7 +218,7 @@ class ExperienceGenerator:
         ]
         exp_ids = [os.path.splitext(os.path.basename(exp_file))[0].split("_")[2] for exp_file in original_exp_files]
         if len(exp_ids) == 0:
-            warnings.warn(
+            self.logger.warning(
                 f"No experience found for {target_role}."
                 f"Please type /save in the chat window to save raw experience or write handcrafted experience."
                 + self.exception_message_for_refresh,

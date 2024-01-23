@@ -196,9 +196,13 @@ class Planner(Role):
         rounds: List[Round],
         selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        experiences = self.experience_generator.format_experience_in_prompt(
-            self.prompt_data["experience_instruction"],
-            selected_experiences,
+        experiences = (
+            self.experience_generator.format_experience_in_prompt(
+                self.prompt_data["experience_instruction"],
+                selected_experiences,
+            )
+            if self.config.use_experience
+            else ""
         )
         chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
 
