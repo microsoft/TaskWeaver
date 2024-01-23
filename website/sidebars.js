@@ -77,6 +77,7 @@ const sidebars = {
     'planner',
     'session',
     'run_pytest',
+    'experience',
   ],
   
 };
