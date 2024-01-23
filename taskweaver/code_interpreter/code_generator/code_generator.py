@@ -219,6 +219,8 @@ class CodeGenerator(Role):
                     is_first_post = False
 
                 if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
+                    # to avoid planner imitating the below handcrafted format,
+                    # we merge plan and query message in the code generator here
                     user_query = conversation_round.user_query
                     plan = next(iter(post.get_attachment(AttachmentType.plan)), None)
                     enrichment = ""

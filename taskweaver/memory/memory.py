@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from typing import List
 
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
 from taskweaver.memory.type_vars import RoleName
@@ -44,9 +45,18 @@ class Memory:
             rounds_from_role.append(new_round)
         return rounds_from_role
 
-    def save_experience(self, exp_dir: str):
+    def save_experience(self, exp_dir: str, thin_mode: bool = True) -> None:
         raw_exp_path = os.path.join(exp_dir, f"raw_exp_{self.session_id}.yaml")
-        write_yaml(raw_exp_path, self.conversation.to_dict())
+        if thin_mode:
+            import copy
+
+            conversation = copy.deepcopy(self.conversation)
+            for round in conversation.rounds:
+                for post in round.post_list:
+                    post.attachment_list = [x for x in post.attachment_list if x.type == AttachmentType.plan]
+            write_yaml(raw_exp_path, conversation.to_dict())
+        else:
+            write_yaml(raw_exp_path, self.conversation.to_dict())
 
     def from_yaml(self, session_id: str, path: str) -> Memory:
         """Load the memory from a yaml file."""
