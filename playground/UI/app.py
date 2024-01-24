@@ -2,7 +2,7 @@ import functools
 import os
 import re
 import sys
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import requests
 
@@ -198,6 +198,39 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     ),
                 ]
                 cl.run_sync(self.cur_step.update())
+
+    def get_message_from_user(self, prompt: str, timeout: int = 120) -> Optional[str]:
+        ask_user_msg = cl.AskUserMessage(content=prompt, author=" ", timeout=timeout)
+        res = cl.run_sync(ask_user_msg.send())
+        cl.run_sync(ask_user_msg.remove())
+        if res is not None:
+            res_msg = cl.Message.from_dict(res)
+            msg_txt = res_msg.content
+            cl.run_sync(res_msg.remove())
+            return msg_txt
+        return None
+
+    def get_confirm_from_user(
+        self,
+        prompt: str,
+        actions: List[Union[Tuple[str, str], str]],
+        timeout: int = 120,
+    ) -> Optional[str]:
+        cl_actions: List[cl.Action] = []
+        for arg_action in actions:
+            if isinstance(arg_action, str):
+                cl_actions.append(cl.Action(name=arg_action, value=arg_action))
+            else:
+                name, value = arg_action
+                cl_actions.append(cl.Action(name=name, value=value))
+        ask_user_msg = cl.AskActionMessage(content=prompt, actions=cl_actions, author=" ", timeout=timeout)
+        res = cl.run_sync(ask_user_msg.send())
+        cl.run_sync(ask_user_msg.remove())
+        if res is not None:
+            for action in cl_actions:
+                if action.value == res["value"]:
+                    return action.value
+        return None
 
     def format_post_body(self, is_end: bool) -> str:
         content_chunks: List[str] = []

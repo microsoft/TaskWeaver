@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from .context import LogErrorLevel, PluginContext
 
@@ -29,7 +29,7 @@ class Plugin(ABC):
         self.config: Dict[str, Any] = config
 
     @abstractmethod
-    def __call__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """
         entry point for the execution of the plugin function
         """
