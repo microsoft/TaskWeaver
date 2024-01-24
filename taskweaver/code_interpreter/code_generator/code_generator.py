@@ -10,6 +10,7 @@ from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
+from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy
@@ -51,6 +52,8 @@ class CodeGeneratorConfig(ModuleConfig):
         )
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
+        self.use_experience = self._get_bool("use_experience", False)
+
 
 class CodeGenerator(Role):
     @inject
@@ -62,6 +65,7 @@ class CodeGenerator(Role):
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
         post_translator: PostTranslator,
+        experience_generator: ExperienceGenerator,
     ):
         self.config = config
         self.logger = logger
@@ -96,6 +100,17 @@ class CodeGenerator(Role):
             logger.info("Plugin embeddings loaded")
             self.selected_plugin_pool = SelectedPluginPool()
 
+        if self.config.use_experience:
+            self.experience_generator = experience_generator
+            # # self.experience_generator.refresh(target_role="All", prompt=experience_prompt_template)
+            self.experience_generator.load_experience(target_role="All")
+            self.logger.info(
+                "Experience loaded successfully, "
+                "there are {} experiences".format(len(self.experience_generator.experience_list)),
+            )
+
+        self.logger.info("CodeInterpreter initialized successfully")
+
     def configure_verification(
         self,
         code_verification_on: bool,
@@ -126,8 +141,18 @@ class CodeGenerator(Role):
         self,
         rounds: List[Round],
         plugins: List[PluginEntry],
+        selected_experiences: Optional[List[Experience]] = None,
     ) -> List[ChatMessageType]:
-        chat_history = [format_chat_message(role="system", message=self.instruction)]
+        experiences = (
+            self.experience_generator.format_experience_in_prompt(
+                self.prompt_data["experience_instruction"],
+                selected_experiences,
+            )
+            if self.config.use_experience
+            else ""
+        )
+
+        chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
 
         if self.examples is None:
             self.examples = self.load_examples()
@@ -199,6 +224,8 @@ class CodeGenerator(Role):
                     is_first_post = False
 
                 if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
+                    # to avoid planner imitating the below handcrafted format,
+                    # we merge plan and query message in the code generator here
                     user_query = conversation_round.user_query
                     plan = next(iter(post.get_attachment(AttachmentType.plan)), None)
                     enrichment = ""
@@ -302,13 +329,18 @@ class CodeGenerator(Role):
             include_failure_rounds=False,
         )
 
-        # obtain the user query from the last round
+        # obtain the query from the last round
         query = rounds[-1].post_list[-1].message
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
-        prompt = self.compose_prompt(rounds, self.plugin_pool)
+        if self.config.use_experience:
+            selected_experiences = self.experience_generator.retrieve_experience(query)
+        else:
+            selected_experiences = None
+
+        prompt = self.compose_prompt(rounds, self.plugin_pool, selected_experiences)
 
         def early_stop(_type: AttachmentType, value: str) -> bool:
             if _type in [AttachmentType.text, AttachmentType.python, AttachmentType.sample]:

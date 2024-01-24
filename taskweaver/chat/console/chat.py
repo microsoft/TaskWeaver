@@ -438,6 +438,9 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
                 file_to_load = msg[5:].strip()
                 self._load_file(file_to_load)
                 return
+            if lower_command == "save":
+                self._save_memory()
+                return
             error_message(f"Unknown command '{msg}', please try again")
             return
 
@@ -454,9 +457,13 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
                 /clear: clear the console
                 /exit: exit the chat console
                 /help: print this help message
+                /save: save the memory for experience reuse
                 """,
             ),
         )
+
+    def _save_memory(self):
+        self.session.memory.save_experience(exp_dir=self.session.config.experience_dir)
 
     def _load_file(self, file_to_load: str):
         import os

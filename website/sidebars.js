@@ -60,7 +60,7 @@ const sidebars = {
         label: 'Plugin',
         collapsible: true,
         collapsed: true,
-        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding', 'customization/plugin/develop_plugin'],
+        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl'],
       },
       {
         type: 'category',
@@ -77,6 +77,7 @@ const sidebars = {
     'planner',
     'session',
     'run_pytest',
+    'experience',
   ],
   
 };

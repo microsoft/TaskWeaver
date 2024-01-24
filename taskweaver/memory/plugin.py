@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from injector import Module, provider
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.misc.component_registry import ComponentRegistry
+from taskweaver.misc.component_registry import ComponentDisabledException, ComponentRegistry
 from taskweaver.utils import read_yaml, validate_yaml
 
 
@@ -272,7 +272,7 @@ class PluginRegistry(ComponentRegistry[PluginEntry]):
         if entry is None:
             raise Exception(f"failed to loading plugin from {path}")
         if not entry.enabled:
-            raise Exception(f"plugin {entry.name} is disabled")
+            raise ComponentDisabledException(f"plugin {entry.name} is disabled")
         return entry.name, entry
 
 

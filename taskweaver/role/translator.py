@@ -52,7 +52,7 @@ class PostTranslator:
             for c in s:
                 full_llm_content += c["content"]
                 yield c["content"]
-            self.logger.info(f"LLM output: {llm_output}")
+            self.logger.info(f"LLM output: {full_llm_content}")
 
         value_buf: str = ""
         filtered_stream = stream_filter(llm_output)
