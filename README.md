@@ -20,7 +20,8 @@ TaskWeaver is A **code-first** agent framework for seamlessly planning and execu
 
 
 ## 🆕 News
-- 📅2024-01-17: TaskWeaver now has a plugin `vision_web_explorer` that can open a web browser and explore websites.🌐
+- 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉
+- 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐
 - 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️
 - 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb).
 - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.
@@ -94,7 +95,7 @@ Human: ___
 ```
 
 ####  or 💻 Web UI 
-TaskWeaver also supports WebUI for demo purpose, please refers to [web UI docs](https://microsoft.github.io/TaskWeaver/docs/usage/webui) for more details.
+TaskWeaver also supports WebUI for demo purpose, please refer to [web UI docs](https://microsoft.github.io/TaskWeaver/docs/usage/webui) for more details.
 
 #### or 📋 Import as a Library
 TaskWeaver can be imported as a library to integrate with your existing project, more information can be found in [docs](https://microsoft.github.io/TaskWeaver/docs/usage/library)
@@ -145,7 +146,7 @@ In this example, we will show you how to use TaskWeaver to forecast QQQ's price 
 
 [Nasdaq 100 Index Price Forecasting](https://github.com/microsoft/TaskWeaver/assets/7489260/1361ed83-16c3-4056-98fc-e0496ecab015)
 
-If you want to follow this example, you need to you have two requirements installed:
+If you want to follow this example, you need to ensure you have these two requirements installed:
 ```bash
 pip install yfinance
 pip install statsmodels

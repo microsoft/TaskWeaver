@@ -21,6 +21,10 @@ class AppSessionConfig(ModuleConfig):
         self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
         self.plugin_only_mode = self._get_bool("plugin_only_mode", False)
+        self.experience_dir = self._get_path(
+            "experience_dir",
+            os.path.join(self.src.app_base_path, "experience"),
+        )
 
 
 class Session:
@@ -43,6 +47,8 @@ class Session:
 
         self.workspace = workspace.get_session_dir(self.session_id)
         self.execution_cwd = os.path.join(self.workspace, "cwd")
+
+        self.init()
 
         self.round_index = 0
         self.memory = Memory(session_id=self.session_id)
@@ -75,8 +81,6 @@ class Session:
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
 
-        self.init()
-
         self.logger.dump_log_file(
             self,
             file_path=os.path.join(self.workspace, f"{self.session_id}.json"),
@@ -88,6 +92,9 @@ class Session:
 
         if not os.path.exists(self.execution_cwd):
             os.makedirs(self.execution_cwd)
+
+        if not os.path.exists(self.config.experience_dir):
+            os.makedirs(self.config.experience_dir)
 
         self.logger.info(f"Session {self.session_id} is initialized")
 

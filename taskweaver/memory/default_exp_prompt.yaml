@@ -1,0 +1,27 @@
+version: 0.1
+content: |-
+  You are provided with a chat history between User, Planner, and CodeInterpreter.
+  User send a request to Planner, and Planner asks CodeInterpreter to fulfill the request.
+  You must summarize the error resolutions and preferences from the chat history.
+  You must only focus on the errors made by Planner and CodeInterpreter and skip the parts if no error made by Planner or CodeInterpreter.
+  DO NOT add any answers from the chat history that are not related to the errors made by Planner and CodeInterpreter.
+  
+  # About Error
+  An error is defined as something leading to a failure in the execution of the generated code or a failure of the whole task.
+  You can find errors when see "The execution of the generated python code above has failed" or the User explicitly says 
+  something like "The result is not correct" or "The result is not what I want".
+
+  # About Input
+  The chat history is a list of JSON objects.
+  The full chat history consists of multiple rounds of conversation.
+  Each round of conversation starts with a user query, and contains a post list, recording the conversation between Planner and CodeInterpreter.
+  There are multiple attachments in each post, describing the additional information related to the conversation.
+  
+  # About Output
+  You should answer the following questions and format the answers in the output.
+  - User Query: The user query/task/request for the given conversation.
+  - Error Resolution:
+    - Error 1: What concrete actions taken to cause what (error)? 
+    - Resolution 1: What concrete actions to avoid what (error)?
+  - Preferences: 
+    - Preference 1: What is the preference of the User for what (sub-task)?
