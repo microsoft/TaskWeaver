@@ -34,7 +34,7 @@ TaskWeaver is A **code-first** agent framework for seamlessly planning and execu
 
 - [x] **Rich data structure** - TaskWeaver allows you to work with rich data structures in Python, such as DataFrames, instead of dealing with strings.
 - [x] **Customized algorithms** - TaskWeaver allows you to encapsulate your own algorithms into plugins and orchestrate them.
-- [x] **Incorporating domain-specific knowledge** - TaskWeaver is designed to incorporat domain-specific knowledge easily to improve the reliability.
+- [x] **Incorporating domain-specific knowledge** - TaskWeaver is designed to incorporate domain-specific knowledge easily to improve the reliability.
 - [x] **Stateful execution** - TaskWeaver is designed to support stateful execution of the generated code to ensure consistent and smooth user experience.
 - [x] **Code verification** - TaskWeaver is designed to verify the generated code before execution. It can detect potential issues in the generated code and provide suggestions to fix them.
 - [x] **Easy to use** - TaskWeaver is easy to use with sample plugins, examples and tutorials to help you get started. TaskWeaver offers an open-box experience, allowing users to run it immediately after installation.
