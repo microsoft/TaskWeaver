@@ -1,0 +1,34 @@
+name: document_retriever
+enabled: true
+required: false
+plugin_only: true
+description: >-
+  This plugin takes a query and returns a list of documents that are most relevant to the query.
+  The query should be a well-formed sentence that describes the user's information need.
+  The document base is a collection of documents about a project named "TaskWeaver".
+  If the query is not clear, or irrelevant to the topic, then should not call this plugin.
+  If you want to answer a question about TaskWeaver, the answer should be strictly based on the documents.
+  You cannot make up an answer that is not in the documents, otherwise bad things will happen.
+examples: |-
+  result = document_retriever(query="what is taskweaver", size=3)
+
+parameters:
+  - name: query
+    type: str
+    required: true
+    description: >-
+      The query is a well-formed sentence that describes the user's information need.
+  - name: size
+    type: int
+    required: false
+    description: number of chunks to return
+
+returns:
+  - name: result
+    type: List[Dict[str, Any]]
+    description: >-
+      The list of documents that are most relevant to the query.
+      Each document has a chunk content and its metadata.
+
+configurations:
+  index_folder: /path/to/project/sample_data/knowledge_base
