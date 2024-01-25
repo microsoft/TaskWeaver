@@ -38,4 +38,5 @@ returns:
 configurations:
     endpoint:
     api_key:
-    driver_path:
+    chrome_driver_path:
+    chrome_executable_path:

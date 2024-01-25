@@ -11,7 +11,9 @@
 
 </div>
 
-TaskWeaver is A **code-first** agent framework for seamlessly planning and executing data analytics tasks. This innovative framework interprets user requests through coded snippets and efficiently coordinates a variety of plugins in the form of functions to execute data analytics tasks in a stateful manner.
+TaskWeaver is A **code-first** agent framework for seamlessly planning and executing data analytics tasks. 
+This innovative framework interprets user requests through code snippets and efficiently coordinates a variety 
+of plugins in the form of functions to execute data analytics tasks in a stateful manner.
 
 
 <h1 align="center">
@@ -65,8 +67,8 @@ Before running TaskWeaver, you need to provide your LLM configurations. Taking O
 #### OpenAI
 ```json
 {
-"llm.api_key": "the api key",
-"llm.model": "the model name, e.g., gpt-4"
+  "llm.api_key": "the api key",
+  "llm.model": "the model name, e.g., gpt-4"
 }
 ```
 
