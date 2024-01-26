@@ -4,13 +4,13 @@ required: false
 plugin_only: true
 description: >-
   This plugin takes a query and returns a list of documents that are most relevant to the query.
-  The query should be a well-formed sentence that describes the user's information need.
+  The query should be self-contained, and not require any context to understand.
   The document base is a collection of documents about a project named "TaskWeaver".
   If the query is not clear, or irrelevant to the topic, then should not call this plugin.
-  If you want to answer a question about TaskWeaver, the answer should be strictly based on the documents.
+  If a question on TaskWeaver is answered, the answer should be strictly based on the documents.
   You cannot make up an answer that is not in the documents, otherwise bad things will happen.
 examples: |-
-  result = document_retriever(query="what is taskweaver", size=3)
+  result = document_retriever(query="what is TaskWeaver", size=5)
 
 parameters:
   - name: query
