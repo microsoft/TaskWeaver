@@ -143,36 +143,50 @@ class LLMApi(object):
         buffer_message: Optional[ChatMessageType] = None
         buffer_content: str = ""
         finished = False
+        llm_source_failed: bool = False
+        llm_source_error: Optional[Exception] = None
 
         update_lock = threading.Lock()
         update_cond = threading.Condition()
         cur_base_speed: float = 10.0
 
+        def non_zero(num: float) -> float:
+            return num + 1e-6
+
         def speed_normalize(speed: float):
             return min(max(speed, 5), 600)
 
         def base_stream_puller():
-            nonlocal buffer_message, buffer_content, finished, cur_base_speed
-            stream = stream_init()
+            nonlocal buffer_message, buffer_content, finished, cur_base_speed, llm_source_failed, llm_source_error
+            try:
+                stream = stream_init()
 
-            for msg in stream:
-                if msg["content"] == "":
-                    continue
+                for msg in stream:
+                    if msg["content"] == "":
+                        continue
 
-                with update_lock:
-                    buffer_message = msg
-                    buffer_content += msg["content"]
-                    cur_time = time.time()
+                    with update_lock:
+                        buffer_message = msg
+                        buffer_content += msg["content"]
+                        cur_time = time.time()
 
-                    new_speed = min(2e3, len(buffer_content) / (cur_time - recv_start))
-                    weight = min(1.0, len(buffer_content) / 80)
-                    cur_base_speed = new_speed * weight + cur_base_speed * (1 - weight)
+                        new_speed = min(2e3, len(buffer_content) / non_zero(cur_time - recv_start))
+                        weight = min(1.0, len(buffer_content) / 80)
+                        cur_base_speed = new_speed * weight + cur_base_speed * (1 - weight)
 
-                with update_cond:
-                    update_cond.notify()
-
-            with update_lock:
-                finished = True
+                    with update_cond:
+                        update_cond.notify()
+            except Exception as e:
+                llm_source_failed = True
+                llm_source_error = e
+            finally:
+                try:
+                    with update_lock:
+                        finished = True
+                    with update_cond:
+                        update_cond.notify()
+                except Exception:
+                    pass
 
         thread = threading.Thread(target=base_stream_puller)
         thread.start()
@@ -183,6 +197,18 @@ class LLMApi(object):
         cur_update_speed = cur_base_speed
 
         while True:
+            if llm_source_failed:
+                if thread.is_alive():
+                    try:
+                        # try to join the thread if it has not finished
+                        thread.join(timeout=1)
+                    except Exception:
+                        pass
+                if llm_source_error is not None:
+                    # raise the error from execution thread again
+                    raise llm_source_error  # type:ignore
+                else:
+                    raise Exception("calling LLM failed")
             if finished and len(buffer_content) - len(sent_content) < min_chunk_size * 5:
                 if buffer_message is not None and len(sent_content) < len(
                     buffer_content,
@@ -221,17 +247,17 @@ class LLMApi(object):
 
             cur_base_speed_norm = speed_normalize(cur_base_speed)
             cur_actual_speed_norm = speed_normalize(
-                sent_len / (time.time() - (sent_start if not finished else recv_start)),
+                sent_len / non_zero(time.time() - (sent_start if not finished else recv_start)),
             )
             target_speed = cur_base_speed_norm + (cur_base_speed_norm - cur_actual_speed_norm) * 0.25
             cur_update_speed = speed_normalize(0.5 * cur_update_speed + target_speed * 0.5)
 
-            if cur_update_speed > min_chunk_size / min_update_interval:
+            if cur_update_speed > min_chunk_size / non_zero(min_update_interval):
                 chunk_time_target = min_update_interval
                 new_pack_size_target = chunk_time_target * cur_update_speed
             else:
                 new_pack_size_target = min_chunk_size
-                chunk_time_target = new_pack_size_target / cur_update_speed
+                chunk_time_target = new_pack_size_target / non_zero(cur_update_speed)
 
             rand_min = max(
                 min(rem_len, min_chunk_size),
@@ -240,7 +266,7 @@ class LLMApi(object):
             rand_max = min(rem_len, int(1.2 * new_pack_size_target))
             new_pack_size = random.randint(rand_min, rand_max) if rand_max - rand_min > 1 else rand_min
 
-            chunk_time = chunk_time_target / new_pack_size_target * new_pack_size
+            chunk_time = chunk_time_target / non_zero(new_pack_size_target) * new_pack_size
 
             new_pack = buffer_content[sent_len : (sent_len + new_pack_size)]
             sent_content += new_pack

@@ -1,9 +1,12 @@
 name: web_search
-enabled: true
+enabled: false
 required: false
 plugin_only: true
 description: >-
-  Search information from web with a query using search engine. The title, URL and a chunk of snippet of a series of results would be retrieved. When there are too many results retrieved, some filtering might be needed afterwards. When retrieving specific information, maybe need to further access specific link to get more information.
+  Search information from web with a query using search engine. 
+  The title, URL and a chunk of snippet of a series of results would be retrieved. 
+  When there are too many results retrieved, some filtering might be needed afterwards. 
+  When retrieving specific information, maybe need to further access specific link to get more information.
 
 examples: |-
   query_results = web_search("what the weather like in Seattle?")
@@ -13,7 +16,6 @@ parameters:
     type: str
     required: true
     description: query for web search
-
 
 returns:
   - name: results

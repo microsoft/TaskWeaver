@@ -33,6 +33,7 @@ class SeleniumDriver:
         self,
         mobile_emulation: bool = True,
         chrome_driver_path: str = None,
+        chrome_executable_path: str = None,
         action_delay: int = 5,
     ):
         # Set up Chrome options
@@ -46,8 +47,13 @@ class SeleniumDriver:
             chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
             chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
             chrome_options.add_argument("--ignore-certificate-errors")
+            chrome_options.add_argument("--log-level=OFF")
+            chrome_options.add_argument("--allow-insecure-localhost")
+            chrome_options.add_argument("--log-level=3")
+            if chrome_executable_path is not None:
+                chrome_options.binary_location = chrome_executable_path
 
-        # Set up the service object with the specified path to chromedriver
+            # Set up the service object with the specified path to chromedriver
         service = Service(executable_path=chrome_driver_path)
 
         # Set up the driver with the specified service
@@ -604,8 +610,16 @@ class VisionWebBrowser(Plugin):
         try:
             GPT4V_KEY = self.config.get("api_key")
             GPT4V_ENDPOINT = self.config.get("endpoint")
-            driver = SeleniumDriver(chrome_driver_path=self.config.get("driver_path"), mobile_emulation=False)
-            self.vision_planner = VisionPlanner(api_key=GPT4V_KEY, endpoint=GPT4V_ENDPOINT, driver=driver)
+            driver = SeleniumDriver(
+                chrome_driver_path=self.config.get("chrome_driver_path"),
+                chrome_executable_path=self.config.get("chrome_executable_path", None),
+                mobile_emulation=False,
+            )
+            self.vision_planner = VisionPlanner(
+                api_key=GPT4V_KEY,
+                endpoint=GPT4V_ENDPOINT,
+                driver=driver,
+            )
         except Exception as e:
             if driver is not None:
                 driver.quit()
@@ -615,7 +629,10 @@ class VisionWebBrowser(Plugin):
         if self.vision_planner is None:
             self._init()
         try:
-            done_message = self.vision_planner.get_objective_done(request, additional_info)
+            done_message = self.vision_planner.get_objective_done(
+                request,
+                additional_info,
+            )
         except Exception as e:
             print(e)
             done_message = "Failed to achieve the objective. Please check the log for more details."

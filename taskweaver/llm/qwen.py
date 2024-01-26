@@ -83,7 +83,7 @@ class QWenService(CompletionService, EmbeddingService):
 
             else:
                 raise Exception(
-                    f"QWen API call failed with status code {response.status_code} and error message {response.error}",
+                    f"QWen API call failed with status code {msg_chunk.status_code} and error message {msg_chunk.code}",
                 )
 
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
