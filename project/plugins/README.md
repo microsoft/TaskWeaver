@@ -34,10 +34,15 @@ pip install selenium
 pip install pillow
 ```
 
-We use the Chrome driver in this example. You can download the driver from [here](https://chromedriver.chromium.org/downloads). 
-We tested the plugin with Chrome version >= 120.
-After downloading the driver, you need to unzip it and configure the path to the executable in the plugin configuration file `vision_web_explorer.yaml`.
-Also, you need to install Chrome browser on your machine.
+We use the Chrome + ChromeDriver in this example. You can download the driver from [here](https://chromedriver.chromium.org/downloads).
+Make sure you download the driver that matches your Chrome version, otherwise, the browser may crash.
+For example, the latest Chrome version on 1/25/2024 is 121.0.6167.85, so you need to download the ChromeDriver 121.0.6167.85.
+After downloading the driver, you need to unzip it and configure the path (i.e., `chrome_driver_path`) to the executable in the plugin configuration file `vision_web_explorer.yaml`.
+If you already have Chrome installed, you can upgrade it to the latest version.
+If you want to have a dedicated Chrome for this plugin, you can download the Chrome executable from [here](https://googlechromelabs.github.io/chrome-for-testing/).
+After downloading the Chrome executable, you need to unzip it and configure the path to the executable (i.e., `chrome_executable_path`) in the plugin configuration file `vision_web_explorer.yaml`.
+If this path is not configured, the plugin will use the default Chrome installed on your machine.
+
 
 In addition, you need to configure the GPT vision model in the plugin configuration file `vision_web_explorer.yaml`.
 For OpenAI GPT model, you can find the sample code [here](https://platform.openai.com/docs/guides/vision/uploading-base-64-encoded-images).
@@ -51,5 +56,16 @@ A video demo using this plugin for web browsing:
 
 [Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/7f819524-2c5b-46a8-9c0c-e001a2c7131b)
 
+## web_search
 
+This plugin by default is **not** enabled. If you want to use this plugin, you need to enable it in the `web_search.yaml` file.
+In this plugin, we will call the Bing Search or Google Search API to search for web pages.
+The input to the plugin is a natural language query, and the output is a list of web pages including the URL, title, and a short snippet.
+To use this plugin, you need to configure the API key in the plugin configuration file `web_search.yaml`.
 
+We support two search engines: Bing Search and Google Search.
+
+- To use Bing Search, you need to register a search resource on Azure Portal: https://aka.ms/bingapisignup.
+Then, you can get the API key from the registered resource. Refer to this [link](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api) for more details.
+- To use Google Search, you need to register a custom search engine on Google: https://cse.google.com/all.
+Then, you can get the API key from the registered search engine from the [Credentials page](https://console.cloud.google.com/apis/credentials).

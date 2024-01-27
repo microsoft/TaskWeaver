@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
 
-AppConfigSourceType = Literal["env", "json", "app", "default"]
+AppConfigSourceType = Literal["override", "env", "json", "app", "default"]
 AppConfigValueType = Literal["str", "int", "float", "bool", "list", "enum", "path"]
 
 
@@ -49,6 +49,7 @@ class AppConfigSource:
         self.config: Dict[str, AppConfigItem] = {}
         self.config_file_path = config_file_path
         self.in_memory_store = config
+        self.override_store: Dict[str, Any] = {}
         if config_file_path is not None:
             self.json_file_store = self._load_config_from_json(config_file_path)
         else:
@@ -74,6 +75,11 @@ class AppConfigSource:
         required: bool = True,
     ) -> Optional[Any]:
         self.set_config_value(var_name, var_type, default_value, "default")
+
+        if var_name in self.override_store:
+            val = self.override_store.get(var_name, None)
+            if val is not None:
+                return val
 
         if self.in_memory_store is not None:
             val = self.in_memory_store.get(var_name, None)
@@ -114,10 +120,13 @@ class AppConfigSource:
                 sources=[AppConfigSourceValue(source=source, value=value)],
             )
         else:
-            self.config[var_name].value = value
             new_sources = [s for s in self.config[var_name].sources if s.source != source]
             new_sources.append(AppConfigSourceValue(source=source, value=value))
+            new_sources.sort(key=lambda s: s.source)
             self.config[var_name].sources = new_sources
+            self.config[var_name].value = value
+        if source == "override":
+            self.override_store[var_name] = value
 
     def get_bool(
         self,
