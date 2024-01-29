@@ -1,6 +1,6 @@
 version: 0.1
 config_var:
-  code_verification.plugin_only: true
+  session.plugin_only_mode: true
 app_dir: ../project/
 eval_query:
   - user_query: generate 10 random numbers

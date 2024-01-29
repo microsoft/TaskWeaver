@@ -79,6 +79,10 @@ def auto_evaluate_for_taskweaver(
     return score_list
 
 
+class SessionEventBaseHandler:
+    pass
+
+
 def batch_auto_evaluate_for_taskweaver(
     result_file_path: str,
     eval_case_dir: str,
@@ -103,9 +107,11 @@ def batch_auto_evaluate_for_taskweaver(
             continue
         print("------------Start evaluating------------", eval_config_file)
         eval_case_file_path = os.path.join(eval_case_dir, eval_config_file)
+
         score_list = auto_evaluate_for_taskweaver(
             eval_case_file_path,
             interrupt_threshold=interrupt_threshold,
+            event_handler=None,
         )
         for idx, score, normalized_score in score_list:
             print(f"Round-{idx} score: {score}, normalized score: {normalized_score}")

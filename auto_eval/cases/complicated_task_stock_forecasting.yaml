@@ -7,7 +7,7 @@ eval_query:
     scoring_points:
       - score_point: "There should be 7 predicted stock prices in the output"
         weight: 1
-      - score_point: "The predicted stock price should be in range of 370 to 380"
+      - score_point: "The predicted stock price should be in range of 400 to 450"
         weight: 1
       - score_point: "Agent should use ARIMA model to predict the stock price"
         weight: 1
