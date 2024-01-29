@@ -9,6 +9,7 @@ In this tutorial, we will show you how to contribute your LLM API to TaskWeaver.
 from injector import inject
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType
+...
 ```
 3. Create a new class `YourLLMServiceConfig` that inherits from `LLMServiceConfig` and implements the `_configure` method.
 In this method, you can set the name of your LLM, and the API key, model name, backup model name, and embedding model name of your LLM.
@@ -67,7 +68,7 @@ class YourLLMService(CompletionService, EmbeddingService):
 ```
 Note:
 - We set stream response by default in `chat_completion`.
-- You need to use `self.config` to get the configuration of your LLM API in `YourLLMService` class.
+- You need to use `self.config` to get the configuration of your LLM API (e.g., api key/model name) in `YourLLMService` class.
 - The `get_embeddings` method is optional. 
 - If you need to import other libraries for your LLM API, please import them in `__init__` function of `YourLLMService` class.
 You can refer to [QWen dashscope library import](https://github.com/microsoft/TaskWeaver/blob/main/taskweaver/llm/qwen.py) for an example.
@@ -141,7 +142,7 @@ class LLMApi(object):
 ```
 
 5. Configurate `taskweaver_config.json` file in the `project` dir based on your implemented LLM API.
-6. Run `python llm_api_test.py` to test your LLM API. If the LLM API is successfully tested, you will see the response from your LLM API.
+6. Run `python llm_api_test.py` to test your LLM API. If the LLM API is successfully set up, you will see the response from your LLM API.
 
 
 
