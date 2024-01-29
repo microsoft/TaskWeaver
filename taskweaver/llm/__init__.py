@@ -10,9 +10,8 @@ from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
-from taskweaver.llm.zhipuai import ZhipuAIService
-
 from .qwen import QWenService
+from .zhipuai import ZhipuAIService
 from .util import ChatMessageType, format_chat_message
 
 

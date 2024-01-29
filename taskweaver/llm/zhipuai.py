@@ -1,7 +1,5 @@
 from typing import Any, Generator, List, Optional
 from injector import inject
-from zhipuai import ZhipuAI
-
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from .base import CompletionService, EmbeddingService, LLMServiceConfig
 
@@ -54,11 +52,23 @@ class ZhipuAIServiceConfig(LLMServiceConfig):
 
 
 class ZhipuAIService(CompletionService, EmbeddingService):
+    zhipuai = None
+
     @inject
     def __init__(self, config: ZhipuAIServiceConfig):
+
+        if ZhipuAIService.zhipuai is None:
+            try:
+                import zhipuai
+                ZhipuAIService.zhipuai = zhipuai
+            except Exception:
+                raise Exception(
+                    "Package zhipuai>=2.0.0 is required for using ZhipuAI API.",
+                )
+
         self.config = config
-        self.client: ZhipuAI = (
-            ZhipuAI(
+        self.client = (
+            ZhipuAIService.zhipuai.ZhipuAI(
                 base_url=self.config.api_base,
                 api_key=self.config.api_key,
             )
