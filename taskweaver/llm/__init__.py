@@ -1,3 +1,4 @@
+import types
 from typing import Any, Callable, Generator, List, Optional, Type
 
 from injector import Injector, inject
@@ -10,9 +11,10 @@ from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
+
 from .qwen import QWenService
-from .zhipuai import ZhipuAIService
 from .util import ChatMessageType, format_chat_message
+from .zhipuai import ZhipuAIService
 
 
 class LLMApi(object):
@@ -76,26 +78,26 @@ class LLMApi(object):
         self.injector.binder.bind(svc, to=self.embedding_service)
 
     def chat_completion(
-            self,
-            messages: List[ChatMessageType],
-            use_backup_engine: bool = False,
-            stream: bool = True,
-            temperature: Optional[float] = None,
-            max_tokens: Optional[int] = None,
-            top_p: Optional[float] = None,
-            stop: Optional[List[str]] = None,
-            **kwargs: Any,
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
         for msg_chunk in self.completion_service.chat_completion(
-                messages,
-                use_backup_engine,
-                stream,
-                temperature,
-                max_tokens,
-                top_p,
-                stop,
-                **kwargs,
+            messages,
+            use_backup_engine,
+            stream,
+            temperature,
+            max_tokens,
+            top_p,
+            stop,
+            **kwargs,
         ):
             msg["role"] = msg_chunk["role"]
             msg["content"] += msg_chunk["content"]
@@ -104,16 +106,16 @@ class LLMApi(object):
         return msg
 
     def chat_completion_stream(
-            self,
-            messages: List[ChatMessageType],
-            use_backup_engine: bool = False,
-            stream: bool = True,
-            temperature: Optional[float] = None,
-            max_tokens: Optional[int] = None,
-            top_p: Optional[float] = None,
-            stop: Optional[List[str]] = None,
-            use_smoother: bool = True,
-            **kwargs: Any,
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = True,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        use_smoother: bool = True,
+        **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         def get_generator() -> Generator[ChatMessageType, None, None]:
             return self.completion_service.chat_completion(
@@ -132,8 +134,8 @@ class LLMApi(object):
         return get_generator()
 
     def _stream_smoother(
-            self,
-            stream_init: Callable[[], Generator[ChatMessageType, None, None]],
+        self,
+        stream_init: Callable[[], Generator[ChatMessageType, None, None]],
     ) -> Generator[ChatMessageType, None, None]:
         import random
         import threading
@@ -147,6 +149,7 @@ class LLMApi(object):
         buffer_message: Optional[ChatMessageType] = None
         buffer_content: str = ""
         finished = False
+        llm_thread_interrupt: bool = False
         llm_source_failed: bool = False
         llm_source_error: Optional[Exception] = None
 
@@ -161,11 +164,17 @@ class LLMApi(object):
             return min(max(speed, 5), 600)
 
         def base_stream_puller():
-            nonlocal buffer_message, buffer_content, finished, cur_base_speed, llm_source_failed, llm_source_error
+            nonlocal buffer_message, buffer_content, finished, cur_base_speed
+            nonlocal llm_source_failed, llm_source_error, llm_thread_interrupt
+            stream: Optional[Generator[ChatMessageType, None, None]] = None
             try:
                 stream = stream_init()
 
                 for msg in stream:
+                    if llm_thread_interrupt:
+                        # early interrupt from drainer side
+                        break
+
                     if msg["content"] == "":
                         continue
 
@@ -174,7 +183,10 @@ class LLMApi(object):
                         buffer_content += msg["content"]
                         cur_time = time.time()
 
-                        new_speed = min(2e3, len(buffer_content) / non_zero(cur_time - recv_start))
+                        new_speed = min(
+                            2e3,
+                            len(buffer_content) / non_zero(cur_time - recv_start),
+                        )
                         weight = min(1.0, len(buffer_content) / 80)
                         cur_base_speed = new_speed * weight + cur_base_speed * (1 - weight)
 
@@ -184,6 +196,11 @@ class LLMApi(object):
                 llm_source_failed = True
                 llm_source_error = e
             finally:
+                if stream is not None and isinstance(stream, types.GeneratorType):
+                    try:
+                        stream.close()
+                    except GeneratorExit:
+                        pass
                 try:
                     with update_lock:
                         finished = True
@@ -200,92 +217,103 @@ class LLMApi(object):
         next_update_time = time.time()
         cur_update_speed = cur_base_speed
 
-        while True:
-            if llm_source_failed:
-                if thread.is_alive():
-                    try:
-                        # try to join the thread if it has not finished
-                        thread.join(timeout=1)
-                    except Exception:
-                        pass
-                if llm_source_error is not None:
-                    # raise the error from execution thread again
-                    raise llm_source_error  # type:ignore
-                else:
-                    raise Exception("calling LLM failed")
-            if finished and len(buffer_content) - len(sent_content) < min_chunk_size * 5:
-                if buffer_message is not None and len(sent_content) < len(
+        try:
+            while True:
+                if llm_source_failed:
+                    if llm_source_error is not None:
+                        # raise the error from execution thread again
+                        raise llm_source_error  # type:ignore
+                    else:
+                        raise Exception("calling LLM failed")
+                if finished and len(buffer_content) - len(sent_content) < min_chunk_size * 5:
+                    if buffer_message is not None and len(sent_content) < len(
                         buffer_content,
-                ):
-                    new_pack = buffer_content[len(sent_content):]
-                    sent_content += new_pack
-                    yield format_chat_message(
-                        role=buffer_message["role"],
-                        message=new_pack,
-                        name=buffer_message["name"] if "name" in buffer_message else None,
+                    ):
+                        new_pack = buffer_content[len(sent_content) :]
+                        sent_content += new_pack
+                        yield format_chat_message(
+                            role=buffer_message["role"],
+                            message=new_pack,
+                            name=buffer_message["name"] if "name" in buffer_message else None,
+                        )
+                    break
+
+                if time.time() < next_update_time:
+                    with update_cond:
+                        update_cond.wait(
+                            min(min_sleep_interval, next_update_time - time.time()),
+                        )
+                    continue
+
+                with update_lock:
+                    cur_buf_message = buffer_message
+                    total_len = len(buffer_content)
+                    sent_len = len(sent_content)
+                    rem_len = total_len - sent_len
+
+                if cur_buf_message is None or len(buffer_content) - len(sent_content) < min_chunk_size:
+                    # wait for more buffer
+                    with update_cond:
+                        update_cond.wait(min_sleep_interval)
+                    continue
+
+                if sent_start == 0.0:
+                    # first chunk time
+                    sent_start = time.time()
+
+                cur_base_speed_norm = speed_normalize(cur_base_speed)
+                cur_actual_speed_norm = speed_normalize(
+                    sent_len
+                    / non_zero(
+                        time.time() - (sent_start if not finished else recv_start),
+                    ),
+                )
+                target_speed = cur_base_speed_norm + (cur_base_speed_norm - cur_actual_speed_norm) * 0.25
+                cur_update_speed = speed_normalize(
+                    0.5 * cur_update_speed + target_speed * 0.5,
+                )
+
+                if cur_update_speed > min_chunk_size / non_zero(min_update_interval):
+                    chunk_time_target = min_update_interval
+                    new_pack_size_target = chunk_time_target * cur_update_speed
+                else:
+                    new_pack_size_target = min_chunk_size
+                    chunk_time_target = new_pack_size_target / non_zero(
+                        cur_update_speed,
                     )
-                break
 
-            if time.time() < next_update_time:
+                rand_min = max(
+                    min(rem_len, min_chunk_size),
+                    int(0.8 * new_pack_size_target),
+                )
+                rand_max = min(rem_len, int(1.2 * new_pack_size_target))
+                new_pack_size = random.randint(rand_min, rand_max) if rand_max - rand_min > 1 else rand_min
+
+                chunk_time = chunk_time_target / non_zero(new_pack_size_target) * new_pack_size
+
+                new_pack = buffer_content[sent_len : (sent_len + new_pack_size)]
+                sent_content += new_pack
+
+                yield format_chat_message(
+                    role=cur_buf_message["role"],
+                    message=new_pack,
+                    name=cur_buf_message["name"] if "name" in cur_buf_message else None,
+                )
+
+                next_update_time = time.time() + chunk_time
                 with update_cond:
-                    update_cond.wait(
-                        min(min_sleep_interval, next_update_time - time.time()),
-                    )
-                continue
+                    update_cond.wait(min(min_sleep_interval, chunk_time))
+        finally:
+            # when the exception is from drainer side (such as client side generator close)
+            # mark the label to interrupt the execution thread
+            llm_thread_interrupt = True
 
-            with update_lock:
-                cur_buf_message = buffer_message
-                total_len = len(buffer_content)
-                sent_len = len(sent_content)
-                rem_len = total_len - sent_len
-
-            if cur_buf_message is None or len(buffer_content) - len(sent_content) < min_chunk_size:
-                # wait for more buffer
-                with update_cond:
-                    update_cond.wait(min_sleep_interval)
-                continue
-
-            if sent_start == 0.0:
-                # first chunk time
-                sent_start = time.time()
-
-            cur_base_speed_norm = speed_normalize(cur_base_speed)
-            cur_actual_speed_norm = speed_normalize(
-                sent_len / non_zero(time.time() - (sent_start if not finished else recv_start)),
-            )
-            target_speed = cur_base_speed_norm + (cur_base_speed_norm - cur_actual_speed_norm) * 0.25
-            cur_update_speed = speed_normalize(0.5 * cur_update_speed + target_speed * 0.5)
-
-            if cur_update_speed > min_chunk_size / non_zero(min_update_interval):
-                chunk_time_target = min_update_interval
-                new_pack_size_target = chunk_time_target * cur_update_speed
-            else:
-                new_pack_size_target = min_chunk_size
-                chunk_time_target = new_pack_size_target / non_zero(cur_update_speed)
-
-            rand_min = max(
-                min(rem_len, min_chunk_size),
-                int(0.8 * new_pack_size_target),
-            )
-            rand_max = min(rem_len, int(1.2 * new_pack_size_target))
-            new_pack_size = random.randint(rand_min, rand_max) if rand_max - rand_min > 1 else rand_min
-
-            chunk_time = chunk_time_target / non_zero(new_pack_size_target) * new_pack_size
-
-            new_pack = buffer_content[sent_len: (sent_len + new_pack_size)]
-            sent_content += new_pack
-
-            yield format_chat_message(
-                role=cur_buf_message["role"],
-                message=new_pack,
-                name=cur_buf_message["name"] if "name" in cur_buf_message else None,
-            )
-
-            next_update_time = time.time() + chunk_time
-            with update_cond:
-                update_cond.wait(min(min_sleep_interval, chunk_time))
-
-        thread.join()
+            if thread.is_alive():
+                try:
+                    # try to join the thread if it has not finished
+                    thread.join(timeout=1)
+                except Exception:
+                    pass
 
     def get_embedding(self, string: str) -> List[float]:
         return self.embedding_service.get_embeddings([string])[0]
