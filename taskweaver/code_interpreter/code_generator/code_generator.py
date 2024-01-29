@@ -115,13 +115,14 @@ class CodeGenerator(Role):
         self,
         code_verification_on: bool,
         allowed_modules: Optional[List[str]] = None,
+        blocked_functions: Optional[List[str]] = None,
     ):
         self.allowed_modules = allowed_modules if allowed_modules is not None else []
         self.code_verification_on = code_verification_on
+        self.blocked_functions = blocked_functions
 
     def compose_verification_requirements(
         self,
-        plugin_list: List[PluginEntry],
     ) -> str:
         requirements: List[str] = []
         if not self.code_verification_on:
@@ -135,6 +136,12 @@ class CodeGenerator(Role):
 
         if len(self.allowed_modules) == 0:
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
+
+        if len(self.blocked_functions) > 0:
+            requirements.append(
+                f"- {self.role_name} cannot use the following Python functions: "
+                + ", ".join([f"{function}" for function in self.blocked_functions]),
+            )
         return "\n".join(requirements)
 
     def compose_prompt(
@@ -290,7 +297,7 @@ class CodeGenerator(Role):
                     # add requirements to the last user message
                     if is_final_post and add_requirements:
                         user_message += "\n" + self.query_requirements_template.format(
-                            CODE_GENERATION_REQUIREMENTS=self.compose_verification_requirements(plugins),
+                            CODE_GENERATION_REQUIREMENTS=self.compose_verification_requirements(),
                             ROLE_NAME=self.role_name,
                         )
                     chat_history.append(
