@@ -5,6 +5,7 @@ from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.llm import QWenService
+from taskweaver.llm import ZhipuAIService
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
@@ -96,3 +97,25 @@ def test_qwen_embedding():
     assert len(embeddings) == 2
     assert len(embeddings[0]) == 1536
     assert len(embeddings[1]) == 1536
+
+
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
+def test_zhipuai_embedding():
+    app_injector = Injector()
+    app_config = AppConfigSource(
+        config={
+            "llm.embedding_api_type": "zhipuai",
+            "llm.embedding_model": "embedding-2",
+            "llm.api_key": "",
+            # need to configure llm.api_key in the config to run this test
+        },
+    )
+    app_injector.binder.bind(AppConfigSource, to=app_config)
+    zhipuai_service = app_injector.create_object(ZhipuAIService)
+
+    text_list = ["This is a test sentence.", "This is another test sentence."]
+    embedding1 = zhipuai_service.get_embeddings(text_list)
+
+    assert len(embedding1) == 2
+    assert len(embedding1[0]) == 1024
+    assert len(embedding1[1]) == 1024

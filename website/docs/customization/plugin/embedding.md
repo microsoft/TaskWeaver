@@ -10,6 +10,7 @@ In TaskWeaver, we support various embedding models to generate embeddings for au
   - qwen
   - ollama
   - sentence_transformers
+  - glm
 
 - `llm.embedding_model`: The embedding model name. The model name should be aligned with `llm.embedding_api_type`.
    We only list some embedding models we have tested below:
@@ -25,5 +26,6 @@ In TaskWeaver, we support various embedding models to generate embeddings for au
     - all-distilroberta-v1
     - all-MiniLM-L12-v2
     - multi-qa-MiniLM-L6-cos-v1
-
+  - zhipuai
+    - embedding-2
 You also can use other embedding models supported by the above embedding APIs.

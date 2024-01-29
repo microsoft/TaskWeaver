@@ -10,8 +10,8 @@ from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
-
 from .qwen import QWenService
+from .zhipuai import ZhipuAIService
 from .util import ChatMessageType, format_chat_message
 
 
@@ -31,6 +31,8 @@ class LLMApi(object):
             self._set_completion_service(GoogleGenAIService)
         elif self.config.api_type == "qwen":
             self._set_completion_service(QWenService)
+        elif self.config.api_type == "zhipuai":
+            self._set_completion_service(ZhipuAIService)
         else:
             raise ValueError(f"API type {self.config.api_type} is not supported")
 
@@ -44,6 +46,8 @@ class LLMApi(object):
             self._set_embedding_service(SentenceTransformerService)
         elif self.config.embedding_api_type == "qwen":
             self._set_embedding_service(QWenService)
+        elif self.config.embedding_api_type == "zhipuai":
+            self._set_embedding_service(ZhipuAIService)
         elif self.config.embedding_api_type == "azure_ml":
             self.embedding_service = PlaceholderEmbeddingService(
                 "Azure ML does not support embeddings yet. Please configure a different embedding API.",
@@ -72,26 +76,26 @@ class LLMApi(object):
         self.injector.binder.bind(svc, to=self.embedding_service)
 
     def chat_completion(
-        self,
-        messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
-        stream: bool = True,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        stop: Optional[List[str]] = None,
-        **kwargs: Any,
+            self,
+            messages: List[ChatMessageType],
+            use_backup_engine: bool = False,
+            stream: bool = True,
+            temperature: Optional[float] = None,
+            max_tokens: Optional[int] = None,
+            top_p: Optional[float] = None,
+            stop: Optional[List[str]] = None,
+            **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
         for msg_chunk in self.completion_service.chat_completion(
-            messages,
-            use_backup_engine,
-            stream,
-            temperature,
-            max_tokens,
-            top_p,
-            stop,
-            **kwargs,
+                messages,
+                use_backup_engine,
+                stream,
+                temperature,
+                max_tokens,
+                top_p,
+                stop,
+                **kwargs,
         ):
             msg["role"] = msg_chunk["role"]
             msg["content"] += msg_chunk["content"]
@@ -100,16 +104,16 @@ class LLMApi(object):
         return msg
 
     def chat_completion_stream(
-        self,
-        messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
-        stream: bool = True,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        top_p: Optional[float] = None,
-        stop: Optional[List[str]] = None,
-        use_smoother: bool = True,
-        **kwargs: Any,
+            self,
+            messages: List[ChatMessageType],
+            use_backup_engine: bool = False,
+            stream: bool = True,
+            temperature: Optional[float] = None,
+            max_tokens: Optional[int] = None,
+            top_p: Optional[float] = None,
+            stop: Optional[List[str]] = None,
+            use_smoother: bool = True,
+            **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         def get_generator() -> Generator[ChatMessageType, None, None]:
             return self.completion_service.chat_completion(
@@ -128,8 +132,8 @@ class LLMApi(object):
         return get_generator()
 
     def _stream_smoother(
-        self,
-        stream_init: Callable[[], Generator[ChatMessageType, None, None]],
+            self,
+            stream_init: Callable[[], Generator[ChatMessageType, None, None]],
     ) -> Generator[ChatMessageType, None, None]:
         import random
         import threading
@@ -211,9 +215,9 @@ class LLMApi(object):
                     raise Exception("calling LLM failed")
             if finished and len(buffer_content) - len(sent_content) < min_chunk_size * 5:
                 if buffer_message is not None and len(sent_content) < len(
-                    buffer_content,
+                        buffer_content,
                 ):
-                    new_pack = buffer_content[len(sent_content) :]
+                    new_pack = buffer_content[len(sent_content):]
                     sent_content += new_pack
                     yield format_chat_message(
                         role=buffer_message["role"],
@@ -268,7 +272,7 @@ class LLMApi(object):
 
             chunk_time = chunk_time_target / non_zero(new_pack_size_target) * new_pack_size
 
-            new_pack = buffer_content[sent_len : (sent_len + new_pack_size)]
+            new_pack = buffer_content[sent_len: (sent_len + new_pack_size)]
             sent_content += new_pack
 
             yield format_chat_message(

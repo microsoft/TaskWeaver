@@ -48,7 +48,7 @@ const sidebars = {
       },
       collapsible: true,
       collapsed: false,
-      items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen'],
+      items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen', 'llms/glm'],
     },
     {
       type: 'category',
