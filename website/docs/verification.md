@@ -18,8 +18,7 @@ exec(code)
 ```
 
 
-<!--change the image size to 50%-->
-<img src="./../static/img/code_verification.png" alt="Code verification workflow" width="600">  
+<img src="./../static/img/code_verification.png" alt="Code verification workflow" width="600" />  
 
 
 In this case, the generated code read the content of a file and execute it, which is potentially dangerous.
