@@ -8,28 +8,6 @@ app_injector = Injector(
 )
 
 
-def test_plugin_only():
-    allowed_modules = []
-    code_snippet = (
-        "anomaly_detection()\n"
-        "s = timext()\n"
-        "result, var = anomaly_detection()\n"
-        "result, var\n"
-        "result\n"
-        "var\n"
-        "s\n"
-    )
-    code_verify_errors = code_snippet_verification(
-        code_snippet,
-        ["anomaly_detection"],
-        plugin_only=True,
-        allowed_modules=allowed_modules,
-        code_verification_on=True,
-    )
-    print("---->", code_verify_errors)
-    assert len(code_verify_errors) == 2
-
-
 def test_import_allowed():
     allowed_modules = ["pandas", "matplotlib"]
     code_snippet = (
@@ -45,17 +23,28 @@ def test_import_allowed():
     )
     code_verify_errors = code_snippet_verification(
         code_snippet,
-        ["anomaly_detection"],
-        plugin_only=False,
         allowed_modules=allowed_modules,
         code_verification_on=True,
+        blocked_functions=[],
     )
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 1
 
 
+def test_block_function():
+    blocked_functions = ["exec", "eval"]
+    code_snippet = "exec('import os')\n" "eval('import sys')\n" "import os\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        allowed_modules=["pandas", "os"],
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) == 2
+
+
 def test_normal_code():
-    plugin_only = False
     allowed_modules = []
     code_snippet = (
         "with open('file.txt', 'r') as file:\n"
@@ -68,10 +57,9 @@ def test_normal_code():
     )
     code_verify_errors = code_snippet_verification(
         code_snippet,
-        ["anomaly_detection"],
-        plugin_only=plugin_only,
         allowed_modules=allowed_modules,
         code_verification_on=True,
+        blocked_functions=[],
     )
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 0

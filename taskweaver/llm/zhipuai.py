@@ -1,6 +1,9 @@
 from typing import Any, Generator, List, Optional
+
 from injector import inject
+
 from taskweaver.llm.util import ChatMessageType, format_chat_message
+
 from .base import CompletionService, EmbeddingService, LLMServiceConfig
 
 DEFAULT_STOP_TOKEN: List[str] = ["</s>"]
@@ -56,10 +59,10 @@ class ZhipuAIService(CompletionService, EmbeddingService):
 
     @inject
     def __init__(self, config: ZhipuAIServiceConfig):
-
         if ZhipuAIService.zhipuai is None:
             try:
                 import zhipuai
+
                 ZhipuAIService.zhipuai = zhipuai
             except Exception:
                 raise Exception(
@@ -67,23 +70,21 @@ class ZhipuAIService(CompletionService, EmbeddingService):
                 )
 
         self.config = config
-        self.client = (
-            ZhipuAIService.zhipuai.ZhipuAI(
-                base_url=self.config.api_base,
-                api_key=self.config.api_key,
-            )
+        self.client = ZhipuAIService.zhipuai.ZhipuAI(
+            base_url=self.config.api_base,
+            api_key=self.config.api_key,
         )
 
     def chat_completion(
-            self,
-            messages: List[ChatMessageType],
-            use_backup_engine: bool = False,
-            stream: bool = False,
-            temperature: Optional[float] = None,
-            max_tokens: Optional[int] = None,
-            top_p: Optional[float] = None,
-            stop: Optional[List[str]] = None,
-            **kwargs: Any,
+        self,
+        messages: List[ChatMessageType],
+        use_backup_engine: bool = False,
+        stream: bool = False,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+        top_p: Optional[float] = None,
+        stop: Optional[List[str]] = None,
+        **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         engine = self.config.model
         backup_engine = self.config.backup_model
@@ -136,13 +137,17 @@ class ZhipuAIService(CompletionService, EmbeddingService):
                     message=zhipuai_response.content if zhipuai_response.content is not None else "",
                 )
                 if zhipuai_response.tool_calls is not None:
+                    import json
+
                     response["role"] = "function"
-                    response["content"] = (
-                            "["
-                            + ",".join(
-                        [t.function.model_dump_json() for t in zhipuai_response.tool_calls],
-                    )
-                            + "]"
+                    response["content"] = json.dumps(
+                        [
+                            {
+                                "name": t.function.name,
+                                "arguments": json.loads(t.function.arguments),
+                            }
+                            for t in zhipuai_response.tool_calls
+                        ],
                     )
                 yield response
         except Exception as e:

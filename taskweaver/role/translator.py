@@ -1,5 +1,6 @@
 import io
 import json
+import types
 from json import JSONDecodeError
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Literal, Optional, Tuple, Union
 
@@ -49,10 +50,17 @@ class PostTranslator:
         # llm_output = "".join(llm_output_list)
         def stream_filter(s: Iterable[ChatMessageType]) -> Iterator[str]:
             full_llm_content = ""
-            for c in s:
-                full_llm_content += c["content"]
-                yield c["content"]
-            self.logger.info(f"LLM output: {full_llm_content}")
+            try:
+                for c in s:
+                    full_llm_content += c["content"]
+                    yield c["content"]
+            finally:
+                if isinstance(s, types.GeneratorType):
+                    try:
+                        s.close()
+                    except GeneratorExit:
+                        pass
+                self.logger.info(f"LLM output: {full_llm_content}")
 
         value_buf: str = ""
         filtered_stream = stream_filter(llm_output)
@@ -62,57 +70,64 @@ class PostTranslator:
             else self.parse_llm_output_stream(filtered_stream)
         )
         cur_attachment: Optional[Attachment] = None
-        for type_str, value, is_end in parser_stream:
-            value_buf += value
-            type: Optional[AttachmentType] = None
-            if type_str == "message":
-                post_proxy.update_message(value_buf, is_end=is_end)
-                value_buf = ""
-            elif type_str == "send_to":
-                if is_end:
-                    assert value_buf in [
-                        "User",
-                        "Planner",
-                        "CodeInterpreter",
-                    ], f"Invalid send_to value: {value}"
-                    post_proxy.update_send_to(value_buf)  # type: ignore
+        try:
+            for type_str, value, is_end in parser_stream:
+                value_buf += value
+                type: Optional[AttachmentType] = None
+                if type_str == "message":
+                    post_proxy.update_message(value_buf, is_end=is_end)
                     value_buf = ""
-                else:
-                    # collect the whole content before updating post
-                    pass
-            else:
-                try:
-                    type = AttachmentType(type_str)
-                    if cur_attachment is not None:
-                        assert type == cur_attachment.type
-                    cur_attachment = post_proxy.update_attachment(
-                        value_buf,
-                        type,
-                        id=(cur_attachment.id if cur_attachment is not None else None),
-                        is_end=is_end,
-                    )
-                    value_buf = ""
+                elif type_str == "send_to":
                     if is_end:
-                        cur_attachment = None
-                except Exception as e:
-                    self.logger.warning(
-                        f"Failed to parse attachment: {type_str}-{value_buf} due to {str(e)}",
-                    )
-                    continue
-            parsed_type = (
-                type
-                if type is not None
-                else "message"
-                if type_str == "message"
-                else "send_to"
-                if type_str == "send_to"
-                else None
-            )
-            assert parsed_type is not None, f"Invalid type: {type_str}"
+                        assert value_buf in [
+                            "User",
+                            "Planner",
+                            "CodeInterpreter",
+                        ], f"Invalid send_to value: {value}"
+                        post_proxy.update_send_to(value_buf)  # type: ignore
+                        value_buf = ""
+                    else:
+                        # collect the whole content before updating post
+                        pass
+                else:
+                    try:
+                        type = AttachmentType(type_str)
+                        if cur_attachment is not None:
+                            assert type == cur_attachment.type
+                        cur_attachment = post_proxy.update_attachment(
+                            value_buf,
+                            type,
+                            id=(cur_attachment.id if cur_attachment is not None else None),
+                            is_end=is_end,
+                        )
+                        value_buf = ""
+                        if is_end:
+                            cur_attachment = None
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to parse attachment: {type_str}-{value_buf} due to {str(e)}",
+                        )
+                        continue
+                parsed_type = (
+                    type
+                    if type is not None
+                    else "message"
+                    if type_str == "message"
+                    else "send_to"
+                    if type_str == "send_to"
+                    else None
+                )
+                assert parsed_type is not None, f"Invalid type: {type_str}"
 
-            # check whether parsing should be triggered prematurely when each key parsing is finished
-            if is_end and early_stop is not None and early_stop(parsed_type, value):
-                break
+                # check whether parsing should be triggered prematurely when each key parsing is finished
+                if is_end and early_stop is not None and early_stop(parsed_type, value):
+                    break
+        finally:
+            if isinstance(parser_stream, types.GeneratorType):
+                try:
+                    parser_stream.close()
+                except GeneratorExit:
+                    pass
 
         if validation_func is not None:
             validation_func(post_proxy.post)
@@ -226,6 +241,12 @@ class PostTranslator:
             self.logger.warning(
                 f"Failed to parse LLM output stream due to JSONError: {str(e)}",
             )
+        finally:
+            if isinstance(llm_output, types.GeneratorType):
+                try:
+                    llm_output.close()
+                except GeneratorExit:
+                    pass
 
     def parse_llm_output_stream_v2(
         self,
@@ -296,3 +317,10 @@ class PostTranslator:
             self.logger.warning(
                 f"Failed to parse LLM output stream due to JSONError: {str(e)}",
             )
+
+        finally:
+            if isinstance(parser, types.GeneratorType):
+                try:
+                    parser.close()
+                except GeneratorExit:
+                    pass

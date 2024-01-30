@@ -1,12 +1,8 @@
 import ast
-import builtins
 import re
-from _ast import Name
 from typing import List, Optional, Tuple
 
 from injector import inject
-
-allowed_builtins = [name for name, obj in vars(builtins).items() if callable(obj)]
 
 
 class FunctionCallValidator(ast.NodeVisitor):
@@ -14,22 +10,19 @@ class FunctionCallValidator(ast.NodeVisitor):
     def __init__(
         self,
         lines: List[str],
-        plugin_list: List[str],
-        plugin_only: bool,
         allowed_modules: List[str],
+        blocked_functions: List[str],
     ):
         self.lines = lines
-        self.plugin_list = plugin_list
         self.errors = []
-        self.plugin_return_values = []
-        self.plugin_only = plugin_only
         self.allowed_modules = allowed_modules
+        self.blocked_functions = blocked_functions
 
     def visit_Call(self, node):
-        if self.plugin_only:
+        if len(self.blocked_functions) > 0:
             if isinstance(node.func, ast.Name):
                 function_name = node.func.id
-                if function_name not in self.plugin_list and function_name not in allowed_builtins:
+                if function_name in self.blocked_functions:
                     self.errors.append(
                         f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
                         f"=> Function '{node.func.id}' is not allowed.",
@@ -38,7 +31,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 return True
             elif isinstance(node.func, ast.Attribute):
                 function_name = node.func.attr
-                if function_name not in allowed_builtins and function_name not in self.plugin_list:
+                if function_name in self.blocked_functions:
                     self.errors.append(
                         f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
                         f"=> Function '{function_name}' is not allowed.",
@@ -46,10 +39,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                     return False
                 return True
             else:
-                self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} " f"=> Function call is not allowed.",
-                )
-                return False
+                return True
 
     def visit_Import(self, node):
         if len(self.allowed_modules) > 0:
@@ -76,55 +66,8 @@ class FunctionCallValidator(ast.NodeVisitor):
                     f"=>  Importing from module '{node.module}' is not allowed.",
                 )
 
-    def visit_FunctionDef(self, node):
-        if self.plugin_only:
-            self.errors.append(
-                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} => Defining new functions is not allowed.",
-            )
-
-    def visit_Assign(self, node):
-        if self.plugin_only:
-            if isinstance(node.value, ast.Call):
-                is_allowed_call = self.visit_Call(node.value)
-                if not is_allowed_call:
-                    return
-                if isinstance(node.targets[0], ast.Tuple):
-                    for elt in node.targets[0].elts:
-                        if isinstance(elt, ast.Name):
-                            self.plugin_return_values.append(elt.id)
-                elif isinstance(node.targets[0], ast.Name):
-                    self.plugin_return_values.append(node.targets[0].id)
-                # print(self.plugin_return_values)
-            else:
-                self.errors.append(f"Error: Unsupported assignment on line {node.lineno}.")
-                self.generic_visit(node)
-
-    def visit_Name(self, node: Name):
-        if self.plugin_only:
-            if node.id not in self.plugin_return_values:
-                self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} => "
-                    "Only return values of plugins calls can be used.",
-                )
-            # self.generic_visit(node)
-
     def generic_visit(self, node):
-        if self.plugin_only and not isinstance(
-            node,
-            (ast.Call, ast.Assign, ast.Import, ast.ImportFrom, ast.Expr, ast.Module, ast.Name),
-        ):
-            if isinstance(node, ast.Tuple):
-                for elt in node.elts:
-                    self.visit(elt)
-            else:
-                error_message = (
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} => "
-                    "Codes except plugin calls are not allowed."
-                )
-                self.errors.append(error_message)
-
-        else:
-            super().generic_visit(node)
+        super().generic_visit(node)
 
 
 def format_code_correction_message() -> str:
@@ -174,10 +117,9 @@ def separate_magics_and_code(input_code: str) -> Tuple[List[str], str, List[str]
 
 def code_snippet_verification(
     code_snippet: str,
-    plugin_list: List[str],
     code_verification_on: bool = False,
-    plugin_only: bool = False,
     allowed_modules: List[str] = [],
+    blocked_functions: List[str] = [],
 ) -> Optional[List[str]]:
     if not code_verification_on:
         return None
@@ -193,7 +135,7 @@ def code_snippet_verification(
             if not line.strip() or line.strip().startswith("#"):
                 continue
             processed_lines.append(line)
-        validator = FunctionCallValidator(processed_lines, plugin_list, plugin_only, allowed_modules)
+        validator = FunctionCallValidator(processed_lines, allowed_modules, blocked_functions)
         validator.visit(tree)
         errors.extend(validator.errors)
         return errors
