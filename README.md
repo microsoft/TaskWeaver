@@ -22,7 +22,7 @@ of plugins in the form of functions to execute data analytics tasks in a statefu
 
 
 ## 🆕 News
-- 📅2024-01-30: TaskWeaver introduces a plugin-only mode. Find more details [here](https://microsoft.github.io/TaskWeaver/docs/plugin/plugin_only). 🪡 
+- 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 
 - 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉
 - 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐
 - 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️

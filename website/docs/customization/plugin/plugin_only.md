@@ -6,6 +6,7 @@ slug: /plugin/plugin_only
 
 # The Plugin-Only Mode
 
+## What is the plugin-only mode?
 The plugin-only mode is a restricted mode of TaskWeaver that only allows you to use plugins. 
 Compared to the full mode, the plugin-only mode has the following restrictions:
 
@@ -25,7 +26,7 @@ Compared to the full mode, the plugin-only mode has the following restrictions:
     ...
     ```
    If this field is not specified, the default value is `false`.
-   For these plugins, the argument type can only be `str`, `int`, `boolean`, or `float`.
+   For plugins in the plugin-only mode, the argument type can only be `str`, `int`, `boolean`, or `float`.
    Other types such as `DataFrame` are not allowed.
    Essentially, we consider these plugins only produce "text-like" output that can be directly consumed by the LLM.
 
