@@ -1,5 +1,6 @@
 import json
 import os
+import types
 from json import JSONDecodeError
 from typing import Iterable, List, Optional
 
@@ -285,12 +286,19 @@ class Planner(Role):
 
             def stream_filter(s: Iterable[ChatMessageType]):
                 is_first_chunk = True
-                for c in s:
-                    if is_first_chunk:
-                        new_post.update_status("receiving LLM response")
-                        is_first_chunk = False
-                    llm_output.append(c["content"])
-                    yield c
+                try:
+                    for c in s:
+                        if is_first_chunk:
+                            new_post.update_status("receiving LLM response")
+                            is_first_chunk = False
+                        llm_output.append(c["content"])
+                        yield c
+                finally:
+                    if isinstance(s, types.GeneratorType):
+                        try:
+                            s.close()
+                        except GeneratorExit:
+                            pass
 
             self.planner_post_translator.raw_text_to_post(
                 post_proxy=new_post,
