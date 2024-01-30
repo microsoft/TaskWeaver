@@ -18,6 +18,8 @@ parser.add_argument(
     default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "project"),
 )
 
+parser.add_argument("--query", type=str, default="Hello!")
+
 args = parser.parse_args()
 
 
@@ -33,7 +35,7 @@ def LLM_API_test():
     llm_api = app_injector.create_object(LLMApi)
 
     llm_stream = llm_api.chat_completion_stream(
-        messages=[format_chat_message(role="user", message=f"Hello!")],
+        messages=[format_chat_message(role="user", message=args.query)],
         use_backup_engine=False,
         use_smoother=True,
     )
