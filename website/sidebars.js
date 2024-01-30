@@ -48,7 +48,7 @@ const sidebars = {
       },
       collapsible: true,
       collapsed: false,
-      items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen', 'llms/glm'],
+      items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen', 'llms/glm', 'llms/customized_llm_api'],
     },
     {
       type: 'category',
@@ -60,7 +60,7 @@ const sidebars = {
         label: 'Plugin',
         collapsible: true,
         collapsed: true,
-        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl'],
+        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl', 'customization/plugin/plugin_only'],
       },
       {
         type: 'category',
@@ -78,6 +78,7 @@ const sidebars = {
     'session',
     'run_pytest',
     'experience',
+    'code_verification',
   ],
   
 };

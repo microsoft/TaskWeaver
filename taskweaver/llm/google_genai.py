@@ -100,28 +100,16 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
         stop: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
-        try:
-            return self._chat_completion(
-                messages=messages,
-                use_backup_engine=use_backup_engine,
-                stream=stream,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=top_p,
-                stop=stop,
-                **kwargs,
-            )
-        except Exception:
-            return self._completion(
-                messages=messages,
-                use_backup_engine=use_backup_engine,
-                stream=stream,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                top_p=top_p,
-                stop=stop,
-                **kwargs,
-            )
+        return self._chat_completion(
+            messages=messages,
+            use_backup_engine=use_backup_engine,
+            stream=stream,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            top_p=top_p,
+            stop=stop,
+            **kwargs,
+        )
 
     def _chat_completion(
         self,

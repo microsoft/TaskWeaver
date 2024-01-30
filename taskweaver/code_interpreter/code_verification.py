@@ -42,29 +42,37 @@ class FunctionCallValidator(ast.NodeVisitor):
                 return True
 
     def visit_Import(self, node):
-        if len(self.allowed_modules) > 0:
-            for alias in node.names:
-                if "." in alias.name:
-                    module_name = alias.name.split(".")[0]
-                else:
-                    module_name = alias.name
-                if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
-                    self.errors.append(
-                        f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
-                        f"=> Importing module '{module_name}' is not allowed. ",
-                    )
-
-    def visit_ImportFrom(self, node):
-        if len(self.allowed_modules) > 0:
-            if "." in node.module:
-                module_name = node.module.split(".")[0]
+        for alias in node.names:
+            if "." in alias.name:
+                module_name = alias.name.split(".")[0]
             else:
-                module_name = node.module
+                module_name = alias.name
             if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
                 self.errors.append(
                     f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
-                    f"=>  Importing from module '{node.module}' is not allowed.",
+                    f"=> Importing module '{module_name}' is not allowed. ",
                 )
+            elif len(self.allowed_modules) == 0:
+                self.errors.append(
+                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                    f"=> Importing module '{module_name}' is not allowed. ",
+                )
+
+    def visit_ImportFrom(self, node):
+        if "." in node.module:
+            module_name = node.module.split(".")[0]
+        else:
+            module_name = node.module
+        if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
+            self.errors.append(
+                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"=>  Importing from module '{node.module}' is not allowed.",
+            )
+        elif len(self.allowed_modules) == 0:
+            self.errors.append(
+                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"=>  Importing from module '{node.module}' is not allowed.",
+            )
 
     def generic_visit(self, node):
         super().generic_visit(node)
