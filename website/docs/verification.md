@@ -17,8 +17,7 @@ code = file.read()
 exec(code)
 ```
 
-
-<img src="./../static/img/code_verification.png" alt="Code verification workflow" width="600" />  
+![Code verification workflow](./../static/img/code_verification.png)
 
 
 In this case, the generated code read the content of a file and execute it, which is potentially dangerous.
