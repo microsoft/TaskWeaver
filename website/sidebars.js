@@ -78,6 +78,7 @@ const sidebars = {
     'session',
     'run_pytest',
     'experience',
+    'code_verification',
   ],
   
 };
