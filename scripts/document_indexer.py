@@ -2,9 +2,12 @@ import argparse
 import csv
 import json
 import os
+import pickle
 import re
 import traceback
 from typing import Dict, List, Literal, Optional, Tuple
+
+from tiktoken import Encoding
 
 try:
     import docx2txt
@@ -17,14 +20,13 @@ try:
 except ImportError:
     raise ImportError("Please install the dependencies first.")
 
-enc = tiktoken.get_encoding("gpt2")
-
 
 def chunk_str_overlap(
     s: str,
     separator: chr = "\n",
     num_tokens: int = 256,
     step_tokens: int = 128,
+    encoding: Encoding = None,
 ) -> List[str]:
     """
     Split a string into chunks with overlap
@@ -32,6 +34,7 @@ def chunk_str_overlap(
     :param separator: the separator to split the string
     :param num_tokens: the number of tokens in each chunk
     :param step_tokens: the number of tokens to step forward
+    :param encoding: the encoding to encode the string
     """
     assert step_tokens <= num_tokens, (
         f"The number of tokens {num_tokens} in each chunk " f"should be larger than the step size {step_tokens}."
@@ -45,7 +48,7 @@ def chunk_str_overlap(
         return []
 
     first_line = lines[0]
-    first_line_size = len(enc.encode(first_line))
+    first_line_size = len(encoding.encode(first_line))
 
     chunks[0] = [first_line, first_line_size]
 
@@ -53,7 +56,7 @@ def chunk_str_overlap(
 
     for i in range(1, len(lines)):
         line = lines[i]
-        line_size = len(enc.encode(line))
+        line_size = len(encoding.encode(line))
 
         to_pop = []
         for key in chunks:
@@ -210,7 +213,7 @@ def chunk_document(
     doc_path: str,
     chunk_size: int,
     chunk_step: int,
-) -> Tuple[int, List[str], List[Dict[str, str]]]:
+) -> Tuple[int, List[str], List[Dict[str, str]], Dict[str, int]]:
     """
     Split documents into chunks
     :param doc_path: the path of the documents
@@ -220,6 +223,10 @@ def chunk_document(
     texts = []
     metadata_list = []
     file_count = 0
+    chunk_id_to_index = dict()
+
+    enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
+
     # traverse all files under dir
     print("Split documents into chunks...")
     for root, dirs, files in os.walk(doc_path):
@@ -240,8 +247,8 @@ def chunk_document(
                     num_tokens=chunk_size,
                     step_tokens=chunk_step,
                     separator="\n",
+                    encoding=enc,
                 )
-                texts.extend(chunks)
                 source = os.path.sep.join(f.split(os.path.sep)[4:])
                 for i in range(len(chunks)):
                     # custom metadata if needed
@@ -250,10 +257,12 @@ def chunk_document(
                         "title": title,
                         "chunk_id": i,
                     }
+                    chunk_id_to_index[f"{source}_{i}"] = len(texts) + i
                     metadata_list.append(metadata)
+                texts.extend(chunks)
             except Exception as e:
                 print(f"Error encountered when reading {f}: {traceback.format_exc()} {e}")
-    return file_count, texts, metadata_list
+    return file_count, texts, metadata_list, chunk_id_to_index
 
 
 if __name__ == "__main__":
@@ -271,14 +280,14 @@ if __name__ == "__main__":
         "--chunk_size",
         help="the size of the chunk",
         type=int,
-        default=256,
+        default=64,
     )
     parser.add_argument(
         "-s",
         "--chunk_step",
         help="the step size of the chunk",
         type=int,
-        default=128,
+        default=64,
     )
     parser.add_argument(
         "-o",
@@ -289,7 +298,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    file_count, texts, metadata_list = chunk_document(
+    file_count, texts, metadata_list, chunk_id_to_index = chunk_document(
         doc_path=args.doc_path,
         chunk_size=args.chunk_size,
         chunk_step=args.chunk_step,
@@ -301,4 +310,6 @@ if __name__ == "__main__":
         embedding=embeddings,
     )
     vectorstore.save_local(folder_path=args.output_path)
+    with open(os.path.join(args.output_path, "chunk_id_to_index.pkl"), "wb") as f:
+        pickle.dump(chunk_id_to_index, f)
     print(f"Saved vectorstore to {args.output_path}")

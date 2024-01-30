@@ -21,7 +21,12 @@ parameters:
   - name: size
     type: int
     required: false
-    description: number of chunks to return
+    description: number of chunks to return; default is 5
+  - name: target_length
+    type: int
+    required: false
+    description: >-
+      The target length of each chunk. The default is 256.
 
 returns:
   - name: result
@@ -31,4 +36,4 @@ returns:
       Each document has a chunk content and its metadata.
 
 configurations:
-  index_folder: /path/to/project/sample_data/knowledge_base
+  index_folder: knowledge_base

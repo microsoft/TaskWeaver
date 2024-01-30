@@ -408,7 +408,7 @@ class Environment:
                         DisplayData(data=data, metadata=metadata, transient=transient),
                     )
                 else:
-                    assert False, f"Unsupported message from kernel: {msg_type}, the jupyter_client might be outdated."
+                    pass
         finally:
             kc.stop_channels()
         return exec_result
