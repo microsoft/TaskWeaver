@@ -152,7 +152,6 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
         else:
             response:GenerateContentResponse = self.model.generate_content(genai_messages, stream=True)
             response.resolve()
-            print(response.parts)
             for chunk_obj in response.parts:
                 yield format_chat_message("assistant", chunk_obj.text)
 
