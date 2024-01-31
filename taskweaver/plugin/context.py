@@ -11,7 +11,7 @@ class PluginContext(ABC):
     interface for API to interact with execution environment of plugin
 
     The runtime will provide an implementation of this interface to the plugin.
-    Plugin could use the API provded withotu need to implement this interface.
+    Plugin could use the API provided without need to implement this interface.
     """
 
     @property
@@ -99,6 +99,10 @@ class PluginContext(ABC):
     @abstractmethod
     def get_env(self, plugin_name: str, variable_name: str) -> str:
         """get an environment variable from the context"""
+
+    @abstractmethod
+    def wrap_text_with_delimiter_temporal(self, text: str) -> str:
+        """wrap text with delimiter for temporal data"""
 
 
 class TestPluginContxt(PluginContext):

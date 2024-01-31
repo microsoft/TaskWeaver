@@ -1,5 +1,5 @@
 name: document_retriever
-enabled: true
+enabled: false
 required: false
 plugin_only: true
 description: >-
@@ -30,10 +30,10 @@ parameters:
 
 returns:
   - name: result
-    type: List[Dict[str, Any]]
+    type: str
     description: >-
-      The list of documents that are most relevant to the query.
+      The list of documents that are most relevant to the query in JSON format.
       Each document has a chunk content and its metadata.
 
 configurations:
-  index_folder: knowledge_base
+  index_folder: /TaskWeaver/project/sample_data/knowledge_base

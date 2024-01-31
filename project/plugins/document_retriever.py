@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -41,6 +42,13 @@ class DocumentRetriever(Plugin):
             k=size,
         )
 
+        expanded_chunks = self.do_expand(result, target_length)
+
+        return f"DocumentRetriever has done searching for `{query}`.\n" + self.ctx.wrap_text_with_delimiter_temporal(
+            "\n```json\n" + json.dumps(expanded_chunks, indent=4) + "```\n",
+        )
+
+    def do_expand(self, result, target_length):
         expanded_chunks = []
         # do expansion
         for r in result:
@@ -66,7 +74,9 @@ class DocumentRetriever(Plugin):
                         left_chunk_id -= 1
                         current_length += len(encoded_left_chunk)
                     else:
-                        expanded_result += self.enc.decode(encoded_left_chunk[-(target_length - current_length) :])
+                        expanded_result += self.enc.decode(
+                            encoded_left_chunk[-(target_length - current_length) :],
+                        )
                         current_length = target_length
                         break
                 else:
@@ -84,7 +94,9 @@ class DocumentRetriever(Plugin):
                         right_chunk_id += 1
                         current_length += len(encoded_right_chunk)
                     else:
-                        expanded_result += self.enc.decode(encoded_right_chunk[: target_length - current_length])
+                        expanded_result += self.enc.decode(
+                            encoded_right_chunk[: target_length - current_length],
+                        )
                         current_length = target_length
                         break
                 else:
@@ -101,5 +113,4 @@ class DocumentRetriever(Plugin):
                     # "chunk_ids": chunk_ids
                 },
             )
-
         return expanded_chunks
