@@ -1,8 +1,9 @@
 import os
 
-from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.document_loaders.pdf import PyPDFLoader
 from langchain.schema.messages import HumanMessage, SystemMessage
+from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 
 from taskweaver.plugin import Plugin, register_plugin
 

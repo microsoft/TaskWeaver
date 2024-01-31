@@ -20,7 +20,7 @@ experience_text: 'User Query: show top 3 data in ./demo_data.csv
   read it.
 
   2. Update the file path in the code when the user provides a new one.'
-raw_experience_path: D:\python_project\TaskWeaver\tests\unit_tests\data\experience\raw_exp_test-exp-1.yaml
+raw_experience_path: D:\TaskWeaver\tests\unit_tests\data\experience\raw_exp_test-exp-1.yaml
 embedding_model: all-mpnet-base-v2
 embedding:
 - 0.07244912534952164
