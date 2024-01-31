@@ -4,9 +4,9 @@ import sys
 import warnings
 from typing import Any, Optional
 
-from taskweaver.module.event_emitter import SessionEventHandler
-
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+from taskweaver.module.event_emitter import SessionEventHandler
 
 warnings.filterwarnings("ignore")
 

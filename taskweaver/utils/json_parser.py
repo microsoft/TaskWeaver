@@ -1,4 +1,5 @@
 import itertools
+import types
 from typing import Any, Iterable, List, Literal, NamedTuple, Optional, Tuple
 
 ParserEventType = Literal[
@@ -333,11 +334,8 @@ def parse_json_stream(
         ev_queue.clear()
         return result
 
-    for chunk in itertools.chain(token_stream, [None]):
-        if chunk is None:
-            is_end = True
-        else:
-            buf += chunk
+    def parse_buf():
+        nonlocal buf, is_end
         while True:
             if len(buf) == 0 and not is_end:
                 break
@@ -386,19 +384,33 @@ def parse_json_stream(
                 )
             if is_end:
                 break
-        yield from process_ev_queue()
 
-    # post parsing checks
-    assert len(state_stack) > 0
+    try:
+        for chunk in itertools.chain(token_stream, [None]):
+            if chunk is None:
+                is_end = True
+            else:
+                buf += chunk
+            parse_buf()
+            yield from process_ev_queue()
 
-    final_root_type, final_root_state = state_stack[0]
-    assert final_root_type == "root"
+        # post parsing checks
+        assert len(state_stack) > 0
 
-    if not final_root_state[0]:
-        raise StreamJsonParserError("empty string with no element found")
+        final_root_type, final_root_state = state_stack[0]
+        assert final_root_type == "root"
 
-    if len(state_stack) > 1:
-        raise StreamJsonParserError("incomplete JSON str ends prematurely")
+        if not final_root_state[0]:
+            raise StreamJsonParserError("empty string with no element found")
+
+        if len(state_stack) > 1:
+            raise StreamJsonParserError("incomplete JSON str ends prematurely")
+    finally:
+        if isinstance(token_stream, types.GeneratorType):
+            try:
+                token_stream.close()
+            except GeneratorExit:
+                print("generator already closed in parser")
 
 
 def parse_json(token_stream: Iterable[str], skip_after_root: bool = False) -> Any:

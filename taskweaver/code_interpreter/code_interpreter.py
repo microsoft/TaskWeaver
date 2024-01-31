@@ -36,6 +36,19 @@ class CodeInterpreterConfig(ModuleConfig):
                 "typing",
             ],
         )
+        self.blocked_functions = self._get_list(
+            "blocked_functions",
+            [
+                "eval",
+                "exec",
+                "execfile",
+                "compile",
+                "open",
+                "input",
+                "raw_input",
+                "reload",
+            ],
+        )
 
 
 def update_verification(
@@ -75,6 +88,7 @@ class CodeInterpreter(Role):
         self.generator.configure_verification(
             code_verification_on=self.config.code_verification_on,
             allowed_modules=self.config.allowed_modules,
+            blocked_functions=self.config.blocked_functions,
         )
 
         self.executor = executor
@@ -143,10 +157,9 @@ class CodeInterpreter(Role):
         self.logger.info(f"Code to be verified: {code.content}")
         code_verify_errors = code_snippet_verification(
             code.content,
-            [plugin.name for plugin in self.generator.get_plugin_pool()],
             self.config.code_verification_on,
-            plugin_only=False,
             allowed_modules=self.config.allowed_modules,
+            blocked_functions=self.config.blocked_functions,
         )
 
         if code_verify_errors is None:

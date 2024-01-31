@@ -197,13 +197,17 @@ class OpenAIService(CompletionService, EmbeddingService):
                     message=oai_response.content if oai_response.content is not None else "",
                 )
                 if oai_response.tool_calls is not None:
+                    import json
+
                     response["role"] = "function"
-                    response["content"] = (
-                        "["
-                        + ",".join(
-                            [t.function.model_dump_json() for t in oai_response.tool_calls],
-                        )
-                        + "]"
+                    response["content"] = json.dumps(
+                        [
+                            {
+                                "name": t.function.name,
+                                "arguments": json.loads(t.function.arguments),
+                            }
+                            for t in oai_response.tool_calls
+                        ],
                     )
                 yield response
 
