@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import yaml
-from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.schema.messages import HumanMessage, SystemMessage
+from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import AzureChatOpenAI
 
 PROMPT_FILE_PATH = os.path.join(os.path.dirname(__file__), "evaluator_prompt.yaml")
 
