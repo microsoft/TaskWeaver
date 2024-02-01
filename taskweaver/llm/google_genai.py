@@ -152,7 +152,6 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
             yield format_chat_message("assistant", response.text)
         else:
             response:GenerateContentResponse = self.model.generate_content(genai_messages, stream=True)
-            response.resolve() # wait for the response to be ready - GenAI library doesn't provide another obvious way to get all the data without an exception occuring
             for chunk_obj in response.parts:
                 yield format_chat_message("assistant", chunk_obj.text)
 
