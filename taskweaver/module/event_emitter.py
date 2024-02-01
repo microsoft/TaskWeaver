@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional, Union
 from taskweaver.memory.attachment import Attachment, AttachmentType
 from taskweaver.memory.post import Post
 from taskweaver.memory.type_vars import RoleName
-from taskweaver.module.prompt_util import PromptUtil
 
 
 class EventScope(Enum):
@@ -159,7 +158,7 @@ class PostEventProxy:
         self.message_is_end = is_end
         self._emit(
             PostEventType.post_message_update,
-            PromptUtil.remove_all_delimiters(message) if is_end else message,
+            message,
             {"is_end": is_end},
         )
 
