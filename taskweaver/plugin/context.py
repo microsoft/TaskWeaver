@@ -105,7 +105,7 @@ class PluginContext(ABC):
         """wrap text with delimiter for temporal data"""
 
 
-class TestPluginContxt(PluginContext):
+class TestPluginContext(PluginContext):
     """
     This plugin context is used for testing purpose.
     """
@@ -184,6 +184,15 @@ class TestPluginContxt(PluginContext):
     ) -> Optional[str]:
         return self._session_var.get(variable_name, default)
 
+    def wrap_text_with_delimiter_temporal(self, text: str) -> str:
+        """wrap text with delimiter"""
+        from taskweaver.module.prompt_util import PromptUtil
+
+        return PromptUtil.wrap_text_with_delimiter(
+            text,
+            PromptUtil.DELIMITER_TEMPORAL,
+        )
+
 
 @contextlib.contextmanager
 def temp_context(workspace_dir: Optional[str] = None):
@@ -199,6 +208,6 @@ def temp_context(workspace_dir: Optional[str] = None):
         os.makedirs(workspace_dir)
 
     try:
-        yield TestPluginContxt(workspace_dir)
+        yield TestPluginContext(workspace_dir)
     finally:
         shutil.rmtree(workspace_dir)

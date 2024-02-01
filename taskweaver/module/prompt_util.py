@@ -21,7 +21,7 @@ class PromptUtil:
             # Find the start of the temporal part
             start_index = text.find(delimiter[0])
             # Find the end of the temporal part
-            end_index = text.find(delimiter[1])
+            end_index = text.find(delimiter[1], start_index + len(delimiter[0]))
 
             # Check if both markers are present
             if start_index != -1 and end_index != -1:

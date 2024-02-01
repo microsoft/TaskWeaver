@@ -5,18 +5,12 @@ import os
 import pickle
 import re
 import traceback
-from typing import Dict, List, Literal, Optional, Tuple
-
-from tiktoken import Encoding
+from typing import Dict, List, Literal, Tuple
 
 try:
-    import docx2txt
-    import pptx
     import tiktoken
-    from bs4 import BeautifulSoup
     from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_community.vectorstores import FAISS
-    from pypdf import PdfReader
 except ImportError:
     raise ImportError("Please install the dependencies first.")
 
@@ -24,9 +18,9 @@ except ImportError:
 def chunk_str_overlap(
     s: str,
     separator: chr = "\n",
-    num_tokens: int = 256,
-    step_tokens: int = 128,
-    encoding: Encoding = None,
+    num_tokens: int = 64,
+    step_tokens: int = 64,
+    encoding: tiktoken.Encoding = None,
 ) -> List[str]:
     """
     Split a string into chunks with overlap
@@ -111,11 +105,19 @@ def extract_text_from_file(
     :param file_type: the extension of the file
     """
     if file_type == "pdf":
+        try:
+            from pypdf import PdfReader
+        except ImportError:
+            raise ImportError("Please install pypdf first.")
         # Extract text from pdf using PyPDF2
         reader = PdfReader(file)
         extracted_text = " ".join([page.extract_text() for page in reader.pages])
         title = extracted_text.split("\n")[0]
     elif file_type == "docx":
+        try:
+            import docx2txt
+        except ImportError:
+            raise ImportError("Please install docx2txt first.")
         # Extract text from docx using docx2txt
         extracted_text = docx2txt.process(file)
         title = extracted_text.split("\n")[0]
@@ -127,6 +129,10 @@ def extract_text_from_file(
         for row in reader:
             extracted_text += " ".join(row) + "\n"
     elif file_type == "pptx":
+        try:
+            import pptx
+        except ImportError:
+            raise ImportError("Please install python-pptx first.")
         extracted_text = ""
         no_title = True
         title = ""
@@ -150,7 +156,7 @@ def extract_text_from_file(
 
 def text_parser(
     read_file: str,
-) -> Tuple[str, str, Optional[BeautifulSoup], str]:
+) -> Tuple[str, str]:
     """
     Returns the title, parsed text and a BeautifulSoup object with different file extension
     : param read_file: the input file with a given extension
@@ -172,6 +178,8 @@ def text_parser(
         with open(read_file, "r", encoding=default_encoding, errors="ignore") as f:
             text = f.read()
     elif extension in ("html", "htm"):
+        from bs4 import BeautifulSoup
+
         with open(read_file, "r", encoding=default_encoding, errors="ignore") as f:
             soup = BeautifulSoup(f, "html.parser")
         title = next(soup.stripped_strings)[:100]
@@ -183,7 +191,7 @@ def text_parser(
                 data = json.load(f) if extension == "json" else [json.loads(line) for line in f]
         except:
             # json file encoding issue, skip this file
-            return title, "", soup, extension
+            return title, ""
 
         if isinstance(data, dict):
             text = json.dumps(data)
@@ -198,7 +206,7 @@ def text_parser(
             f"Not support for file with extension: {extension}. "
             f"The supported extensions are {supported_extensions}",
         )
-        return title, "", soup, extension
+        return title, ""
 
     output_text = re.sub(r"\n{3,}", "\n\n", text)
     # keep whitespaces for formatting
@@ -206,7 +214,7 @@ def text_parser(
     output_text = re.sub(r"\*{3,}", "***", output_text)
     output_text = re.sub(r"_{3,}", "___", output_text)
 
-    return title, output_text, soup, extension
+    return title, output_text
 
 
 def chunk_document(
@@ -234,7 +242,7 @@ def chunk_document(
             f = os.path.join(root, name)
             print(f"Reading {f}")
             try:
-                title, content, _, _ = text_parser(f)
+                title, content = text_parser(f)
                 file_count += 1
                 if file_count % 100 == 0:
                     print(f"{file_count} files read.")
