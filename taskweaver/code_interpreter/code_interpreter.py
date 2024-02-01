@@ -234,6 +234,7 @@ class CodeInterpreter(Role):
                 with_code=True,  # the message to be sent to the user should contain the code
                 use_local_uri=self.config.use_local_uri,
             ),
+            is_end=True,
         )
 
         if exec_result.is_success or self.retry_count >= self.config.max_retry_count:

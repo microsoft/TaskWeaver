@@ -156,7 +156,11 @@ class PostEventProxy:
         assert not self.message_is_end, "Cannot update message when update is finished"
         self.post.message += message
         self.message_is_end = is_end
-        self._emit(PostEventType.post_message_update, message, {"is_end": is_end})
+        self._emit(
+            PostEventType.post_message_update,
+            message,
+            {"is_end": is_end},
+        )
 
     def update_attachment(
         self,

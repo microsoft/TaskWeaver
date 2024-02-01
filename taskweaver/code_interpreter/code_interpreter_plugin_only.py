@@ -94,6 +94,7 @@ class CodeInterpreterPluginOnly(Role):
                     with_code=True,
                     use_local_uri=self.config.use_local_uri,
                 ),
+                is_end=True,
             )
         else:
             post_proxy.update_message(

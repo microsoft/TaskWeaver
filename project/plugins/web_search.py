@@ -1,3 +1,4 @@
+import json
 from typing import List, Tuple
 
 import requests
@@ -20,8 +21,10 @@ class WebSearch(Plugin):
         else:
             raise ValueError("Invalid API provider. Please check your config file.")
 
-    def __call__(self, query: str) -> List[ResponseEntry]:
-        return self.search_query(query)
+    def __call__(self, query: str) -> str:
+        return f"WebSearch has done searching for `{query}`.\n" + self.ctx.wrap_text_with_delimiter_temporal(
+            "\n```json\n" + json.dumps(self.search_query(query), indent=4) + "```\n",
+        )
 
     def _search_google_custom_search(self, query: str, cnt: int) -> List[ResponseEntry]:
         api_key = self.config.get("google_api_key")
