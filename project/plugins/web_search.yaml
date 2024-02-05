@@ -19,8 +19,8 @@ parameters:
 
 returns:
   - name: results
-    type: List[Tuple[str, str, str]]
-    description: list of search results, each includes its title, url and a snippet
+    type: str
+    description: list of search results, each includes its title, url and a snippet in JSON format
 
 configurations:
   # support one of "bing" or "google", need to configure API key below

@@ -1,6 +1,7 @@
 import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from taskweaver.module.prompt_util import PromptUtil
 from taskweaver.plugin.context import ArtifactType, LogErrorLevel, PluginContext
 
 if TYPE_CHECKING:
@@ -145,3 +146,10 @@ class ExecutorPluginContext(PluginContext):
         if variable_name in self.executor.session_var:
             return self.executor.session_var[variable_name]
         return default
+
+    def wrap_text_with_delimiter_temporal(self, text: str) -> str:
+        """wrap text with delimiter"""
+        return PromptUtil.wrap_text_with_delimiter(
+            text,
+            PromptUtil.DELIMITER_TEMPORAL,
+        )
