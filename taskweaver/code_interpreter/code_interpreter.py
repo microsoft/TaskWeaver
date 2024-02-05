@@ -47,6 +47,7 @@ class CodeInterpreterConfig(ModuleConfig):
                 "input",
                 "raw_input",
                 "reload",
+                "__import__",
             ],
         )
 
