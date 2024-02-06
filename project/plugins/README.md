@@ -70,6 +70,12 @@ Then, you can get the API key from the registered resource. Refer to this [link]
 - To use Google Search, you need to register a custom search engine on Google: https://cse.google.com/all.
 Then, you can get the API key from the registered search engine from the [Credentials page](https://console.cloud.google.com/apis/credentials).
 
+A video demo using web search to find out information and then complete the task based on the retrieved information:
+
+[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/d078a05b-a19b-498c-b712-6f8c4855cefa)
+
+
+
 ## document_retriever
 
 This plugin by default is **not** enabled. If you want to use this plugin, you need to enable it in the `document_retriever.yaml` file.
