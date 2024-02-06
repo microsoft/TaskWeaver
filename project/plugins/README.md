@@ -4,14 +4,14 @@
 In this plugin, we call the Klarna API to search for products.
 
 ## paper_summary
-In this plugin, we load a pdf file (e.g., a research paper) and use Langchain to summarize the paper.
+This plugin by default is **not** enabled. In this plugin, we load a pdf file (e.g., a research paper) and use Langchain to summarize the paper.
 To install Langchain, you can run the following command:
 ```bash
 pip install langchain
 ```
 
 ## sql_pull_data
-In this plugin, we pull data from a sqlite database based on a query in natural language.
+This plugin by default is **not** enabled. In this plugin, we pull data from a sqlite database based on a query in natural language.
 This plugin is implemented based on Langchain. So, you need to install Langchain first.
 To install Langchain, you can run the following command:
 ```bash
