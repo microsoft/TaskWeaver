@@ -54,6 +54,8 @@ def txt(content: str, br: bool = True):
     content = content.replace("<", "&lt;").replace(">", "&gt;")
     if br:
         content = content.replace("\n", "<br>")
+    else:
+        content = content.replace("\n", "&#10;")
     return content
 
 
