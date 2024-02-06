@@ -1,5 +1,4 @@
 from typing import Any, Generator, List, Optional
-from google.generativeai.types import GenerateContentResponse
 
 from injector import inject
 
@@ -123,6 +122,8 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
         stop: Optional[List[str]] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
+        from google.generativeai.types import GenerateContentResponse
+
         genai_messages = []
         prev_role = ""
         for msg in messages:
@@ -148,10 +149,10 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
                 raise Exception(f"Invalid role: {msg['role']}")
 
         if stream is False:
-            response:GenerateContentResponse = self.model.generate_content(genai_messages, stream=False)
+            response: GenerateContentResponse = self.model.generate_content(genai_messages, stream=False)
             yield format_chat_message("assistant", response.text)
         else:
-            response:GenerateContentResponse = self.model.generate_content(genai_messages, stream=True)
+            response: GenerateContentResponse = self.model.generate_content(genai_messages, stream=True)
             for chunk_obj in response.parts:
                 yield format_chat_message("assistant", chunk_obj.text)
 
