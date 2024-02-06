@@ -21,7 +21,7 @@ def browse_page(
         from langchain_community.document_loaders import AsyncHtmlLoader
         from langchain_community.document_transformers import Html2TextTransformer
     except ImportError:
-        raise ImportError("Please install langchain-community first.")
+        raise ImportError("Please install langchain/langchain-community first.")
 
     loader = AsyncHtmlLoader(web_path=urls)
     docs = loader.load()
