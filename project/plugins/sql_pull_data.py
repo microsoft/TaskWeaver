@@ -12,6 +12,8 @@ from taskweaver.plugin import Plugin, register_plugin
 
 @register_plugin
 class SqlPullData(Plugin):
+    db = None
+
     def __call__(self, query: str):
         api_type = self.config.get("api_type", "azure")
         if api_type == "azure":
@@ -43,10 +45,11 @@ class SqlPullData(Plugin):
             SQL Query:"""
         prompt = ChatPromptTemplate.from_template(template)
 
-        db = SQLDatabase.from_uri(self.config.get("sqlite_db_path"))
+        if self.db is None:
+            self.db = SQLDatabase.from_uri(self.config.get("sqlite_db_path"))
 
         def get_schema(_):
-            return db.get_table_info()
+            return self.db.get_table_info()
 
         inputs = {
             "schema": RunnableLambda(get_schema),
@@ -56,7 +59,7 @@ class SqlPullData(Plugin):
 
         sql = sql_response.invoke({"question": query})
 
-        result = db._execute(sql, fetch="all")
+        result = self.db._execute(sql, fetch="all")
 
         df = pd.DataFrame(result)
 

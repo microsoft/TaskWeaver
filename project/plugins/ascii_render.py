@@ -13,3 +13,11 @@ class AsciiRenderPlugin(Plugin):
         result = ASCII_art_1
 
         return result
+
+
+if __name__ == "__main__":
+    from taskweaver.plugin.context import temp_context
+
+    with temp_context() as temp_ctx:
+        render = AsciiRenderPlugin(name="ascii_render", ctx=temp_ctx, config={})
+        print(render(text="hello world!"))

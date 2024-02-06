@@ -200,5 +200,11 @@ Besides, we also set two optional fields as below:
    self.config.get("key1")
    self.config.get("key2")
    ```
+3. **plugin_only**: When this plugin is only used for the 
+   [plugin-only mode](https://microsoft.github.io/TaskWeaver/docs/plugin/plugin_only),
+set this field to `true`. The default value is `false`. Note that all plugins will be 
+loaded in the non-plugin-only mode which is the default mode. 
+But in the plugin-only mode, only the plugins with `plugin_only: true` will be loaded. 
+      
    
 
