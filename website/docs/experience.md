@@ -1,11 +1,25 @@
 # Experience
 
-We build up a long-term memory for TaskWeaver, so that we can learn from the previous experience and improve our future performance.
-It can summarize the mistakes it made in the past and help us avoid making the same mistakes again.
-In addition, it also can remember the user preferences and use them to guide the future conversation.
+## Motivation
+The agent developers can add examples to guide the planning and code generation. 
+Alternatively, we also provide another way of saving user experiences to long-term memory. 
+In practice, if the user asks TaskWeaver to solve a hard problem. 
+TaskWeaver can first go wrong. But after several attempts or the user gives more instructions, 
+the agent can finally solve the problem. However, next time, if the user asks a similar problem 
+or even exactly the same problem. The agent is still hard to come up with the right solution 
+at first because it does not memorize the experiences.  Therefore, we proposed a mechanism called experience memory. 
+Here is the basic idea. A user can issue a command to TaskWeaver to save chat history and 
+then extract experience tips from it and save them into the experience pool. 
+Later, when the agent sees similar requests, it will retrieve the experience from the memory 
+to guide its planning and code generation.
+An experience tip is about what should do or should not do when seeing a request like this.
+We will add the retrieved experiences to the prompt when received a similar request afterward.
+
+![Save User Experience](./../static/img/experience.png)
 
 
-## How to use
+
+## How to use experience memory
 
 1. To enable the experience feature, you only need to set the `planner.use_experience` and `code_generator.use_experience` parameter in the configuration file to `true`.
 2. Start a new conversation with TaskWeaver. You will find `experience` directory is created in your project directory. Note that there is no experience now because we have not saved any chat history yet.
@@ -14,10 +28,11 @@ In addition, it also can remember the user preferences and use them to guide the
 5. When user send a similar query to TaskWeaver, it will retrieve the relevant experience and load it into the system prompt (for Planner and CodeInterpreter). In this way, the experience can be used to guide the future conversation.
 
 
-## Example
+## A walk-through example
 
 1. Start a new conversation with TaskWeaver. Send a request "calculate the mean value of ./project/sample_data/data_demo.csv" to TaskWeaver.
-2. You will find TaskWeaver made a mistake, calculating the mean value of the non-numerical column. After several rounds of conversation, TaskWeaver just fixed this issue.
+2. You will find TaskWeaver made a mistake, calculating the mean value of the non-numerical column. 
+After several attempts, TaskWeaver fixed this issue.
 ```
 =========================================================
  _____         _     _       __
@@ -176,7 +191,8 @@ In addition, it also can remember the user preferences and use them to guide the
  ╰──● sending message to User
  TaskWeaver ▶  The mean value of the data in d:/demo_data.csv is 78172.75
 ```
-3. We `/save` the chat history and restart TaskWeaver. We can see the experience summarized from the last chat history is below:
+3. We can issue the `/save` command from the console chat interface to save the chat history. Then, after we restart TaskWeaver, 
+we can see the experience summarized from the last chat history is below:
 ```yaml
 exp_id: 20231228-073922-9b411afd
 experience_text: "User Query: get the mean value of d:/demo_data.csv
@@ -189,7 +205,7 @@ raw_experience_path: D:\project\experience\raw_exp_20231228-073922-9b411afd.yaml
 embedding_model: text-embedding-ada-002
 embedding: ...
 ```
-4. Send the similar request "calculate the variance value of ./project/sample_data/data_demo.csv" to TaskWeaver. You will find TaskWeaver will not make the same mistake again. It will ask User to confirm the column name to calculate the variance value.
+4. Send a similar request "calculate the variance value of ./project/sample_data/data_demo.csv" to TaskWeaver. You will find TaskWeaver will not make the same mistake again. It will ask User to confirm the column name to calculate the variance value.
 ```
 =========================================================
  _____         _     _       __

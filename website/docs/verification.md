@@ -34,7 +34,7 @@ After enabling code verification, you can also specify the code verification rul
 | Parameter	                          | Description	                                              | Default                                                                                                                                    |
 |-------------------------------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
 | code_interpreter.allowed_modules	   | The list of allowed modules to import in code generation. | 	["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"], if the list is empty, no modules would be allowed |
-| code_interpreter.blocked_functions	 | The list of functions to block from code generation.      | 	["eval", "exec", "execfile", "compile", "open", "input", "raw_input", "reload"]                                                           |
+| code_interpreter.blocked_functions	 | The list of functions to block from code generation.      | 	["_\_import__","eval", "exec", "execfile", "compile", "open", "input", "raw_input", "reload"]                                             |
 
 We currently support checking the allowed modules and blocked functions.
 If a module is in the `allowed_modules` list, it can be imported in the generated code.
