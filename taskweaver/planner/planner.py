@@ -111,7 +111,7 @@ class Planner(Role):
             CI_introduction=self.code_interpreter_introduction,
         )
         self.ask_self_cnt = 0
-        self.max_self_ask_num = 1
+        self.max_self_ask_num = 3
 
         self.round_compressor = round_compressor
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
