@@ -157,7 +157,17 @@ class Session:
                     send_from="Planner",
                     send_to="CodeInterpreter",
                 )
-                post = _send_message("CodeInterpreter", post)
+                while True:
+                    if post.send_to == "Planner":
+                        reply_post = Post.create(
+                            message=post.message,
+                            send_from="CodeInterpreter",
+                            send_to="User",
+                        )
+                        chat_round.add_post(reply_post)
+                        break
+                    else:
+                        post = _send_message("CodeInterpreter", post)
 
             self.round_index += 1
             chat_round.change_round_state("finished")
