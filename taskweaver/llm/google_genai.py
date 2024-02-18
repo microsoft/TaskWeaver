@@ -153,7 +153,7 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
             yield format_chat_message("assistant", response.text)
         else:
             response: GenerateContentResponse = self.model.generate_content(genai_messages, stream=True)
-            for chunk_obj in response.parts:
+            for chunk_obj in response:
                 yield format_chat_message("assistant", chunk_obj.text)
 
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
