@@ -15,6 +15,7 @@ TaskWeaver is A **code-first** agent framework for seamlessly planning and execu
 This innovative framework interprets user requests through code snippets and efficiently coordinates a variety 
 of plugins in the form of functions to execute data analytics tasks in a stateful manner.
 
+Unlike many agent frameworks that only track the chat history with LLMs in text, TaskWeaver preserves both the **chat history** and the **code execution history**, including the in-memory data. This feature enhances the *expressiveness* of the agent framework, making it ideal for processing complex data structures like high-dimensional tabular data.
 
 <h1 align="center">
     <img src="./.asset/taskweaver_arch.png"/> 
