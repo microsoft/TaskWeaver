@@ -81,7 +81,6 @@ class CodeGeneratorCLIOnly(Role):
             system_instructions=self.instruction_template.format(
                 ROLE_NAME=self.role_name,
                 OS_NAME=self.os_name,
-                CLI_NAME=self.cli_name,
             ),
             rounds=rounds,
         )
@@ -116,9 +115,9 @@ def _compose_prompt(
 
     for _round in rounds:
         for post in _round.post_list:
-            if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
+            if post.send_to == "CodeInterpreter":
                 prompt.append(format_chat_message(role="user", message=post.message))
-            elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
+            elif post.send_from == "CodeInterpreter":
                 prompt.append(format_chat_message(role="assistant", message=post.message))
 
     return prompt
