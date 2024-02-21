@@ -177,7 +177,7 @@ class AppConfigSource:
 
         return val
 
-    def get_list(self, key: str, default: Optional[List[Any]] = None) -> List[str]:
+    def get_list(self, key: str, default: Optional[List[Any]] = None) -> List[Any]:
         val = self._get_config_value(key, "list", default)
         if isinstance(val, list):
             return val

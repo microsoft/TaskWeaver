@@ -60,6 +60,8 @@ class PlannerConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
+        self.ext_llm = self._get_str("ext_llm", default="", required=False)
+
 
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
@@ -280,6 +282,7 @@ class Planner(Role):
                 chat_history,
                 use_backup_engine=use_back_up_engine,
                 use_smoother=True,
+                ext_llm=self.config.ext_llm,
             )
 
         llm_output: List[str] = []
