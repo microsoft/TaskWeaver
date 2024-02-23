@@ -1,4 +1,5 @@
 from taskweaver.ces.common import Manager
+from taskweaver.ces.environment import Environment, EnvMode
 from taskweaver.ces.manager.sub_proc import SubProcessManager
 
 

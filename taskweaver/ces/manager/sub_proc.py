@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 from typing import Dict, Optional
 
+from taskweaver.ces import Environment, EnvMode
 from taskweaver.ces.common import Client, ExecutionResult, Manager
-from taskweaver.ces.environment import Environment
 
 
 class SubProcessClient(Client):
@@ -63,7 +63,7 @@ class SubProcessManager(Manager):
             "TASKWEAVER_ENV_DIR",
             os.path.realpath(os.getcwd()),
         )
-        self.env = Environment(env_id, env_dir)
+        self.env = Environment(env_id, env_dir, env_mode=EnvMode.OutsideContainer)
 
     def initialize(self) -> None:
         pass
