@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+import time
 from ast import literal_eval
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -171,16 +172,6 @@ class Environment:
             f"conn-{session_id}-{kernel_id}.json",
         )
 
-    def _prepare_session(self, cwd, session_dir, session_id):
-        session = self._get_session(session_id, session_dir=session_dir)
-        ces_session_dir = os.path.join(session.session_dir, "ces")
-        kernel_id = get_id(prefix="knl")
-        os.makedirs(ces_session_dir, exist_ok=True)
-        connection_file = self._get_connection_file(session_id, kernel_id)
-        cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
-        os.makedirs(cwd, exist_ok=True)
-        return ces_session_dir, connection_file, cwd, kernel_id, session
-
     def start_session(
         self,
         session_id: str,
@@ -190,11 +181,14 @@ class Environment:
         port_start: Optional[int] = None,
     ) -> None:
         if self.mode == EnvMode.SubProcess:
-            ces_session_dir, connection_file, cwd, new_kernel_id, session = self._prepare_session(
-                cwd,
-                session_dir,
-                session_id,
-            )
+            session = self._get_session(session_id, session_dir=session_dir)
+            ces_session_dir = os.path.join(session.session_dir, "ces")
+            new_kernel_id = get_id(prefix="knl")
+            os.makedirs(ces_session_dir, exist_ok=True)
+            connection_file = self._get_connection_file(session_id, new_kernel_id)
+            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
+            os.makedirs(cwd, exist_ok=True)
+
             # set python home from current python environment
             python_home = os.path.sep.join(sys.executable.split(os.path.sep)[:-2])
             python_path = os.pathsep.join(
@@ -235,11 +229,11 @@ class Environment:
             session.kernel_status = "ready"
 
         elif self.mode == EnvMode.OutsideContainer:
-            ces_session_dir, connection_file, cwd, new_kernel_id, session = self._prepare_session(
-                cwd,
-                session_dir,
-                session_id,
-            )
+            session = self._get_session(session_id, session_dir=session_dir)
+            ces_session_dir = os.path.join(session.session_dir, "ces")
+            new_kernel_id = get_id(prefix="knl")
+            os.makedirs(ces_session_dir, exist_ok=True)
+            connection_file = self._get_connection_file(session_id, new_kernel_id)
 
             kernel_env = {
                 "TASKWEAVER_ENV_ID": self.id,
@@ -264,6 +258,17 @@ class Environment:
                 },
             )
 
+            tick = 0
+            while tick < 10:
+                container.reload()
+                if container.status == "running" and os.path.isfile(connection_file):
+                    print("Container is running and connection file is ready.")
+                    break
+                time.sleep(1)  # wait for 1 second before checking again
+                tick += 1
+            if tick == 10:
+                raise Exception("Container is not ready after 10 seconds")
+
             self.session_container_dict[session_id] = container.id
             self.session_container_port_dict[session_id] = self.port_start
             self.port_start += 5
@@ -274,15 +279,29 @@ class Environment:
             session.kernel_status = "ready"
         elif self.mode == EnvMode.InsideContainer:
             assert port_start is not None, "Port start must be provided when inside container."
-            kernel_env = {
-                "JUPYTER_SHELL_PORT": str(port_start),
-                "JUPYTER_IOPUB_PORT": str(port_start + 1),
-                "JUPYTER_STDIN_PORT": str(port_start + 2),
-                "JUPYTER_HB_PORT": str(port_start + 3),
-                "JUPYTER_CONTROL_PORT": str(port_start + 4),
-                "JUPYTER_KERNEL_IP": "0.0.0.0",
-                "JUPYTER_MANUAL_PORTS": "True",
-            }
+            session = self._get_session(session_id, session_dir=session_dir)
+            ces_session_dir = os.path.join(session.session_dir, "ces")
+            connection_file = self._get_connection_file(session_id, kernel_id)
+            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
+
+            kernel_env = os.environ.copy()
+            kernel_env.update(
+                {
+                    "JUPYTER_SHELL_PORT": str(port_start),
+                    "JUPYTER_IOPUB_PORT": str(port_start + 1),
+                    "JUPYTER_STDIN_PORT": str(port_start + 2),
+                    "JUPYTER_HB_PORT": str(port_start + 3),
+                    "JUPYTER_CONTROL_PORT": str(port_start + 4),
+                    "JUPYTER_KERNEL_IP": "0.0.0.0",
+                    "JUPYTER_MANUAL_PORTS": "True",
+                    "CONNECTION_FILE": connection_file,
+                    "TASKWEAVER_LOGGING_FILE_PATH": os.path.join(
+                        ces_session_dir,
+                        "kernel_logging.log",
+                    ),
+                    "PATH": os.environ["PATH"],
+                },
+            )
 
             kernel_id = self.multi_kernel_manager.start_kernel(
                 kernel_id=kernel_id,
@@ -467,6 +486,8 @@ class Environment:
         print(connection_file)
         client = BlockingKernelClient(connection_file=connection_file)
         client.load_connection_file()
+        # overwrite the ip to localhost
+        client.ip = "127.0.0.1"
         return client
 
     def _execute_code_on_kernel(

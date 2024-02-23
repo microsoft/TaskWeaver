@@ -1,5 +1,8 @@
 import os
+import sys
 import time
+
+sys.path.append("/app")
 
 from taskweaver.ces import Environment, EnvMode
 
@@ -12,7 +15,7 @@ env_id = os.getenv(
 )
 env_dir = os.getenv(
     "TASKWEAVER_ENV_DIR",
-    os.path.realpath(os.getcwd()),
+    "/app",
 )
 session_id = os.getenv(
     "TASKWEAVER_SESSION_ID",
@@ -28,7 +31,6 @@ kernel_id = os.getenv(
     "TASKWEAVER_KERNEL_ID",
     "kernel_id",
 )
-
 
 if __name__ == "__main__":
     env = Environment(env_id, env_dir, env_mode=EnvMode.InsideContainer)
