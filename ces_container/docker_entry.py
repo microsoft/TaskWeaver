@@ -1,8 +1,5 @@
 import os
-import sys
 import time
-
-sys.path.append("/app")
 
 from taskweaver.ces import Environment, EnvMode
 

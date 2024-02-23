@@ -15,8 +15,7 @@ COPY taskweaver/ces /app/taskweaver/ces
 COPY taskweaver/plugin /app/taskweaver/plugin
 COPY taskweaver/module /app/taskweaver/module
 COPY taskweaver/__init__.py /app/taskweaver/__init__.py
-
-RUN mv /app/taskweaver/ces/docker_entry.py /app/docker_entry.py
+COPY docker_entry.py /app/docker_entry.py
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 

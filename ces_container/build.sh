@@ -14,11 +14,8 @@ if [ -d "$taskweaverPath" ]; then
     cp -r "$taskweaverPath" .
     cp "$requirementsPath" .
 else
-    echo "Cloning repository and using repository files"
-    git clone https://github.com/microsoft/TaskWeaver.git
-    mv ".TaskWeaver/taskweaver" .
-    mv ".TaskWeaver/requirements.txt" .
-    rm -rf ".TaskWeaver"
+    echo "Local files not found."
+    exit 1
 fi
 
 # Build the Docker image

@@ -15,11 +15,8 @@ if (Test-Path $taskweaverPath) {
     Copy-Item -Path $taskweaverPath -Destination ".\taskweaver" -Recurse
     Copy-Item -Path $requirementsPath -Destination ".\requirements.txt"
 } else {
-    Write-Host "Cloning repository and using repository files"
-    git clone https://github.com/microsoft/TaskWeaver.git
-    Move-Item -Path ".\TaskWeaver\taskweaver" -Destination ".\taskweaver"
-    Move-Item -Path ".\TaskWeaver\requirements.txt" -Destination ".\requirements.txt"
-    Remove-Item -Path ".\TaskWeaver" -Recurse -Force
+    Write-Host "Local files not found."
+    exit 1
 }
 
 # Build the Docker image

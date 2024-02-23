@@ -138,7 +138,10 @@ class Environment:
         self.env_dir = env_dir if env_dir is not None else os.getcwd()
         self.mode = env_mode
         if self.mode == EnvMode.SubProcess or self.mode == EnvMode.InsideContainer:
-            self.multi_kernel_manager = self._init_kernel_manager()
+            self.multi_kernel_manager = TaskWeaverMultiKernelManager(
+                default_kernel_name="taskweaver",
+                kernel_spec_manager=KernelSpecProvider(),
+            )
         elif self.mode == EnvMode.OutsideContainer:
             try:
                 import docker
@@ -150,6 +153,7 @@ class Environment:
             self.port_start = 12300
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
+        atexit.register(self.clean_up)
 
     def clean_up(self) -> None:
         for session in self.session_dict.values():
@@ -157,13 +161,6 @@ class Environment:
                 self.stop_session(session.session_id)
             except Exception as e:
                 logger.error(e)
-
-    def _init_kernel_manager(self) -> MultiKernelManager:
-        atexit.register(self.clean_up)
-        return TaskWeaverMultiKernelManager(
-            default_kernel_name="taskweaver",
-            kernel_spec_manager=KernelSpecProvider(),
-        )
 
     def _get_connection_file(self, session_id: str, kernel_id: str) -> str:
         return os.path.join(
