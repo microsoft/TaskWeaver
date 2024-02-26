@@ -24,6 +24,7 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+
 ExecType = Literal["user", "control"]
 ResultMimeType = Union[
     Literal["text/plain", "text/html", "text/markdown", "text/latex"],
@@ -132,6 +133,8 @@ class Environment:
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         env_mode: Optional[EnvMode] = EnvMode.SubProcess,
+        port_range_start: Optional[int] = 49500,
+        port_range_end: Optional[int] = 49999,
     ) -> None:
         self.session_dict: Dict[str, EnvSession] = {}
         self.id = get_id(prefix="env") if env_id is None else env_id
@@ -142,15 +145,26 @@ class Environment:
                 default_kernel_name="taskweaver",
                 kernel_spec_manager=KernelSpecProvider(),
             )
+            if self.mode == EnvMode.InsideContainer:
+                file_handler = logging.FileHandler("env.log")
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(formatter)
+                logger.addHandler(file_handler)
+
         elif self.mode == EnvMode.OutsideContainer:
             try:
                 import docker
+
+                from taskweaver.ces.port_manager import PortManager
             except ImportError:
                 raise ImportError("docker package is required for container-based kernel.")
             self.docker_client = docker.from_env()
             self.session_container_dict: Dict[str, str] = {}
-            self.session_container_port_dict: Dict[str, int] = {}
-            self.port_start = 12300
+            self.port_manager = PortManager(
+                port_range_start,
+                port_range_end,
+                allocation_size=5,
+            )
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
         atexit.register(self.clean_up)
@@ -219,8 +233,6 @@ class Environment:
                 cwd=cwd,
                 env=kernel_env,
             )
-            kernel = self.multi_kernel_manager.get_kernel(session.kernel_id)
-            print(kernel.get_connection_info())
 
             self._cmd_session_init(session)
             session.kernel_status = "ready"
@@ -231,13 +243,13 @@ class Environment:
             new_kernel_id = get_id(prefix="knl")
             os.makedirs(ces_session_dir, exist_ok=True)
             connection_file = self._get_connection_file(session_id, new_kernel_id)
-
+            new_port_start = self.port_manager.allocate_ports(client_id=session_id)
             kernel_env = {
                 "TASKWEAVER_ENV_ID": self.id,
                 "TASKWEAVER_SESSION_ID": session_id,
                 "TASKWEAVER_KERNEL_ID": new_kernel_id,
                 "TASKWEAVER_ENV_DIR": "/app",
-                "TASKWEAVER_PORT_START": str(self.port_start),
+                "TASKWEAVER_PORT_START": str(new_port_start),
             }
             container = self.docker_client.containers.run(
                 image="test_executor",
@@ -247,11 +259,11 @@ class Environment:
                     os.path.abspath(session_dir): {"bind": f"/app/sessions/{session_id}", "mode": "rw"},
                 },
                 ports={
-                    f"{self.port_start}/tcp": self.port_start,
-                    f"{self.port_start + 1}/tcp": self.port_start + 1,
-                    f"{self.port_start + 2}/tcp": self.port_start + 2,
-                    f"{self.port_start + 3}/tcp": self.port_start + 3,
-                    f"{self.port_start + 4}/tcp": self.port_start + 4,
+                    f"{new_port_start}/tcp": new_port_start,
+                    f"{new_port_start + 1}/tcp": new_port_start + 1,
+                    f"{new_port_start + 2}/tcp": new_port_start + 2,
+                    f"{new_port_start + 3}/tcp": new_port_start + 3,
+                    f"{new_port_start + 4}/tcp": new_port_start + 4,
                 },
             )
 
@@ -259,7 +271,7 @@ class Environment:
             while tick < 10:
                 container.reload()
                 if container.status == "running" and os.path.isfile(connection_file):
-                    print("Container is running and connection file is ready.")
+                    logger.info("Container is running and connection file is ready.")
                     break
                 time.sleep(1)  # wait for 1 second before checking again
                 tick += 1
@@ -267,10 +279,6 @@ class Environment:
                 raise Exception("Container is not ready after 10 seconds")
 
             self.session_container_dict[session_id] = container.id
-            self.session_container_port_dict[session_id] = self.port_start
-            self.port_start += 5
-            print("Container started for session", session_id)
-
             session.kernel_id = new_kernel_id
             self._cmd_session_init(session)
             session.kernel_status = "ready"
@@ -414,7 +422,7 @@ class Environment:
                     container.stop()
                     container.remove()
                     del self.session_container_dict[session_id]
-                    del self.session_container_port_dict[session_id]
+                    self.port_manager.reclaim_ports(client_id=session_id)
                 else:
                     raise ValueError(f"Unsupported environment mode {self.mode}")
 
@@ -480,7 +488,7 @@ class Environment:
     ) -> BlockingKernelClient:
         session = self._get_session(session_id)
         connection_file = self._get_connection_file(session_id, session.kernel_id)
-        print(connection_file)
+        logger.info(f"Get client for {connection_file}")
         client = BlockingKernelClient(connection_file=connection_file)
         client.load_connection_file()
         # overwrite the ip to localhost

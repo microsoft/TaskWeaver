@@ -15,6 +15,12 @@ class ExecutionServiceConfig(ModuleConfig):
             "env_dir",
             os.path.join(self.src.app_base_path, "env"),
         )
+        self.kernel_mode = self._get_str(
+            "kernel_mode",
+            "SubProcess",
+        )
+        self.port_start = self._get_int("port_start", 49500)
+        self.port_end = self._get_int("port_end", 49999)
 
 
 class ExecutionServiceModule(Module):
@@ -25,6 +31,9 @@ class ExecutionServiceModule(Module):
     def provide_executor_manager(self, config: ExecutionServiceConfig) -> Manager:
         if self.manager is None:
             self.manager = code_execution_service_factory(
-                config.env_dir,
+                env_dir=config.env_dir,
+                kernel_mode=config.kernel_mode,
+                port_start=config.port_start,
+                port_end=config.port_end,
             )
         return self.manager

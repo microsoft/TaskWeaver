@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 
 from taskweaver.ces import Environment, EnvMode
 from taskweaver.ces.common import Client, ExecutionResult, Manager
@@ -57,13 +57,28 @@ class SubProcessManager(Manager):
         self,
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
+        kernel_mode: Optional[Literal["SubProcess", "Container"]] = "SubProcess",
+        port_start: int = 49500,
+        port_end: int = 49999,
     ) -> None:
         env_id = env_id or os.getenv("TASKWEAVER_ENV_ID", "local")
         env_dir = env_dir or os.getenv(
             "TASKWEAVER_ENV_DIR",
             os.path.realpath(os.getcwd()),
         )
-        self.env = Environment(env_id, env_dir, env_mode=EnvMode.OutsideContainer)
+        if kernel_mode == "SubProcess":
+            env_mode = EnvMode.SubProcess
+        elif kernel_mode == "Container":
+            env_mode = EnvMode.OutsideContainer
+        else:
+            raise ValueError(f"Invalid kernel mode: {kernel_mode}, expected 'SubProcess' or 'Container'.")
+        self.env = Environment(
+            env_id,
+            env_dir,
+            env_mode=env_mode,
+            port_range_start=port_start,
+            port_range_end=port_end,
+        )
 
     def initialize(self) -> None:
         pass
