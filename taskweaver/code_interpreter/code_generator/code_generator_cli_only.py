@@ -101,6 +101,14 @@ class CodeGeneratorCLIOnly(Role):
 
         assert "description" in llm_response, "Description is not found in LLM response."
         assert "code" in llm_response, "Code is not found in LLM response."
+
+        if (
+            self.os_name == "Windows"
+            and len(llm_response["code"]) != 0
+            and not llm_response["code"].startswith("powershell -Command")
+        ):
+            llm_response["code"] = f"powershell -Command {llm_response['code']}"
+
         post_proxy.update_attachment(llm_response["description"], AttachmentType.thought)
         post_proxy.update_attachment(llm_response["code"], AttachmentType.python)
 
