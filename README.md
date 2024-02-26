@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+kiet is here
+>>>>>>> refs/remotes/origin/main
 dsfdjslfjsdlfksjdklf
 dfsdfasflkkjkjk
 
@@ -21,7 +25,7 @@ of plugins in the form of functions to execute data analytics tasks in a statefu
 Unlike many agent frameworks that only track the chat history with LLMs in text, TaskWeaver preserves both the **chat history** and the **code execution history**, including the in-memory data. This feature enhances the _expressiveness_ of the agent framework, making it ideal for processing complex data structures like high-dimensional tabular data.
 
 <h1 align="center">
-    <img src="./.asset/taskweaver_arch.png"/> 
+    <img src="./.asset/taskweaver_arch.png"/>
 </h1>
 
 ## 🆕 News
@@ -31,11 +35,19 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉
 - 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐
 - 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️
+<<<<<<< HEAD
   <!-- - 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb). -->
   <!-- - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.) -->
   <!-- - 📅2023-12-21: TaskWeaver Website is now [available]&#40;https://microsoft.github.io/TaskWeaver/&#41; with more documentations.) -->
   <!-- - 📅2023-12-12: A simple UI demo is available in playground/UI folder, try it [here](https://microsoft.github.io/TaskWeaver/docs/usage/webui)! -->
   <!-- - 📅2023-11-30: TaskWeaver is released on GitHub🎈.  -->
+=======
+<!-- - 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb). -->
+<!-- - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.) -->
+<!-- - 📅2023-12-21: TaskWeaver Website is now [available]&#40;https://microsoft.github.io/TaskWeaver/&#41; with more documentations.) -->
+<!-- - 📅2023-12-12: A simple UI demo is available in playground/UI folder, try it [here](https://microsoft.github.io/TaskWeaver/docs/usage/webui)! -->
+<!-- - 📅2023-11-30: TaskWeaver is released on GitHub🎈.  -->
+>>>>>>> refs/remotes/origin/main
 
 ## 💥 Highlights
 
@@ -121,8 +133,14 @@ More documentations can be found on [TaskWeaver Website](https://microsoft.githu
 ### ❓Get help
 
 - ❔GitHub Issues (prefered)
+<<<<<<< HEAD
 - [💬 Discord](https://discord.gg/Z56MXmZgMb) for discussion
 - For other communications, please contact taskweaver@microsoft.com
+=======
+
+- [💬 Discord](https://discord.gg/Z56MXmZgMb) for discussion
+- For other communications, please contact <taskweaver@microsoft.com>
+>>>>>>> refs/remotes/origin/main
 
 ---
 
