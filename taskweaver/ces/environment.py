@@ -252,7 +252,7 @@ class Environment:
                 "TASKWEAVER_PORT_START": str(new_port_start),
             }
             container = self.docker_client.containers.run(
-                image="test_executor",
+                image="executor_container",
                 detach=True,
                 environment=kernel_env,
                 volumes={
@@ -284,7 +284,9 @@ class Environment:
             session.kernel_status = "ready"
         elif self.mode == EnvMode.InsideContainer:
             assert port_start is not None, "Port start must be provided when inside container."
-            session = self._get_session(session_id, session_dir=session_dir)
+            session = self._get_session(session_id)
+            # to ensure executor can find the session directory
+            os.environ["TASKWEAVER_SESSION_DIR"] = session.session_dir
             ces_session_dir = os.path.join(session.session_dir, "ces")
             connection_file = self._get_connection_file(session_id, kernel_id)
             cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
@@ -506,7 +508,7 @@ class Environment:
     ) -> EnvExecution:
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         kc = self._get_client(session_id)
-        kc.wait_for_ready(timeout=30)
+        kc.wait_for_ready(timeout=60)
         kc.start_channels()
         result_msg_id = kc.execute(
             code=code,

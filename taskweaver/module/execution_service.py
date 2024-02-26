@@ -20,7 +20,7 @@ class ExecutionServiceConfig(ModuleConfig):
             "SubProcess",
         )
         self.port_start = self._get_int("port_start", 49500)
-        self.port_end = self._get_int("port_end", 49999)
+        self.port_end = self._get_int("port_end", 49599)
 
 
 class ExecutionServiceModule(Module):

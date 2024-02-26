@@ -9,7 +9,7 @@ from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.plugin.context import ArtifactType
 
-TRUNCATE_CHAR_LENGTH = 1000
+TRUNCATE_CHAR_LENGTH = 1500
 
 
 def get_artifact_uri(execution_id: str, file: str, use_local_uri: bool) -> str:
