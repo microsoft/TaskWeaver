@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 kiet is here
->>>>>>> refs/remotes/origin/main
 dsfdjslfjsdlfksjdklf
 dfsdfasflkkjkjk
 
