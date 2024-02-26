@@ -26,7 +26,7 @@ version_str = get_package_version()
 revert_version_file = update_version_file(version_str)
 
 # Configurations
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8", errors="ignore") as fh:
     long_description = fh.read()
 
 
