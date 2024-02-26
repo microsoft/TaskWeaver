@@ -154,17 +154,10 @@ class Environment:
         elif self.mode == EnvMode.OutsideContainer:
             try:
                 import docker
-
-                from taskweaver.ces.port_manager import PortManager
             except ImportError:
                 raise ImportError("docker package is required for container-based kernel.")
             self.docker_client = docker.from_env()
             self.session_container_dict: Dict[str, str] = {}
-            self.port_manager = PortManager(
-                port_range_start,
-                port_range_end,
-                allocation_size=5,
-            )
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
         atexit.register(self.clean_up)
@@ -243,7 +236,7 @@ class Environment:
             new_kernel_id = get_id(prefix="knl")
             os.makedirs(ces_session_dir, exist_ok=True)
             connection_file = self._get_connection_file(session_id, new_kernel_id)
-            new_port_start = self.port_manager.allocate_ports(client_id=session_id)
+            new_port_start = 12345
             kernel_env = {
                 "TASKWEAVER_ENV_ID": self.id,
                 "TASKWEAVER_SESSION_ID": session_id,
@@ -251,6 +244,7 @@ class Environment:
                 "TASKWEAVER_ENV_DIR": "/app",
                 "TASKWEAVER_PORT_START": str(new_port_start),
             }
+            # ports will be assigned automatically at the host
             container = self.docker_client.containers.run(
                 image="executor_container",
                 detach=True,
@@ -259,11 +253,11 @@ class Environment:
                     os.path.abspath(session_dir): {"bind": f"/app/sessions/{session_id}", "mode": "rw"},
                 },
                 ports={
-                    f"{new_port_start}/tcp": new_port_start,
-                    f"{new_port_start + 1}/tcp": new_port_start + 1,
-                    f"{new_port_start + 2}/tcp": new_port_start + 2,
-                    f"{new_port_start + 3}/tcp": new_port_start + 3,
-                    f"{new_port_start + 4}/tcp": new_port_start + 4,
+                    f"{new_port_start}/tcp": None,
+                    f"{new_port_start + 1}/tcp": None,
+                    f"{new_port_start + 2}/tcp": None,
+                    f"{new_port_start + 3}/tcp": None,
+                    f"{new_port_start + 4}/tcp": None,
                 },
             )
 
@@ -277,6 +271,26 @@ class Environment:
                 tick += 1
             if tick == 10:
                 raise Exception("Container is not ready after 10 seconds")
+
+            # save the ports to ces session dir
+            port_bindings = container.attrs["NetworkSettings"]["Ports"]
+            shell_port = int(port_bindings[f"{new_port_start}/tcp"][0]["HostPort"])
+            iopub_port = int(port_bindings[f"{new_port_start + 1}/tcp"][0]["HostPort"])
+            stdin_port = int(port_bindings[f"{new_port_start + 2}/tcp"][0]["HostPort"])
+            hb_port = int(port_bindings[f"{new_port_start + 3}/tcp"][0]["HostPort"])
+            control_port = int(port_bindings[f"{new_port_start + 4}/tcp"][0]["HostPort"])
+            with open(os.path.join(ces_session_dir, "ports.json"), "w") as f:
+                f.write(
+                    json.dumps(
+                        {
+                            "shell_port": shell_port,
+                            "iopub_port": iopub_port,
+                            "stdin_port": stdin_port,
+                            "hb_port": hb_port,
+                            "control_port": control_port,
+                        },
+                    ),
+                )
 
             self.session_container_dict[session_id] = container.id
             session.kernel_id = new_kernel_id
@@ -484,6 +498,11 @@ class Environment:
             raise Exception(result["message"])
         return result
 
+    def _get_session_ports(self, session_id: str) -> Dict[str, int]:
+        session = self._get_session(session_id)
+        with open(os.path.join(session.session_dir, "ces", "ports.json"), "r") as f:
+            return json.load(f)
+
     def _get_client(
         self,
         session_id: str,
@@ -493,8 +512,15 @@ class Environment:
         logger.info(f"Get client for {connection_file}")
         client = BlockingKernelClient(connection_file=connection_file)
         client.load_connection_file()
-        # overwrite the ip to localhost
-        client.ip = "127.0.0.1"
+        # overwrite the ip and ports if outside container
+        if self.mode == EnvMode.OutsideContainer:
+            client.ip = "127.0.0.1"
+            ports = self._get_session_ports(session_id)
+            client.shell_port = ports["shell_port"]
+            client.stdin_port = ports["stdin_port"]
+            client.hb_port = ports["hb_port"]
+            client.control_port = ports["control_port"]
+            client.iopub_port = ports["iopub_port"]
         return client
 
     def _execute_code_on_kernel(
