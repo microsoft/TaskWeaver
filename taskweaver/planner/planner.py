@@ -60,7 +60,7 @@ class PlannerConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
-        self.ext_llm = self._get_str("ext_llm", default="", required=False)
+        self.llm_type_model = self._get_str("llm_type_model", default="", required=False)
 
 
 class Planner(Role):
@@ -282,7 +282,7 @@ class Planner(Role):
                 chat_history,
                 use_backup_engine=use_back_up_engine,
                 use_smoother=True,
-                ext_llm=self.config.ext_llm,
+                llm_type_model=self.config.llm_type_model,
             )
 
         llm_output: List[str] = []

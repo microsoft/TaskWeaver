@@ -16,13 +16,10 @@ from taskweaver.llm.mock import MockApiService
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
+from taskweaver.llm.qwen import QWenService, QWenServiceConfig
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
-
-from ..config.config_mgt import AppConfigSource
-from ..config.module_config import ModuleConfig
-from .qwen import QWenService, QWenServiceConfig
-from .util import ChatMessageType, format_chat_message
-from .zhipuai import ZhipuAIService
+from taskweaver.llm.util import ChatMessageType, format_chat_message
+from taskweaver.llm.zhipuai import ZhipuAIService
 
 llm_completion_config_map = {
     "openai": OpenAIService,
@@ -150,16 +147,16 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
-        ext_llm: Optional[str] = None,
+        llm_type_model: Optional[str] = None,
         **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
-        if ext_llm is not None and ext_llm != "":
-            if ext_llm in self.ext_llms:
-                completion_service = self.ext_llms[ext_llm]
+        if llm_type_model is not None and llm_type_model != "":
+            if llm_type_model in self.ext_llms:
+                completion_service = self.ext_llms[llm_type_model]
             else:
                 raise ValueError(
-                    f"Cannot import extra LLM model {ext_llm}, "
+                    f"Cannot import extra LLM model {llm_type_model}, "
                     f"the valid model key should be <llm.api_type>.<llm.model>."
                     f"For example, openai.gpt-3.5-turbo.",
                 )
@@ -191,16 +188,16 @@ class LLMApi(object):
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
         use_smoother: bool = True,
-        ext_llm: Optional[str] = None,
+        llm_type_model: Optional[str] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         def get_generator() -> Generator[ChatMessageType, None, None]:
-            if ext_llm is not None and ext_llm != "":
-                if ext_llm in self.ext_llms:
-                    completion_service = self.ext_llms[ext_llm]
+            if llm_type_model is not None and llm_type_model != "":
+                if llm_type_model in self.ext_llms:
+                    completion_service = self.ext_llms[llm_type_model]
                 else:
                     raise ValueError(
-                        f"Cannot import extra LLM model {ext_llm}, "
+                        f"Cannot import extra LLM model {llm_type_model}, "
                         f"the valid model key should be <llm.api_type>.<llm.model>."
                         f"For example, openai.gpt-3.5-turbo.",
                     )

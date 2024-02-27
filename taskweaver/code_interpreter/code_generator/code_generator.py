@@ -54,7 +54,7 @@ class CodeGeneratorConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
-        self.ext_llm = self._get_str("ext_llm", default="", required=False)
+        self.llm_type_model = self._get_str("llm_type_model", default="", required=False)
 
 
 class CodeGenerator(Role):
@@ -362,7 +362,7 @@ class CodeGenerator(Role):
                 prompt,
                 use_backup_engine=use_back_up_engine,
                 use_smoother=True,
-                ext_llm=self.config.ext_llm,
+                llm_type_model=self.config.llm_type_model,
             ),
             post_proxy=post_proxy,
             early_stop=early_stop,

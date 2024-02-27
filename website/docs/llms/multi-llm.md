@@ -14,19 +14,19 @@ In this section, we will show you how to use different LLMs for different compon
 "llm.model": "gpt-3.5-turbo-1106",
 "llm.response_format": "json_object"
 "ext_llms.llm_list": [
-        {
-            "llm.api_type":"openai",
-            "llm.api_base": "https://api.openai.com/v1",
-            "llm.api_key": "YOUR_API_KEY",
-            "llm.model": "gpt-4-1106-preview",
-            "llm.response_format": "json_object"
-        },
-        {
-            "llm.api_type": "google_genai",
-            "llm.google_genai.api_key": "YOUR_API_KEY",
-            "llm.google_genai.model": "gemini-pro"
-        }
-    ]
+    {
+        "llm.api_type": "openai",
+        "llm.api_base": "https://api.openai.com/v1",
+        "llm.api_key": "YOUR_API_KEY",
+        "llm.model": "gpt-4-1106-preview",
+        "llm.response_format": "json_object"
+    },
+    {
+        "llm.api_type": "google_genai",
+        "llm.api_key": "YOUR_API_KEY",
+        "llm.model": "gemini-pro"
+    }
+]
 ```
 Notes:
 - `ext_llms.llm_list` is a list of LLMs for different components. It is an optional field. If you do not specify it, only the primary LLM will be used.
@@ -37,11 +37,11 @@ It is the same as the standard LLM configuration method.
 2. Specify the LLMs for different components in the `taskweaver_config.json`.
 For example, we want to use OpenAI GPT-4 for the Planner and use Google gemini-pro for the CodeInterpreter.
 ```json
-"planner.ext_llm": "openai.gpt-4-1106-preview",
-"code_generator.ext_llm": "google_genai.gemini-pro"
+"planner.llm_type_model": "openai.gpt-4-1106-preview",
+"code_generator.llm_type_model": "google_genai.gemini-pro"
 ```
 Notes:
-- `planner.ext_llm` and `code_generator.ext_llm` are the LLM settings for the Planner and the CodeInterpreter, respectively.
+- `planner.llm_type_model` and `code_generator.llm_type_model` are the LLM  for the Planner and the CodeInterpreter, respectively.
 - The LLM model name should be the concatenation of the LLM API type and the LLM model name, separated by a dot (e.g., `openai.gpt-4-1106-preview`).
 - If you do not specify the LLM for a component, the primary LLM will be used by default.
 In this case, `GPT-3.5-turbo-1106` will be used for both the Planner and the CodeInterpreter, if you do not specify the LLM for them.
