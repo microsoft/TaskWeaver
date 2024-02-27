@@ -133,8 +133,6 @@ class Environment:
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         env_mode: Optional[EnvMode] = EnvMode.SubProcess,
-        port_range_start: Optional[int] = 49500,
-        port_range_end: Optional[int] = 49999,
     ) -> None:
         self.session_dict: Dict[str, EnvSession] = {}
         self.id = get_id(prefix="env") if env_id is None else env_id
@@ -161,8 +159,10 @@ class Environment:
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
         atexit.register(self.clean_up)
+        logger.info(f"Environment {self.id} is created.")
 
     def clean_up(self) -> None:
+        logger.info(f"Environment {self.id} is cleaning up.")
         for session in self.session_dict.values():
             try:
                 self.stop_session(session.session_id)
@@ -330,7 +330,7 @@ class Environment:
                 env=kernel_env,
             )
             kernel = self.multi_kernel_manager.get_kernel(kernel_id)
-            print("Kernel started inside container", kernel.get_connection_info())
+            logger.info(f"Kernel started inside container{kernel.get_connection_info()}")
 
     def execute_code(
         self,
@@ -438,7 +438,6 @@ class Environment:
                     container.stop()
                     container.remove()
                     del self.session_container_dict[session_id]
-                    self.port_manager.reclaim_ports(client_id=session_id)
                 else:
                     raise ValueError(f"Unsupported environment mode {self.mode}")
 

@@ -367,6 +367,15 @@ async def start():
     app_session_dict[user_session_id] = app.get_session()
 
 
+@cl.on_chat_end
+async def end():
+    user_session_id = cl.user_session.get("id")
+    app_session = app_session_dict[user_session_id]
+    print(f"Stopping session {app_session.session_id}")
+    app_session.stop()
+    app_session_dict.pop(user_session_id)
+
+
 @cl.on_message
 async def main(message: cl.Message):
     user_session_id = cl.user_session.get("id")  # type: ignore

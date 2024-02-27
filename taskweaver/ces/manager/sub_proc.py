@@ -58,8 +58,6 @@ class SubProcessManager(Manager):
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         kernel_mode: Optional[Literal["SubProcess", "Container"]] = "SubProcess",
-        port_start: int = 49500,
-        port_end: int = 49999,
     ) -> None:
         env_id = env_id or os.getenv("TASKWEAVER_ENV_ID", "local")
         env_dir = env_dir or os.getenv(
@@ -76,8 +74,6 @@ class SubProcessManager(Manager):
             env_id,
             env_dir,
             env_mode=env_mode,
-            port_range_start=port_start,
-            port_range_end=port_end,
         )
 
     def initialize(self) -> None:

@@ -109,7 +109,7 @@ class CodeGenerator(Role):
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
 
-        self.logger.info("CodeInterpreter initialized successfully")
+        self.logger.info("CodeGenerator initialized successfully")
 
     def configure_verification(
         self,

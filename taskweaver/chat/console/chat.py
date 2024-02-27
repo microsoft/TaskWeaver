@@ -482,6 +482,8 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
 
     def _reset_session(self, first_session: bool = False):
         if not first_session:
+            self._system_message("--- stopping the current session ---")
+            self.session.stop()
             self._system_message("--- new session starts ---")
             self.session = self.app.get_session()
 

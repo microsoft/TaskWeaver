@@ -235,6 +235,10 @@ class Session:
             ),
         )
 
+    def stop(self) -> None:
+        self.logger.info(f"Session {self.session_id} is stopped")
+        self.code_executor.stop()
+
     def to_dict(self) -> Dict[str, str]:
         return {
             "session_id": self.session_id,
