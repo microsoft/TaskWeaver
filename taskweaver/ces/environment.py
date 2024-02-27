@@ -541,7 +541,7 @@ class Environment:
     ) -> EnvExecution:
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         kc = self._get_client(session_id)
-        kc.wait_for_ready(timeout=60)
+        kc.wait_for_ready(timeout=30)
         kc.start_channels()
         result_msg_id = kc.execute(
             code=code,
