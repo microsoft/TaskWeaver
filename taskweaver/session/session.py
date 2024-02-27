@@ -4,9 +4,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreter import CodeInterpreter, CodeInterpreterPluginOnly
+from taskweaver.code_interpreter import CodeInterpreter, CodeInterpreterCLIOnly, CodeInterpreterPluginOnly
 from taskweaver.code_interpreter.code_executor import CodeExecutor
-from taskweaver.code_interpreter.code_interpreter_cli_only import CodeInterpreterCLIOnly
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
@@ -21,12 +20,12 @@ class AppSessionConfig(ModuleConfig):
 
         self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
-        self.plugin_only_mode = self._get_bool("plugin_only_mode", False)
-        self.cli_only_mode = self._get_bool("cli_only_mode", False)
         self.experience_dir = self._get_path(
             "experience_dir",
             os.path.join(self.src.app_base_path, "experience"),
         )
+
+        self.code_exec_mode = self._get_str("code_exec_mode", "python")
 
 
 class Session:
@@ -62,7 +61,7 @@ class Session:
         self.planner = self.session_injector.create_object(
             Planner,
             {
-                "plugin_only": self.config.plugin_only_mode,
+                "plugin_only": True if self.config.code_exec_mode == "plugin_only" else False,
             },
         )
         self.session_injector.binder.bind(Planner, self.planner)
@@ -75,12 +74,17 @@ class Session:
             },
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
-        if self.config.plugin_only_mode:
+        if self.config.code_exec_mode == "plugin_only":
             self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
-        elif self.config.cli_only_mode:
+        elif self.config.code_exec_mode == "cli_only":
             self.code_interpreter = self.session_injector.get(CodeInterpreterCLIOnly)
-        else:
+        elif self.config.code_exec_mode == "python":
             self.code_interpreter = self.session_injector.get(CodeInterpreter)
+        else:
+            raise ValueError(
+                f"Unknown code_exec_mode: {self.config.code_exec_mode}, "
+                f"only support 'plugin_only', 'cli_only', 'python'",
+            )
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0

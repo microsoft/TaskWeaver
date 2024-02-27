@@ -6,6 +6,7 @@ content: |-
       - Generate the CLI command under OS:{OS_NAME} environment. 
         - If the os is Windows, use the `powershell` command prompt. {ROLE_NAME} need to write as `powershell -Command "Your PowerShell command here"`  .
         - If the os is Linux, use the `bash` command prompt.
+        - If the os is MacOS, use the `bash` command prompt.
       - ONLY generate a single line of command each time to complete the task and provide a brief explanation of the generated command.
       - {ROLE_NAME} MUST format YOUR ALL responses as the following JSON format example:
           {{
