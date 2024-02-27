@@ -84,6 +84,7 @@ def connect_and_execute_code(
         client.stop_channels()
 
 
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
 def test_environment_start_subprocess():
     # get cwd of current file
     cwd = os.path.dirname(os.path.abspath(__file__))
@@ -152,6 +153,7 @@ def test_environment_start_outside_container():
         shutil.rmtree(sessions)
 
 
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
 def test_environment_start_inside_container():
     env = Environment("local", env_mode=EnvMode.InsideContainer)
 
