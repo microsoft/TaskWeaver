@@ -133,6 +133,7 @@ class Environment:
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         env_mode: Optional[EnvMode] = EnvMode.SubProcess,
+        port_start_inside_container: Optional[int] = 12345,
     ) -> None:
         self.session_dict: Dict[str, EnvSession] = {}
         self.id = get_id(prefix="env") if env_id is None else env_id
@@ -156,6 +157,7 @@ class Environment:
                 raise ImportError("docker package is required for container-based kernel.")
             self.docker_client = docker.from_env()
             self.session_container_dict: Dict[str, str] = {}
+            self.port_start_inside_container = port_start_inside_container
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
         atexit.register(self.clean_up)
@@ -179,10 +181,10 @@ class Environment:
     def start_session(
         self,
         session_id: str,
-        kernel_id: Optional[str] = None,
         session_dir: Optional[str] = None,
         cwd: Optional[str] = None,
-        port_start: Optional[int] = None,
+        kernel_id_inside_container: Optional[str] = None,
+        port_start_inside_container: Optional[int] = None,
     ) -> None:
         if self.mode == EnvMode.SubProcess:
             session = self._get_session(session_id, session_dir=session_dir)
@@ -234,9 +236,12 @@ class Environment:
             session = self._get_session(session_id, session_dir=session_dir)
             ces_session_dir = os.path.join(session.session_dir, "ces")
             new_kernel_id = get_id(prefix="knl")
+            session.kernel_id = new_kernel_id
             os.makedirs(ces_session_dir, exist_ok=True)
+            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
+            os.makedirs(cwd, exist_ok=True)
             connection_file = self._get_connection_file(session_id, new_kernel_id)
-            new_port_start = 12345
+            new_port_start = self.port_start_inside_container
             kernel_env = {
                 "TASKWEAVER_ENV_ID": self.id,
                 "TASKWEAVER_SESSION_ID": session_id,
@@ -250,7 +255,7 @@ class Environment:
                 detach=True,
                 environment=kernel_env,
                 volumes={
-                    os.path.abspath(session_dir): {"bind": f"/app/sessions/{session_id}", "mode": "rw"},
+                    os.path.abspath(session.session_dir): {"bind": f"/app/sessions/{session_id}", "mode": "rw"},
                 },
                 ports={
                     f"{new_port_start}/tcp": None,
@@ -297,22 +302,24 @@ class Environment:
             self._cmd_session_init(session)
             session.kernel_status = "ready"
         elif self.mode == EnvMode.InsideContainer:
-            assert port_start is not None, "Port start must be provided when inside container."
+            assert port_start_inside_container is not None, "Port start must be provided when inside container."
+            assert kernel_id_inside_container is not None, "Kernel id must be provided when inside container."
             session = self._get_session(session_id)
+            session.kernel_id = kernel_id_inside_container
             # to ensure executor can find the session directory
             os.environ["TASKWEAVER_SESSION_DIR"] = session.session_dir
             ces_session_dir = os.path.join(session.session_dir, "ces")
-            connection_file = self._get_connection_file(session_id, kernel_id)
+            connection_file = self._get_connection_file(session_id, kernel_id_inside_container)
             cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
 
             kernel_env = os.environ.copy()
             kernel_env.update(
                 {
-                    "JUPYTER_SHELL_PORT": str(port_start),
-                    "JUPYTER_IOPUB_PORT": str(port_start + 1),
-                    "JUPYTER_STDIN_PORT": str(port_start + 2),
-                    "JUPYTER_HB_PORT": str(port_start + 3),
-                    "JUPYTER_CONTROL_PORT": str(port_start + 4),
+                    "JUPYTER_SHELL_PORT": str(port_start_inside_container),
+                    "JUPYTER_IOPUB_PORT": str(port_start_inside_container + 1),
+                    "JUPYTER_STDIN_PORT": str(port_start_inside_container + 2),
+                    "JUPYTER_HB_PORT": str(port_start_inside_container + 3),
+                    "JUPYTER_CONTROL_PORT": str(port_start_inside_container + 4),
                     "JUPYTER_KERNEL_IP": "0.0.0.0",
                     "JUPYTER_MANUAL_PORTS": "True",
                     "CONNECTION_FILE": connection_file,
@@ -324,12 +331,13 @@ class Environment:
                 },
             )
 
-            kernel_id = self.multi_kernel_manager.start_kernel(
-                kernel_id=kernel_id,
+            kernel_id_inside_container = self.multi_kernel_manager.start_kernel(
+                kernel_id=kernel_id_inside_container,
                 cwd=cwd,
                 env=kernel_env,
             )
-            kernel = self.multi_kernel_manager.get_kernel(kernel_id)
+            kernel = self.multi_kernel_manager.get_kernel(kernel_id_inside_container)
+            session.kernel_status = "ready"
             logger.info(f"Kernel started inside container{kernel.get_connection_info()}")
 
     def execute_code(

@@ -10,6 +10,9 @@ COPY requirements.txt /app/requirements.txt
 # Install any necessary dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install additional dependencies below for the plugins
+# e.g., RUN pip install your-package-name
+
 # Copy the project code
 COPY taskweaver/ces /app/taskweaver/ces
 COPY taskweaver/plugin /app/taskweaver/plugin

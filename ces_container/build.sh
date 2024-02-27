@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Check if an image name is provided, if not, use the default value
 if [ -z "$1" ]; then
-    echo "Please provide an image name as an argument."
-    exit 1
+    echo "Using default image name: executor_container"
+    imageName="executor_container"
+else
+    imageName="$1"
 fi
 
 imageName="$1"

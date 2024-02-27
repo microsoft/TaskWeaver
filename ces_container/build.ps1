@@ -1,5 +1,5 @@
 param (
-    [string]$imageName
+    [string]$imageName = "executor_container"
 )
 
 if (-not $imageName) {
