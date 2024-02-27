@@ -189,11 +189,3 @@ def test_environment_start_inside_container():
     finally:
         # delete sessions
         shutil.rmtree(sessions)
-
-
-@pytest.fixture(scope="session")
-def after_tests():
-    # Code to run after tests
-    env_log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "env.log")
-    if os.path.isfile(env_log_file):
-        os.remove(env_log_file)
