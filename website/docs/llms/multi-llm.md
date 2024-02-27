@@ -6,7 +6,7 @@ In this section, we will show you how to use different LLMs for different compon
 
 ## Usage
 
-1. Configure the primary LLM and extra LLMs settings in the `taskeaver_config.json` file under `project` directory, just as follows:
+1. Configure the primary LLM and extra LLMs settings in the `taskweaver_config.json` file under `project` directory, just as follows:
 ```json
 "llm.api_type":"openai",
 "llm.api_base": "https://api.openai.com/v1",
@@ -30,9 +30,9 @@ In this section, we will show you how to use different LLMs for different compon
 ```
 Notes:
 - `ext_llms.llm_list` is a list of LLMs for different components. It is an optional field. If you do not specify it, only the primary LLM will be used.
-- For each LLM setting, please should follow the configuration method described in [llms](./index.md).
-- Besides the extra LLMs, you should also configure the primary LLM settings in the `taskeaver_config.json`, just as shown in the top 5 lines in the above code snippet.
-It is the same as the standard configuration method described in [llms](./index.md).
+- For each LLM setting, please should follow the configuration method described in each LLM configuration page.
+- Besides the extra LLMs, you should also configure the primary LLM settings in the `taskweaver_config.json`, just as shown in the top 5 lines in the above code snippet.
+It is the same as the standard LLM configuration method.
 
 2. Specify the LLMs for different components in the `taskweaver_config.json`.
 For example, we want to use OpenAI GPT-4 for the Planner and use Google gemini-pro for the CodeInterpreter.
