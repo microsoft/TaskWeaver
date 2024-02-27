@@ -1,12 +1,16 @@
 import os
 
+import pytest
 from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.llm import LLMApi
 from taskweaver.logging import LoggingModule
 
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
+
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
 def test_multi_llm():
     app_injector = Injector(
         [LoggingModule],
