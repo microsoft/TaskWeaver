@@ -90,7 +90,7 @@ class KernelSpecProvider(KernelSpecManager):
 class TaskWeaverMultiKernelManager(MultiKernelManager):
     def pre_start_kernel(
         self,
-        kernel_name: str | None,
+        kernel_name: Optional[str],
         kwargs: Any,
     ) -> tuple[KernelManager, str, str]:
         env: Optional[Dict[str, str]] = kwargs.get("env")
