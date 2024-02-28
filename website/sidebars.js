@@ -79,6 +79,7 @@ const sidebars = {
     'run_pytest',
     'experience',
     'code_verification',
+    'cli_only'
   ],
   
 };

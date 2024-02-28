@@ -30,7 +30,7 @@ Compared to the full mode, the plugin-only mode has the following restrictions:
    Other types such as `DataFrame` are not allowed.
    Essentially, we consider these plugins only produce "text-like" output that can be directly consumed by the LLM.
 
-To enable the plugin-only mode, you can add the configuration `"session.plugin_only_mode": true` 
+To enable the plugin-only mode, you can add the configuration `"session.code_gen_mode": "plugin_only"` 
 in the project configuration file `taskweaver_config.json`.
 
 ## Why do we need the plugin-only mode?
