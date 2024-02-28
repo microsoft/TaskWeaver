@@ -12,6 +12,7 @@ You can refer to [taskweaver_as_a_lib](./usage/library.md) to see how to setup a
 - `code_interpreter_only`: allow users to directly communicate with the Code Interpreter.
    In this mode, users can only send messages to the Code Interpreter and receive messages from the Code Interpreter.
    Here is an example:
+
 ``````bash
  =========================================================
  _____         _     _       __
@@ -61,4 +62,31 @@ The execution of the generated python code above has succeeded
 The result of above Python code after execution is:
 array([0.09918602, 0.68732778, 0.44413814, 0.4756623 , 0.48302334,
        0.8286594 , 0.80994359, 0.35677263, 0.45719317, 0.68240194])
-`````
+``````
+- `code_gen_mode`: code generation mode.
+  - `plugin_only`: please refer to [plugin_only_mode](./customization/plugin/plugin_only.md) for more details.
+  - `cli_only`: allow users to directly communicate with the Command Line Interface (CLI) in natural language.
+    CodeInterpreter will generate CLI commands (e.g., bash/powershell), instead of Python code, to fulfill the user's request.
+  
+    💡It is better to enable `code_interpreter_only` when `cli_only` mode is enabled.
+    Here is an example:
+``````bash
+=========================================================
+ _____         _     _       __
+|_   _|_ _ ___| | _ | |     / /__  ____ __   _____  _____
+  | |/ _` / __| |/ /| | /| / / _ \/ __ `/ | / / _ \/ ___/
+  | | (_| \__ \   < | |/ |/ /  __/ /_/ /| |/ /  __/ /
+  |_|\__,_|___/_|\_\|__/|__/\___/\__,_/ |___/\___/_/
+=========================================================
+ TaskWeaver ▶  I am TaskWeaver, an AI assistant. To get started, could you please enter your request?
+    Human   ▶  what time is it now
+ ╭───< CodeInterpreter] preparing          <=�=>
+ ├─► [thought] This command will display the current date and time in the PowerShell command prompt.
+ ├─► [python] powershell -Command "Get-Date"
+ ╰──● sending message to Planner
+ ├──● 
+ │   Tuesday, February 27, 2024 11:05:05 AM
+ ╰──● sending message to Planner
+ TaskWeaver ▶  
+Tuesday, February 27, 2024 11:05:05 AM
+``````

@@ -23,6 +23,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 
 ## 🆕 News
+- 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟
 - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚
 - 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 
 - 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉

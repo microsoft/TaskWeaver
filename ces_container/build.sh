@@ -13,7 +13,7 @@ taskweaverPath="../taskweaver"
 requirementsPath="../requirements.txt"
 
 if [ -d "$taskweaverPath" ]; then
-    echo "Using local files from $folderPath"
+    echo "Using local files from $taskweaverPath"
     cp -r "$taskweaverPath" .
     cp "$requirementsPath" .
 else
