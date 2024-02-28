@@ -79,6 +79,8 @@ const sidebars = {
     'run_pytest',
     'experience',
     'code_verification',
+    'code_execution',
+    'FAQ',
   ],
   
 };
