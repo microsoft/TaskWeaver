@@ -7,7 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import requests
 
 # change current directory to the directory of this file for loading resources
-os.chdir(os.path.dirname(__file__))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 try:
     import chainlit as cl
