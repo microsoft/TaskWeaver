@@ -25,7 +25,11 @@ class AppSessionConfig(ModuleConfig):
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.code_exec_mode = self._get_str("code_exec_mode", "python")
+        self.code_gen_mode = self._get_enum(
+            "code_gen_mode",
+            options=["plugin_only", "cli_only", "python"],
+            default="python",
+        )
 
 
 class Session:
@@ -61,7 +65,7 @@ class Session:
         self.planner = self.session_injector.create_object(
             Planner,
             {
-                "plugin_only": True if self.config.code_exec_mode == "plugin_only" else False,
+                "plugin_only": True if self.config.code_gen_mode == "plugin_only" else False,
             },
         )
         self.session_injector.binder.bind(Planner, self.planner)
@@ -74,15 +78,15 @@ class Session:
             },
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
-        if self.config.code_exec_mode == "plugin_only":
+        if self.config.code_gen_mode == "plugin_only":
             self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
-        elif self.config.code_exec_mode == "cli_only":
+        elif self.config.code_gen_mode == "cli_only":
             self.code_interpreter = self.session_injector.get(CodeInterpreterCLIOnly)
-        elif self.config.code_exec_mode == "python":
+        elif self.config.code_gen_mode == "python":
             self.code_interpreter = self.session_injector.get(CodeInterpreter)
         else:
             raise ValueError(
-                f"Unknown code_exec_mode: {self.config.code_exec_mode}, "
+                f"Unknown code_gen_mode: {self.config.code_gen_mode}, "
                 f"only support 'plugin_only', 'cli_only', 'python'",
             )
 
