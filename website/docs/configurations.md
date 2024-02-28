@@ -5,6 +5,7 @@ The configuration file is in JSON format. So for boolean values, use `true` or `
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
 The following table lists the parameters in the configuration file:
 
+
 | Parameter                                     | Description                                                                                                                                                       | Default Value                                                                                                                               |
 |-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
 | `llm.model`                                   | The model name used by the language model.                                                                                                                        | gpt-4                                                                                                                                       |
@@ -37,7 +38,6 @@ The following table lists the parameters in the configuration file:
 | `session.code_gen_mode`                       | The code generation mode, could be `python`, `plugin_only` or `cli_only`, which means generating python code or only generating plugin functions or CLI commands. | `python`                                                                                                                                    |
 | `round_compressor.rounds_to_compress`         | The number of rounds to compress.                                                                                                                                 | `2`                                                                                                                                         |
 | `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                                                                                                                   | `3`                                                                                                                                         |
-
 
 
 > 💡 $\{AppBaseDir\} is the project directory.

@@ -1,12 +1,12 @@
 # CLI Only Mode
 
 TaskWeaver's CLI-only mode enables users to effortlessly communicate with the Command Line Interface (CLI) using natural language. 
-CodeInterpreter generates CLI commands, such as bash or PowerShell to address the user's needs. 
+CodeInterpreter generates CLI commands, such as bash or PowerShell to address the user's needs.
 This mode allows users to operate your system by simply chatting with the command line in natural language!
+
 
 ## Demo
 TBD
-
 
 
 ## How to enable
