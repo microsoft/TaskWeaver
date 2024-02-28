@@ -1,10 +1,8 @@
 import os
+import signal
 import time
 
 from taskweaver.ces import Environment, EnvMode
-
-# Flag to control the main loop
-keep_running = True
 
 env_id = os.getenv(
     "TASKWEAVER_ENV_ID",
@@ -29,8 +27,20 @@ kernel_id = os.getenv(
     "kernel_id",
 )
 
+env = Environment(env_id, env_dir, env_mode=EnvMode.InsideContainer)
+
+
+def signal_handler(sig, frame):
+    print("Received termination signal. Shutting down the environment.")
+    env.stop_session(session_id)
+    exit(0)
+
+
+# Register the signal handler
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
+
 if __name__ == "__main__":
-    env = Environment(env_id, env_dir, env_mode=EnvMode.InsideContainer)
     env.start_session(
         session_id=session_id,
         port_start_inside_container=port_start,

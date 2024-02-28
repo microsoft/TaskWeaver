@@ -153,9 +153,15 @@ class Environment:
         elif self.mode == EnvMode.OutsideContainer:
             try:
                 import docker
+                import docker.errors
             except ImportError:
                 raise ImportError("docker package is required for container-based kernel.")
-            self.docker_client = docker.from_env()
+
+            try:
+                self.docker_client = docker.from_env()
+            except docker.errors.DockerException as e:
+                raise docker.errors.DockerException(f"Failed to connect to Docker daemon: {e}. ")
+
             self.session_container_dict: Dict[str, str] = {}
             self.port_start_inside_container = port_start_inside_container
         else:
@@ -310,7 +316,7 @@ class Environment:
             os.environ["TASKWEAVER_SESSION_DIR"] = session.session_dir
             ces_session_dir = os.path.join(session.session_dir, "ces")
             connection_file = self._get_connection_file(session_id, kernel_id_inside_container)
-            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
+            cwd = os.path.join(session.session_dir, "cwd")
 
             kernel_env = os.environ.copy()
             kernel_env.update(
