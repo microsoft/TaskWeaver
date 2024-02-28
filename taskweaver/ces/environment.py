@@ -348,8 +348,8 @@ class Environment:
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         km = self.multi_kernel_manager.get_kernel(kernel_id)
         kc = km.client()
-        kc.start_channels()
         kc.wait_for_ready(10)
+        kc.start_channels()
         result_msg_id = kc.execute(
             code=code,
             silent=silent,
