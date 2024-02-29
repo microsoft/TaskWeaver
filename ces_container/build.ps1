@@ -1,12 +1,5 @@
-param (
-    [string]$imageName = "executor_container"
-)
 
-if (-not $imageName) {
-    Write-Host "Please provide an image name as an argument."
-    exit 1
-}
-
+$imageName = "taskweaver/executor"
 $taskweaverPath = "..\taskweaver"
 $requirementsPath = "..\requirements.txt"
 
