@@ -5,7 +5,8 @@ CodeInterpreter generates CLI commands, such as bash or PowerShell to address th
 This allows users to operate your system by simply interacting with the command line through chat in natural language!
 
 ## Demo
-TBD
+
+[TaskWeaver-CLI](https://github.com/microsoft/TaskWeaver/assets/32928431/3724d321-0e0b-49e0-8f77-7b3855069a82)
 
 
 ## How to enable
