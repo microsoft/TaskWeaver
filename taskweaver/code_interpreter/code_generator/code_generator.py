@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List, Optional
 
@@ -14,6 +15,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy
+from taskweaver.module.tracer import tracer
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -322,6 +324,7 @@ class CodeGenerator(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
+    @tracer.start_as_current_span("CodeGenerator.reply")
     def reply(
         self,
         memory: Memory,
@@ -355,15 +358,19 @@ class CodeGenerator(Role):
             else:
                 return False
 
-        self.post_translator.raw_text_to_post(
-            llm_output=self.llm_api.chat_completion_stream(
-                prompt,
-                use_backup_engine=use_back_up_engine,
-                use_smoother=True,
-            ),
-            post_proxy=post_proxy,
-            early_stop=early_stop,
-        )
+        with tracer.start_as_current_span("CodeGenerator.reply.raw_text_to_post") as span:
+            span.set_attribute("prompt", json.dumps(prompt, indent=2))
+
+            self.post_translator.raw_text_to_post(
+                llm_output=self.llm_api.chat_completion_stream(
+                    prompt,
+                    use_backup_engine=use_back_up_engine,
+                    use_smoother=True,
+                ),
+                post_proxy=post_proxy,
+                early_stop=early_stop,
+            )
+
         post_proxy.update_send_to("Planner")
         generated_code = ""
         for attachment in post_proxy.post.attachment_list:

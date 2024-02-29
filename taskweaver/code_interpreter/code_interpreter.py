@@ -12,6 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.module.tracer import get_current_span, tracer
 from taskweaver.role import Role
 
 
@@ -99,12 +100,15 @@ class CodeInterpreter(Role):
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
+    @tracer.start_as_current_span("CodeInterpreter.reply")
     def reply(
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        current_span = get_current_span()
+
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         post_proxy.update_status("generating code")
         self.generator.reply(
@@ -154,6 +158,7 @@ class CodeInterpreter(Role):
 
             return post_proxy.end()
 
+        current_span.set_attribute("code", code.content)
         post_proxy.update_status("verifying code")
         self.logger.info(f"Code to be verified: {code.content}")
         code_verify_errors = code_snippet_verification(

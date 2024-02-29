@@ -10,6 +10,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
+from taskweaver.module.tracer import get_current_span, tracer
 from taskweaver.planner.planner import Planner
 from taskweaver.workspace.workspace import Workspace
 
@@ -113,11 +114,17 @@ class Session:
     def update_session_var(self, variables: Dict[str, str]):
         self.session_var.update(variables)
 
+    @tracer.start_as_current_span("Session._send_text_message")
     def _send_text_message(self, message: str) -> Round:
         chat_round = self.memory.create_round(user_query=message)
         self.event_emitter.start_round(chat_round.id)
 
+        @tracer.start_as_current_span("Session._send_text_message._send_message")
         def _send_message(recipient: str, post: Post) -> Post:
+            current_span = get_current_span()
+            current_span.set_attribute("recipient", recipient)
+            current_span.set_attribute("post", str(post))
+
             chat_round.add_post(post)
 
             use_back_up_engine = True if recipient == post.send_from else False
@@ -205,12 +212,19 @@ class Session:
             self.event_emitter.end_round(chat_round.id)
             return chat_round
 
+    @tracer.start_as_current_span("Session.send_message")
     def send_message(
         self,
         message: str,
         event_handler: Optional[SessionEventHandler] = None,
         files: Optional[List[Dict[Literal["name", "path", "content"], Any]]] = None,
     ) -> Round:
+        # init span with session_id
+        current_span = get_current_span()
+        current_span.set_attribute("session_id", self.session_id)
+        current_span.set_attribute("message", message)
+        current_span.set_attribute("files", str(files))
+
         message_prefix = ""
         if files is not None:
             file_names: List[str] = []

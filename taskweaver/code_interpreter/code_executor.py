@@ -7,6 +7,7 @@ from injector import inject
 from taskweaver.ces.common import ExecutionResult, Manager
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
+from taskweaver.module.tracer import tracer
 from taskweaver.plugin.context import ArtifactType
 
 TRUNCATE_CHAR_LENGTH = 1000
@@ -62,6 +63,7 @@ class CodeExecutor:
         self.plugin_loaded: bool = False
         self.config = config
 
+    @tracer.start_as_current_span("CodeExecutor.execute_code")
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
         if not self.client_started:
             self.start()

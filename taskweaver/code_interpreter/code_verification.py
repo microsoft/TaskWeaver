@@ -4,6 +4,8 @@ from typing import List, Optional, Tuple
 
 from injector import inject
 
+from taskweaver.module.tracer import get_current_span, tracer
+
 
 class FunctionCallValidator(ast.NodeVisitor):
     @inject
@@ -123,12 +125,19 @@ def separate_magics_and_code(input_code: str) -> Tuple[List[str], str, List[str]
     return magics, python_code_str, package_install_commands
 
 
+@tracer.start_as_current_span("CodeVerification.code_snippet_verification")
 def code_snippet_verification(
     code_snippet: str,
     code_verification_on: bool = False,
     allowed_modules: List[str] = [],
     blocked_functions: List[str] = [],
 ) -> Optional[List[str]]:
+    current_span = get_current_span()
+    current_span.set_attribute("code_verification_on", code_verification_on)
+    if code_verification_on:
+        current_span.set_attribute("allowed_modules", str(allowed_modules))
+        current_span.set_attribute("blocked_functions", str(blocked_functions))
+
     if not code_verification_on:
         return None
     errors = []
