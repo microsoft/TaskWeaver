@@ -155,7 +155,10 @@ class Environment:
                 import docker
                 import docker.errors
             except ImportError:
-                raise ImportError("docker package is required for container-based kernel.")
+                raise ImportError(
+                    "docker package is required for container-based kernel. "
+                    "Please install it by running `pip install docker`.",
+                )
 
             try:
                 self.docker_client = docker.from_env()
@@ -257,7 +260,7 @@ class Environment:
             }
             # ports will be assigned automatically at the host
             container = self.docker_client.containers.run(
-                image="executor_container",
+                image="taskweaver/executor",
                 detach=True,
                 environment=kernel_env,
                 volumes={
@@ -342,6 +345,9 @@ class Environment:
                 cwd=cwd,
                 env=kernel_env,
             )
+            # change the permission of the connection file
+            os.chmod(connection_file, 0o644)
+
             kernel = self.multi_kernel_manager.get_kernel(kernel_id_inside_container)
             session.kernel_status = "ready"
             logger.info(f"Kernel started inside container{kernel.get_connection_info()}")
