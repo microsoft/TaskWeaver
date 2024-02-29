@@ -47,5 +47,17 @@ After the Docker image is built, you can run `docker images` to check if a Docke
 named `executor_container` is available. 
 If the prerequisite is met, you can now run TaskWeaver in the `Container` mode.
 
+## Limitations of the `Container` Mode
 
+The `Container` mode is more secure than the `SubProcess` mode, but it also has some limitations:
+
+- The startup time of the `Container` mode is longer than the `SubProcess` mode, because it needs to start a Docker container. 
+- As the Jupyter Kernel is running inside a Docker container, it has limited access to the host machine. We are mapping the
+  `project/workspace/sessions/<session_id>` directory to the container, so the code executed in the container can access the
+  files in it. One implication of this is that the user cannot ask the agent to load a file from the host machine, because the
+  file is not available in the container. Instead, the user needs to upload the file either using the `/upload` command in 
+  the console or the `upload` button in the web interface.
+- We have installed required packages in the Docker image to run the Jupyter Kernel. If the user needs to use a package that is
+  not available in the Docker image, the user needs to add the package to the Dockerfile (at `TaskWeaver/ces_container/Dockerfile`) 
+  and rebuild the Docker image.
 
