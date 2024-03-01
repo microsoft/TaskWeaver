@@ -115,12 +115,12 @@ class LLMApi(object):
             self._set_embedding_service(MockApiService)
 
         if ext_llms_config is not None:
-            for llm_config in ext_llms_config.ext_llm_config_list:
+            for key, llm_config in ext_llms_config.ext_llm_config_mapping.items():
                 assert (
                     llm_config.api_type in llm_completion_config_map
-                ), f"API type {llm_config.api_type} is not supported"
+                ), f"API type {llm_config.api_type} is not suppgorted"
                 llm_completion_service = self._get_completion_service(llm_config)
-                self.ext_llms[llm_config.api_type + "." + llm_config.model] = llm_completion_service
+                self.ext_llms[key] = llm_completion_service
 
     def _set_completion_service(self, svc: Type[CompletionService]) -> None:
         self.completion_service: CompletionService = self.injector.get(svc)
@@ -147,18 +147,16 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
-        llm_type_model: Optional[str] = None,
+        llm_alias: Optional[str] = None,
         **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
-        if llm_type_model is not None and llm_type_model != "":
-            if llm_type_model in self.ext_llms:
-                completion_service = self.ext_llms[llm_type_model]
+        if llm_alias is not None and llm_alias != "":
+            if llm_alias in self.ext_llms:
+                completion_service = self.ext_llms[llm_alias]
             else:
                 raise ValueError(
-                    f"Cannot import extra LLM model {llm_type_model}, "
-                    f"the valid model key should be <llm.api_type>.<llm.model>."
-                    f"For example, openai.gpt-3.5-turbo.",
+                    f"Cannot import extra LLM model {llm_alias}, ",
                 )
         else:
             completion_service = self.completion_service
@@ -188,18 +186,16 @@ class LLMApi(object):
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
         use_smoother: bool = True,
-        llm_type_model: Optional[str] = None,
+        llm_alias: Optional[str] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         def get_generator() -> Generator[ChatMessageType, None, None]:
-            if llm_type_model is not None and llm_type_model != "":
-                if llm_type_model in self.ext_llms:
-                    completion_service = self.ext_llms[llm_type_model]
+            if llm_alias is not None and llm_alias != "":
+                if llm_alias in self.ext_llms:
+                    completion_service = self.ext_llms[llm_alias]
                 else:
                     raise ValueError(
-                        f"Cannot import extra LLM model {llm_type_model}, "
-                        f"the valid model key should be <llm.api_type>.<llm.model>."
-                        f"For example, openai.gpt-3.5-turbo.",
+                        f"Cannot import extra LLM model {llm_alias}, ",
                     )
             else:
                 completion_service = self.completion_service

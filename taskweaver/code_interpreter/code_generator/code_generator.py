@@ -362,7 +362,7 @@ class CodeGenerator(Role):
                 prompt,
                 use_backup_engine=use_back_up_engine,
                 use_smoother=True,
-                llm_type_model=self.config.llm_type_model,
+                llm_alias=self.config.llm_type_model,
             ),
             post_proxy=post_proxy,
             early_stop=early_stop,
