@@ -5,7 +5,7 @@ from injector import inject
 
 from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMApi, format_chat_message
+from taskweaver.llm import LLMApi, format_chat_message,CodeInterpreterLLMApi
 from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
@@ -50,7 +50,8 @@ class CodeGeneratorPluginOnly(Role):
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
         event_emitter: SessionEventEmitter,
-        llm_api: LLMApi,
+        # llm_api: LLMApi,
+        llm_api: CodeInterpreterLLMApi,
     ):
         self.config = config
         self.logger = logger

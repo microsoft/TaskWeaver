@@ -3,7 +3,7 @@ from typing import Callable, List, Set, Tuple
 from injector import inject
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMApi
+from taskweaver.llm import LLMApi,PlannerLLMApi
 from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
@@ -23,7 +23,8 @@ class RoundCompressor:
     @inject
     def __init__(
         self,
-        llm_api: LLMApi,
+        # llm_api: LLMApi,
+        llm_api: PlannerLLMApi,
         config: RoundCompressorConfig,
         logger: TelemetryLogger,
     ):

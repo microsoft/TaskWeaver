@@ -46,6 +46,81 @@ class LLMModuleConfig(ModuleConfig):
 
         self.use_mock: bool = self._get_bool("use_mock", False)
 
+class PlannerModuleConfig(ModuleConfig):
+    def _configure(self) -> None:
+        self._set_name("planner")
+        self.api_type = self._get_str(
+            "api_type",
+            "openai",
+        )
+        self.embedding_api_type = self._get_str(
+            "embedding_api_type",
+            "sentence_transformers",
+        )
+        self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
+        self.api_key: Optional[str] = self._get_str(
+            "api_key",
+            None,
+            required=False,
+        )
+
+        self.model: Optional[str] = self._get_str("model", None, required=False)
+        self.backup_model: Optional[str] = self._get_str(
+            "backup_model",
+            None,
+            required=False,
+        )
+        self.embedding_model: Optional[str] = self._get_str(
+            "embedding_model",
+            None,
+            required=False,
+        )
+
+        self.response_format: Optional[str] = self._get_enum(
+            "response_format",
+            options=["json_object", "text"],
+            default="json_object",
+        )
+
+        self.use_mock: bool = self._get_bool("use_mock", False)
+
+class CodeInterpreterModuleConfig(ModuleConfig):
+    def _configure(self) -> None:
+        self._set_name("code_interpreter")
+        self.api_type = self._get_str(
+            "api_type",
+            "openai",
+        )
+        self.embedding_api_type = self._get_str(
+            "embedding_api_type",
+            "sentence_transformers",
+        )
+        self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
+        self.api_key: Optional[str] = self._get_str(
+            "api_key",
+            None,
+            required=False,
+        )
+
+        self.model: Optional[str] = self._get_str("model", None, required=False)
+        self.backup_model: Optional[str] = self._get_str(
+            "backup_model",
+            None,
+            required=False,
+        )
+        self.embedding_model: Optional[str] = self._get_str(
+            "embedding_model",
+            None,
+            required=False,
+        )
+
+        self.response_format: Optional[str] = self._get_enum(
+            "response_format",
+            options=["json_object", "text"],
+            default="json_object",
+        )
+
+        self.use_mock: bool = self._get_bool("use_mock", False)
 
 class LLMServiceConfig(ModuleConfig):
     @inject
@@ -54,12 +129,40 @@ class LLMServiceConfig(ModuleConfig):
         src: AppConfigSource,
         llm_module_config: LLMModuleConfig,
     ) -> None:
+
         self.llm_module_config = llm_module_config
         super().__init__(src)
 
     def _set_name(self, name: str) -> None:
         self.name = f"llm.{name}"
 
+class PlannerServiceConfig(ModuleConfig):
+    @inject
+    def __init__(
+        self,
+        src: AppConfigSource,
+        planner_module_config: PlannerModuleConfig,
+    ) -> None:
+
+        self.planner_config = planner_module_config
+        super().__init__(src)
+
+    def _set_name(self, name: str) -> None:
+        self.name = f"planner.{name}"
+
+class CodeInterpreterServiceConfig(ModuleConfig):
+    @inject
+    def __init__(
+        self,
+        src: AppConfigSource,
+        code_interpreter_config: CodeInterpreterModuleConfig,
+    ) -> None:
+
+        self.code_interpreter_config = code_interpreter_config
+        super().__init__(src)
+
+    def _set_name(self, name: str) -> None:
+        self.name = f"code_interpreter.{name}"
 
 class CompletionService(abc.ABC):
     @abc.abstractmethod

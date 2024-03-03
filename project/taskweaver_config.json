@@ -1,5 +1,18 @@
 {
-"llm.api_base": "https://api.openai.com/v1",
-"llm.api_key": "",
-"llm.model": "gpt-4-1106-preview"
+    "llm.openai.api_base": "https://api.endpoints.anyscale.com/v1",
+    "llm.openai.api_key": "esecret_az6eksu5wmdsuq88qkhvn4ih4k",
+    "llm.openai.model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "llm.openai.top_p": 1,
+
+    "planner.openai.api_base": "https://api.endpoints.anyscale.com/v1",
+    "planner.openai.api_key": "esecret_az6eksu5wmdsuq88qkhvn4ih4k",
+    "planner.openai.model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+    "planner.openai.top_p": 1,
+
+    "code_interpreter.openai.api_base": "https://api.endpoints.anyscale.com/v1",
+    "code_interpreter.api_key": "esecret_az6eksu5wmdsuq88qkhvn4ih4k",
+    "code_generator.openai.model": "codellama/CodeLlama-70b-Instruct-hf",
+    "code_generator.openai.top_p": 1,
+
+    "app_session_config.max_internal_chat_round_num": 50
 }
