@@ -3,6 +3,7 @@ from typing import Any, Callable, Generator, List, Optional, Type
 
 from injector import Injector, Module, inject, provider
 
+from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.llm.azure_ml import AzureMLService
 from taskweaver.llm.base import (
     CompletionService,
@@ -36,25 +37,6 @@ llm_completion_config_map = {
 llm_embedding_config_map = {}
 
 
-class CompletionServiceModule(Module):
-    @provider
-    def provide_completion_service(self, config: LLMServiceConfig) -> CompletionService:
-        if self.config.api_type in ["openai", "azure", "azure_ad"]:
-            return OpenAIService(config)
-        elif config.llm_module_config.api_type == "qwen":
-            return QWenService(config)
-        elif config.llm_module_config.api_type == "zhipuai":
-            return ZhipuAIService(config)
-        elif config.llm_module_config.api_type == "azure_ml":
-            return AzureMLService(config)
-        elif config.llm_module_config.api_type == "google_genai":
-            return GoogleGenAIService(config)
-        elif config.llm_module_config.api_type == "ollama":
-            return OllamaService(config)
-        else:
-            raise ValueError(f"API type {config.llm_module_config.api_type} is not supported")
-
-
 class LLMApi(object):
     @inject
     def __init__(
@@ -65,7 +47,7 @@ class LLMApi(object):
     ):
         self.config = config
         self.injector = injector
-        self.ext_llm_injector = Injector([CompletionServiceModule])
+        self.ext_llm_injector = Injector([])
         self.ext_llms = {}  # extra llm models
 
         if self.config.api_type in ["openai", "azure", "azure_ad"]:
@@ -115,11 +97,10 @@ class LLMApi(object):
             self._set_embedding_service(MockApiService)
 
         if ext_llms_config is not None:
-            for key, llm_config in ext_llms_config.ext_llm_config_mapping.items():
-                assert (
-                    llm_config.api_type in llm_completion_config_map
-                ), f"API type {llm_config.api_type} is not suppgorted"
-                llm_completion_service = self._get_completion_service(llm_config)
+            for key, config in ext_llms_config.ext_llm_config_mapping.items():
+                api_type = config.get_str("llm.api_type")
+                assert api_type in llm_completion_config_map, f"API type {api_type}  is not supported"
+                llm_completion_service = self._get_completion_service(config)
                 self.ext_llms[key] = llm_completion_service
 
     def _set_completion_service(self, svc: Type[CompletionService]) -> None:
@@ -131,8 +112,9 @@ class LLMApi(object):
         self.injector.binder.bind(svc, to=self.embedding_service)
 
     def _get_completion_service(self, config) -> CompletionService:
-        self.ext_llm_injector.binder.bind(LLMModuleConfig, to=config)
-        return self.ext_llm_injector.get(llm_completion_config_map[config.api_type])
+        self.ext_llm_injector.binder.bind(AppConfigSource, to=config)
+        api_type = config.get_str("llm.api_type")
+        return self.ext_llm_injector.get(llm_completion_config_map[api_type])
 
     def _get_embedding_service(self, svc: Type[EmbeddingService]) -> EmbeddingService:
         # TODO

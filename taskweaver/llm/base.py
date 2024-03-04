@@ -1,4 +1,5 @@
 import abc
+import copy
 from typing import Any, Generator, List, Optional
 
 from injector import inject
@@ -16,9 +17,9 @@ class ExtLLMModuleConfig(ModuleConfig):
         self.ext_llm_config_mapping = {}
 
         for key, config_dict in self.ext_llm_config_dicts.items():
-            config: AppConfigSource = AppConfigSource(config=config_dict)
-            llm_module_config = LLMModuleConfig(src=config)  # use dict in ext_llms.llm_list to create LLMModuleConfig
-            self.ext_llm_config_mapping[key] = llm_module_config
+            config = copy.deepcopy(self.src)
+            config.in_memory_store = config_dict
+            self.ext_llm_config_mapping[key] = config
 
 
 class LLMModuleConfig(ModuleConfig):
@@ -71,7 +72,7 @@ class LLMServiceConfig(ModuleConfig):
         super().__init__(src)
 
     def _set_name(self, name: str) -> None:
-        self.name = f"llm.{name}"
+        self.name = "llm"
 
 
 class CompletionService(abc.ABC):
