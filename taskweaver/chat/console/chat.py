@@ -482,10 +482,10 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
 
     def _reset_session(self, first_session: bool = False):
         if not first_session:
-            self._system_message(f"--- stopping the current session {self.session.session_id} ---")
+            self._system_message("--- stopping the current session ---")
             self.session.stop()
             self.session = self.app.get_session()
-            self._system_message(f"--- new session starts {self.session.session_id} ---")
+            self._system_message("--- new session starts ---")
 
         self._assistant_message(
             "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",

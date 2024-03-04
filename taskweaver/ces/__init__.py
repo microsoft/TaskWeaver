@@ -7,7 +7,7 @@ from taskweaver.ces.manager.sub_proc import SubProcessManager
 
 def code_execution_service_factory(
     env_dir: str,
-    kernel_mode: Literal["SubProcess", "Container"] = "SubProcess",
+    kernel_mode: Literal["local", "container"] = "local",
 ) -> Manager:
     return SubProcessManager(
         env_dir=env_dir,

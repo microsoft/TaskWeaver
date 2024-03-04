@@ -57,16 +57,16 @@ class SubProcessManager(Manager):
         self,
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
-        kernel_mode: Optional[Literal["SubProcess", "Container"]] = "SubProcess",
+        kernel_mode: Optional[Literal["local", "container"]] = "local",
     ) -> None:
         env_id = env_id or os.getenv("TASKWEAVER_ENV_ID", "local")
         env_dir = env_dir or os.getenv(
             "TASKWEAVER_ENV_DIR",
             os.path.realpath(os.getcwd()),
         )
-        if kernel_mode == "SubProcess":
-            env_mode = EnvMode.SubProcess
-        elif kernel_mode == "Container":
+        if kernel_mode == "local":
+            env_mode = EnvMode.Local
+        elif kernel_mode == "container":
             env_mode = EnvMode.OutsideContainer
         else:
             raise ValueError(f"Invalid kernel mode: {kernel_mode}, expected 'SubProcess' or 'Container'.")

@@ -90,7 +90,7 @@ def test_environment_start_subprocess():
     cwd = os.path.dirname(os.path.abspath(__file__))
     sessions = os.path.join(cwd, "sessions")
     try:
-        env = Environment("local", env_mode=EnvMode.SubProcess)
+        env = Environment("local", env_mode=EnvMode.Local)
         env.start_session(
             session_id="session_id",
         )

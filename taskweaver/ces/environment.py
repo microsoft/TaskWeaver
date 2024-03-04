@@ -122,7 +122,7 @@ class TaskWeaverMultiKernelManager(MultiKernelManager):
 
 
 class EnvMode(enum.Enum):
-    SubProcess = "subprocess"
+    Local = "local"
     InsideContainer = "inside_container"
     OutsideContainer = "outside_container"
 
@@ -132,14 +132,14 @@ class Environment:
         self,
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
-        env_mode: Optional[EnvMode] = EnvMode.SubProcess,
+        env_mode: Optional[EnvMode] = EnvMode.Local,
         port_start_inside_container: Optional[int] = 12345,
     ) -> None:
         self.session_dict: Dict[str, EnvSession] = {}
         self.id = get_id(prefix="env") if env_id is None else env_id
         self.env_dir = env_dir if env_dir is not None else os.getcwd()
         self.mode = env_mode
-        if self.mode == EnvMode.SubProcess or self.mode == EnvMode.InsideContainer:
+        if self.mode == EnvMode.Local or self.mode == EnvMode.InsideContainer:
             self.multi_kernel_manager = TaskWeaverMultiKernelManager(
                 default_kernel_name="taskweaver",
                 kernel_spec_manager=KernelSpecProvider(),
@@ -195,7 +195,7 @@ class Environment:
         kernel_id_inside_container: Optional[str] = None,
         port_start_inside_container: Optional[int] = None,
     ) -> None:
-        if self.mode == EnvMode.SubProcess:
+        if self.mode == EnvMode.Local:
             session = self._get_session(session_id, session_dir=session_dir)
             ces_session_dir = os.path.join(session.session_dir, "ces")
             new_kernel_id = get_id(prefix="knl")
@@ -446,7 +446,7 @@ class Environment:
             return
         try:
             if session.kernel_id != "":
-                if self.mode == EnvMode.SubProcess or self.mode == EnvMode.InsideContainer:
+                if self.mode == EnvMode.Local or self.mode == EnvMode.InsideContainer:
                     kernel = self.multi_kernel_manager.get_kernel(session.kernel_id)
                     is_alive = kernel.is_alive()
                     if is_alive:
