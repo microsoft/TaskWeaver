@@ -64,12 +64,13 @@ class SubProcessManager(Manager):
             "TASKWEAVER_ENV_DIR",
             os.path.realpath(os.getcwd()),
         )
-        if kernel_mode == "local":
+        self.kernel_mode = kernel_mode
+        if self.kernel_mode == "local":
             env_mode = EnvMode.Local
-        elif kernel_mode == "container":
+        elif self.kernel_mode == "container":
             env_mode = EnvMode.OutsideContainer
         else:
-            raise ValueError(f"Invalid kernel mode: {kernel_mode}, expected 'SubProcess' or 'Container'.")
+            raise ValueError(f"Invalid kernel mode: {self.kernel_mode}, expected 'local' or 'container'.")
         self.env = Environment(
             env_id,
             env_dir,
@@ -98,3 +99,6 @@ class SubProcessManager(Manager):
             session_dir=session_dir,
             cwd=cwd,
         )
+
+    def get_kernel_mode(self) -> Literal["local", "container"] | None:
+        return self.kernel_mode
