@@ -1,5 +1,5 @@
 import abc
-from typing import Dict, Optional
+from typing import Dict, Iterable, Optional
 
 from ..session.session import Session
 
@@ -21,6 +21,10 @@ class SessionStore(abc.ABC):
     def has_session(self, session_id: str) -> bool:
         pass
 
+    @abc.abstractmethod
+    def get_all_session_ids(self) -> Iterable[str]:
+        pass
+
 
 class InMemorySessionStore(SessionStore):
     def __init__(self) -> None:
@@ -37,3 +41,6 @@ class InMemorySessionStore(SessionStore):
 
     def has_session(self, session_id: str) -> bool:
         return session_id in self.sessions
+
+    def get_all_session_ids(self) -> Iterable[str]:
+        return self.sessions.keys()

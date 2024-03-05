@@ -15,6 +15,10 @@ class ExecutionServiceConfig(ModuleConfig):
             "env_dir",
             os.path.join(self.src.app_base_path, "env"),
         )
+        self.kernel_mode = self._get_str(
+            "kernel_mode",
+            "local",
+        )
 
 
 class ExecutionServiceModule(Module):
@@ -25,6 +29,7 @@ class ExecutionServiceModule(Module):
     def provide_executor_manager(self, config: ExecutionServiceConfig) -> Manager:
         if self.manager is None:
             self.manager = code_execution_service_factory(
-                config.env_dir,
+                env_dir=config.env_dir,
+                kernel_mode=config.kernel_mode,
             )
         return self.manager
