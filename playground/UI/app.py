@@ -72,7 +72,7 @@ def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
             image = cl.Image(
                 name=file_path,
                 display="inline",
-                path=file_path,
+                path=file_path if os.path.isabs(file_path) else os.path.join(session_cwd_path, file_path),
                 size="large",
             )
             elements.append(image)
@@ -378,7 +378,6 @@ async def start():
             "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
         )
 
-
 @cl.on_chat_end
 async def end():
     user_session_id = cl.user_session.get("id")
@@ -395,7 +394,6 @@ async def main(message: cl.Message):
     session_cwd_path = session.execution_cwd
 
     # display loader before sending message
-
     async with cl.Step(name="", show_input=True, root=True) as root_step:
         response_round = await cl.make_async(session.send_message)(
             message.content,
@@ -405,7 +403,7 @@ async def main(message: cl.Message):
                     "path": element.path,
                 }
                 for element in message.elements
-                if element.type == "file"
+                if element.type == "file" or element.type == "image"
             ],
             event_handler=ChainLitMessageUpdater(root_step),
         )
@@ -444,7 +442,6 @@ async def main(message: cl.Message):
                 f"{img_prefix}[{file_name}]({file_path})",
                 file_name,
             )
-
         elements = file_display(files, session_cwd_path)
         await cl.Message(
             author="TaskWeaver",
