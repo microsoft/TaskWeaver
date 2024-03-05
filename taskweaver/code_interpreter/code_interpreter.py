@@ -50,42 +50,6 @@ class CodeInterpreterConfig(ModuleConfig):
                 "__import__",
             ],
         )
-        # Add config from LLMModuleConfig
-        self.api_type = self._get_str(
-            "api_type",
-            "openai",
-        )
-        self.embedding_api_type = self._get_str(
-            "embedding_api_type",
-            "sentence_transformers",
-        )
-        self.api_base: Optional[str] = self._get_str("api_base", None, required=False)
-        self.api_key: Optional[str] = self._get_str(
-            "api_key",
-            None,
-            required=False,
-        )
-
-        self.model: Optional[str] = self._get_str("model", None, required=False)
-        self.backup_model: Optional[str] = self._get_str(
-            "backup_model",
-            None,
-            required=False,
-        )
-        self.embedding_model: Optional[str] = self._get_str(
-            "embedding_model",
-            None,
-            required=False,
-        )
-
-        self.response_format: Optional[str] = self._get_enum(
-            "response_format",
-            options=["json_object", "text"],
-            default="json_object",
-        )
-
-        self.use_mock: bool = self._get_bool("use_mock", False)
-
 
 def update_verification(
     response: PostEventProxy,
