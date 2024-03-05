@@ -378,16 +378,6 @@ async def start():
             "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
         )
 
-
-@cl.on_chat_end
-async def end():
-    user_session_id = cl.user_session.get("id")
-    app_session = app_session_dict[user_session_id]
-    print(f"Stopping session {app_session.session_id}")
-    app_session.stop()
-    app_session_dict.pop(user_session_id)
-
-
 @cl.on_chat_end
 async def end():
     user_session_id = cl.user_session.get("id")
