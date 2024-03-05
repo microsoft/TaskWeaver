@@ -38,8 +38,8 @@ Notes:
 2. Specify the LLMs for different components in the `taskweaver_config.json`.
 For example, we want to use OpenAI GPT-4 for the Planner and use Google gemini-pro for the CodeInterpreter.
 ```json
-"planner.llm_type_model": "llm_A",
-"code_generator.llm_type_model": "llm_B"
+"planner.llm_alias": "llm_A",
+"code_generator.llm_alias": "llm_B"
 ```
 Notes:
 - If you do not specify the LLM for a component, the primary LLM will be used by default.
