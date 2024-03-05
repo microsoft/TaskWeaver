@@ -64,3 +64,63 @@ The `container` mode is more secure than the `local` mode, but it also has some 
   not available in the Docker image, the user needs to add the package to the Dockerfile (at `TaskWeaver/ces_container/Dockerfile`) 
   and rebuild the Docker image.
 
+## Restricting External Network Access for Docker Containers
+
+In some cases, the agent developer may want to restrict the Docker container's access to the external network, e.g., the internet.
+In other words, the agent developer only wants to run the code in the container but does not allow either 
+the plugins or the generated code to access the internet.
+
+The following approach is a common way to restrict a Docker container's access to the internet while still 
+allowing inbound connections on specific ports:  
+   
+1. **Creating a Docker network with `enable_ip_masquerade` set to false**:  
+  
+   By default, Docker uses IP masquerading (a form of network address translation or NAT) to allow containers 
+   to communicate with external networks with the source IP address being the host IP address. 
+    When you set `enable_ip_masquerade` to false for a custom Docker network, 
+    you prevent containers on that network from having their IP addresses masqueraded, effectively blocking them 
+    from accessing the internet. To create such a network in Docker, you would use the following command:  
+  
+   ```bash  
+   docker network create --opt com.docker.network.bridge.enable_ip_masquerade=false my_non_internet_network  
+   ```  
+  
+   Any container connected to `my_non_internet_network` will not have internet access due to the disabled IP masquerade.  
+    Now, you can run 
+    ```bash
+    docker network inspect my_non_internet_network
+    ```
+   and you will see an output similar to the following:
+    ```json
+    "Config": [
+        {
+            "Subnet": "172.19.0.0/16",
+            "Gateway": "172.19.0.1"
+        }
+    ]
+    ```
+   This shows the subnet of the docker network, all containers connected to this network will have an IP address in this subnet.
+   
+2. **Establishing a rule on the host's firewall or using iptables**:  
+  
+   This step is about setting up rules to block outgoing traffic from the Docker network's subnet 
+   to any external addresses. This adds an additional layer of security to ensure that even 
+    if IP masquerade is somehow enabled or if the container finds another route, the traffic will still be blocked.  
+  
+   - **On a Linux host using iptables**, you might add a rule like this:  
+  
+     ```bash  
+     iptables -I FORWARD -s <docker_network_subnet> -j DROP  
+     ```  
+       
+     Replace `<docker_network_subnet>` with the actual subnet used by your Docker network. 
+     In the previous example, the subnet is `172.19.0.0/16`. This rule drops all forwarding traffic from that subnet. 
+  
+   - **On a Windows host**, you would create a similar rule within the Windows Firewall 
+     to block outgoing traffic from the Docker network's subnet.  
+   
+Keep in mind that this approach can be considered good practice if you understand the implications 
+and have a specific need to isolate your container from the internet.
+However, it could also complicate network troubleshooting and container communication if not managed properly. 
+Always ensure you are testing these configurations in a safe environment before applying them to production systems.  
+   
