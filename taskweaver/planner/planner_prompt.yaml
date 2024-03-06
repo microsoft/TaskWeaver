@@ -116,16 +116,16 @@ planner_response_schema: |-
     ]
   }
 
-code_interpreter_introduction : |-
-  - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
-  - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.
-  - CodeInterpreter has the following plugin functions and their required parameters need to be provided before the execution:
-  {plugin_description}
-  - CodeInterpreter can only talk to the Planner.
-  - CodeInterpreter can only follow one instruction at a time.
-  - CodeInterpreter returns the execution results, generated Python code, or error messages to the Planner.
-  - CodeInterpreter is stateful and it remembers the execution results of the previous rounds.
-  - The input of CodeInterpreter will be prefixed with "CodeInterpreter:" in the chat history.
+#code_interpreter_introduction : |-
+#  - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
+#  - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.
+#  - CodeInterpreter has the following plugin functions and their required parameters need to be provided before the execution:
+#  {plugin_description}
+#  - CodeInterpreter can only talk to the Planner.
+#  - CodeInterpreter can only follow one instruction at a time.
+#  - CodeInterpreter returns the execution results, generated Python code, or error messages to the Planner.
+#  - CodeInterpreter is stateful and it remembers the execution results of the previous rounds.
+#  - The input of CodeInterpreter will be prefixed with "CodeInterpreter:" in the chat history.
   
 
 experience_instruction: |-

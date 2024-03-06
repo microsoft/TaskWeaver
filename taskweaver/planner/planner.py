@@ -2,7 +2,7 @@ import json
 import os
 import types
 from json import JSONDecodeError
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from injector import inject
 
@@ -13,7 +13,6 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
-from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
@@ -72,20 +71,18 @@ class Planner(Role):
         logger: TelemetryLogger,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
-        plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor],
         post_translator: PostTranslator,
-        plugin_only: bool = False,
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
         self.config = config
         self.logger = logger
         self.event_emitter = event_emitter
         self.llm_api = llm_api
-        if plugin_only:
-            self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
-        else:
-            self.available_plugins = plugin_registry.get_list()
+        # if plugin_only:
+        #     self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
+        # else:
+        #     self.available_plugins = plugin_registry.get_list()
 
         self.planner_post_translator = post_translator
 
@@ -93,23 +90,23 @@ class Planner(Role):
 
         if self.config.use_example:
             self.examples = self.get_examples()
-        if len(self.available_plugins) == 0:
-            self.logger.warning("No plugin is loaded for Planner.")
-            self.plugin_description = "No plugin functions loaded."
-        else:
-            self.plugin_description = "    " + "\n    ".join(
-                [f"{plugin.spec.plugin_description()}" for plugin in self.available_plugins],
-            )
+        # if len(self.available_plugins) == 0:
+        #     self.logger.warning("No plugin is loaded for Planner.")
+        #     self.plugin_description = "No plugin functions loaded."
+        # else:
+        #     self.plugin_description = "    " + "\n    ".join(
+        #         [f"{plugin.spec.plugin_description()}" for plugin in self.available_plugins],
+        #     )
         self.instruction_template = self.prompt_data["instruction_template"]
-        self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(
-            plugin_description=self.plugin_description,
-        )
+        # self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(
+        #     plugin_description=self.plugin_description,
+        # )
         self.response_schema = self.prompt_data["planner_response_schema"]
 
-        self.instruction = self.instruction_template.format(
-            planner_response_schema=self.response_schema,
-            CI_introduction=self.code_interpreter_introduction,
-        )
+        # self.instruction = self.instruction_template.format(
+        #     planner_response_schema=self.response_schema,
+        #     CI_introduction=self.code_interpreter_introduction,
+        # )
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
@@ -126,6 +123,16 @@ class Planner(Role):
             )
 
         self.logger.info("Planner initialized successfully")
+
+    def compose_sys_prompt(self, roles: Dict[str, Role]):
+        role_description = ""
+        for role_name, role in roles.items():
+            role_description += f"{role.get_intro()}\n\n"
+
+        self.instruction = self.instruction_template.format(
+            planner_response_schema=self.response_schema,
+            role_intro=role_description,
+        )
 
     def compose_conversation_for_prompt(
         self,
