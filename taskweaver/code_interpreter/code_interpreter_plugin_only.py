@@ -2,7 +2,6 @@ import json
 from typing import List, Optional
 
 from injector import inject
-from opentelemetry.trace import StatusCode
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
@@ -11,7 +10,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -110,14 +109,14 @@ class CodeInterpreterPluginOnly(Role):
             )
 
             if exec_result.is_success:
-                current_span.set_status(StatusCode.OK, "Code execution succeeded.")
+                set_span_status(current_span, "OK", "Code execution succeeded.")
             else:
-                current_span.set_status(StatusCode.ERROR, "Code execution failed.")
+                set_span_status(current_span, "ERROR", "Code execution failed.")
             current_span.set_attribute("code_output", code_output)
         else:
             post_proxy.update_message(
                 "No code is generated because no function is selected.",
             )
-            current_span.set_status(StatusCode.OK, "No code is generated.")
+            set_span_status(current_span, "OK", "No code is generated.")
 
         return post_proxy.end()

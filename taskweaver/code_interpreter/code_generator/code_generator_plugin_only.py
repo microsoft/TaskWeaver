@@ -13,7 +13,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -96,6 +96,9 @@ class CodeGeneratorPluginOnly(Role):
         use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
+
+        current_span = get_current_span()
+
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -103,6 +106,8 @@ class CodeGeneratorPluginOnly(Role):
         )
 
         user_query = rounds[-1].user_query
+        current_span.set_attribute("user_query", user_query)
+        current_span.set_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
@@ -134,12 +139,16 @@ class CodeGeneratorPluginOnly(Role):
             return post_proxy.end()
         elif llm_response["role"] == "function":
             post_proxy.update_attachment(llm_response["content"], AttachmentType.function)
+            current_span.set_attribute("function", llm_response["content"])
 
             if self.config.enable_auto_plugin_selection:
                 # here the code is in json format, not really code
                 self.selected_plugin_pool.filter_unused_plugins(code=llm_response["content"])
+
+            set_span_status(current_span, "OK")
             return post_proxy.end()
         else:
+            set_span_status(current_span, "ERROR", "Unexpected response from LLM")
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
 

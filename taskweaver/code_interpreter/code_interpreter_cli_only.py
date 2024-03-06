@@ -1,7 +1,6 @@
 from typing import Optional
 
 from injector import inject
-from opentelemetry.trace import StatusCode
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGeneratorCLIOnly
@@ -10,7 +9,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -62,7 +61,7 @@ class CodeInterpreterCLIOnly(Role):
         code = post_proxy.post.get_attachment(type=AttachmentType.python)[0]
         if len(code) == 0:
             post_proxy.update_message(post_proxy.post.get_attachment(type=AttachmentType.thought)[0], is_end=True)
-            current_span.set_status(StatusCode.OK, "No code is generated.")
+            set_span_status(current_span, "OK", "No code is generated.")
             return post_proxy.end()
 
         code_to_exec = "! " + code
@@ -81,9 +80,9 @@ class CodeInterpreterCLIOnly(Role):
         )
 
         if exec_result.is_success:
-            current_span.set_status(StatusCode.OK, "Code is executed.")
+            set_span_status(current_span, "OK")
         else:
-            current_span.set_status(StatusCode.ERROR, "Code execution failed.")
+            set_span_status(current_span, "ERROR", "Code execution failed.")
         current_span.set_attribute("code_output", CLI_res)
 
         return post_proxy.end()
