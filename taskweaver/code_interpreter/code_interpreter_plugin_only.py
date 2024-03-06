@@ -2,6 +2,7 @@ import json
 from typing import List, Optional
 
 from injector import inject
+from opentelemetry.trace import StatusCode
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
@@ -10,6 +11,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -27,6 +29,7 @@ class CodeInterpreterPluginOnly(Role):
         generator: CodeGeneratorPluginOnly,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
@@ -40,12 +43,15 @@ class CodeInterpreterPluginOnly(Role):
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        current_span = get_current_span()
+
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         self.generator.reply(
             memory,
@@ -83,22 +89,35 @@ class CodeInterpreterPluginOnly(Role):
 
             code_to_exec = "\n".join(code)
             post_proxy.update_attachment(code_to_exec, AttachmentType.python)
-            exec_result = self.executor.execute_code(
-                exec_id=post_proxy.post.id,
-                code=code_to_exec,
+
+            with get_tracer().start_span("executing_code") as span:
+                span.set_tag("code", code_to_exec)
+
+                exec_result = self.executor.execute_code(
+                    exec_id=post_proxy.post.id,
+                    code=code_to_exec,
+                )
+
+            code_output = self.executor.format_code_output(
+                exec_result,
+                with_code=True,
+                use_local_uri=self.config.use_local_uri,
             )
 
             post_proxy.update_message(
-                self.executor.format_code_output(
-                    exec_result,
-                    with_code=True,
-                    use_local_uri=self.config.use_local_uri,
-                ),
+                code_output,
                 is_end=True,
             )
+
+            if exec_result.is_success:
+                current_span.set_status(StatusCode.OK, "Code execution succeeded.")
+            else:
+                current_span.set_status(StatusCode.ERROR, "Code execution failed.")
+            current_span.set_attribute("code_output", code_output)
         else:
             post_proxy.update_message(
                 "No code is generated because no function is selected.",
             )
+            current_span.set_status(StatusCode.OK, "No code is generated.")
 
         return post_proxy.end()

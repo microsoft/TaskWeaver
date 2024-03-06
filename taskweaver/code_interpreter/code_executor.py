@@ -7,7 +7,7 @@ from injector import inject
 from taskweaver.ces.common import ExecutionResult, Manager
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
-from taskweaver.module.tracer import tracer
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.plugin.context import ArtifactType
 
 TRUNCATE_CHAR_LENGTH = 1500
@@ -48,6 +48,7 @@ class CodeExecutor:
         config: AppConfigSource,
         exec_mgr: Manager,
         plugin_registry: PluginRegistry,
+        tracing: Tracing,
     ) -> None:
         self.session_id = session_id
         self.workspace = workspace
@@ -63,16 +64,22 @@ class CodeExecutor:
         self.plugin_registry = plugin_registry
         self.plugin_loaded: bool = False
         self.config = config
+        self.tracing = tracing
 
-    @tracer.start_as_current_span("CodeExecutor.execute_code")
+    @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
+        current_span = get_current_span()
+        current_span.set_attribute("code", code)
+
         if not self.client_started:
-            self.start()
-            self.client_started = True
+            with get_tracer().start_as_current_span("CodeExecutor.start"):
+                self.start()
+                self.client_started = True
 
         if not self.plugin_loaded:
-            self.load_plugin()
-            self.plugin_loaded = True
+            with get_tracer().start_as_current_span("CodeExecutor.load_plugin"):
+                self.load_plugin()
+                self.plugin_loaded = True
 
         result = self.exec_client.execute_code(exec_id, code)
 
@@ -94,6 +101,9 @@ class CodeExecutor:
                         artifact.file_content_encoding,
                     )
                     artifact.file_name = file_name
+
+        set_span_status(current_span, "OK" if result.is_success else "ERROR")
+        current_span.set_attribute("result", self.format_code_output(result, with_code=False))
 
         return result
 

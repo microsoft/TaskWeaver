@@ -1,3 +1,4 @@
+import json
 from typing import Callable, List, Set, Tuple
 
 from injector import inject
@@ -7,6 +8,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 
 
 class RoundCompressorConfig(ModuleConfig):
@@ -26,6 +28,7 @@ class RoundCompressor:
         llm_api: LLMApi,
         config: RoundCompressorConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
     ):
         self.config = config
         self.processed_rounds: Set[str] = set()
@@ -35,6 +38,7 @@ class RoundCompressor:
         self.llm_api = llm_api
         self.logger = logger
 
+    @tracing_decorator
     def compress_rounds(
         self,
         rounds: List[Round],
@@ -42,6 +46,9 @@ class RoundCompressor:
         use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> Tuple[str, List[Round]]:
+        current_span = get_current_span()
+        current_span.set_attribute("previous_summary", self.previous_summary)
+
         remaining_rounds = len(rounds)
         for _round in rounds:
             if _round.id in self.processed_rounds:
@@ -51,6 +58,7 @@ class RoundCompressor:
 
         # not enough rounds to compress
         if remaining_rounds < (self.rounds_to_compress + self.rounds_to_retain):
+            set_span_status(current_span, "OK", "Not enough rounds to compress")
             return self.previous_summary, rounds[-remaining_rounds:]
 
         chat_summary = self._summarize(
@@ -60,12 +68,16 @@ class RoundCompressor:
             prompt_template=prompt_template,
         )
 
+        current_span.set_attribute("chat_summary", chat_summary)
+        set_span_status(current_span, "OK", "Compressed rounds")
+
         if len(chat_summary) > 0:  # if the compression is successful
             self.previous_summary = chat_summary
             return chat_summary, rounds[-self.rounds_to_retain :]
         else:
             return self.previous_summary, rounds[-remaining_rounds:]
 
+    @tracing_decorator
     def _summarize(
         self,
         rounds: List[Round],
@@ -83,7 +95,11 @@ class RoundCompressor:
                 format_chat_message("system", system_instruction),
                 format_chat_message("user", chat_history_str),
             ]
-            new_summary = self.llm_api.chat_completion(prompt, use_backup_engine=use_back_up_engine)["content"]
+            with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
+                span.set_attribute("prompt", json.dumps(prompt, indent=2))
+                new_summary = self.llm_api.chat_completion(prompt, use_backup_engine=use_back_up_engine)["content"]
+                span.set_attribute("summary", new_summary)
+
             self.processed_rounds.update([_round.id for _round in rounds])
             return new_summary
         except Exception as e:

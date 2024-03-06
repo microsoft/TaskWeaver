@@ -12,7 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracer import get_current_span, tracer
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -81,6 +81,7 @@ class CodeInterpreter(Role):
         generator: CodeGenerator,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
@@ -100,7 +101,7 @@ class CodeInterpreter(Role):
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
-    @tracer.start_as_current_span("CodeInterpreter.reply")
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -125,6 +126,8 @@ class CodeInterpreter(Role):
                 "No code verification is performed.",
             )
             update_execution(post_proxy, "NONE", "No code is executed.")
+
+            set_span_status(current_span, "OK", "No code is generated.")
             return post_proxy.end()
 
         code = next(
@@ -134,6 +137,8 @@ class CodeInterpreter(Role):
 
         if code is None:
             # no code is generated is usually due to the failure of parsing the llm output
+            set_span_status(current_span, "ERROR", "Failed to generate code.")
+
             update_verification(
                 post_proxy,
                 "NONE",
@@ -160,13 +165,18 @@ class CodeInterpreter(Role):
 
         current_span.set_attribute("code", code.content)
         post_proxy.update_status("verifying code")
+
+        current_span.set_status("code_verification_on", self.config.code_verification_on)
         self.logger.info(f"Code to be verified: {code.content}")
-        code_verify_errors = code_snippet_verification(
-            code.content,
-            self.config.code_verification_on,
-            allowed_modules=self.config.allowed_modules,
-            blocked_functions=self.config.blocked_functions,
-        )
+        with get_tracer().start_as_current_span("CodeInterpreter.verify_code") as span:
+            span.set_attribute("code", code.content)
+            code_verify_errors = code_snippet_verification(
+                code.content,
+                self.config.code_verification_on,
+                allowed_modules=self.config.allowed_modules,
+                blocked_functions=self.config.blocked_functions,
+            )
+            span.set_attribute("code_verify_errors", code_verify_errors)
 
         if code_verify_errors is None:
             update_verification(
@@ -178,9 +188,14 @@ class CodeInterpreter(Role):
             self.logger.info(
                 f"Code verification finished with {len(code_verify_errors)} errors.",
             )
+
             code_error = "\n".join(code_verify_errors)
             update_verification(post_proxy, "INCORRECT", code_error)
             post_proxy.update_message(code_error)
+
+            set_span_status(current_span, "ERROR", "Code verification failed.")
+            current_span.set_attribute("code_error", code_error)
+
             if self.retry_count < self.config.max_retry_count:
                 post_proxy.update_attachment(
                     format_code_correction_message(),
@@ -252,4 +267,11 @@ class CodeInterpreter(Role):
                 AttachmentType.revise_message,
             )
             self.retry_count += 1
+
+        if exec_result.is_success:
+            set_span_status(current_span, "OK", "Code executed successfully.")
+        else:
+            set_span_status(current_span, "ERROR", "Failed to run code.")
+        current_span.set_attribute("code_output", code_output)
+
         return post_proxy.end()

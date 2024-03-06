@@ -16,7 +16,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracer import tracer
+from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -71,6 +71,7 @@ class Planner(Role):
         self,
         config: PlannerConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
@@ -235,17 +236,22 @@ class Planner(Role):
 
         return chat_history
 
-    @tracer.start_as_current_span("Planner.reply")
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
+        current_span = get_current_span()
+
         rounds = memory.get_role_rounds(role="Planner")
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
+        current_span.set_attribute("user_query", user_query)
+        current_span.set_attribute("use_experience", self.config.use_experience)
+
         if self.config.use_experience:
             selected_experiences = self.experience_generator.retrieve_experience(user_query)
         else:
@@ -303,7 +309,7 @@ class Planner(Role):
                         except GeneratorExit:
                             pass
 
-            with tracer.start_as_current_span("Planner.reply.raw_text_to_post") as span:
+            with get_tracer().start_as_current_span("Planner.reply.raw_text_to_post") as span:
                 span.set_attribute("prompt", json.dumps(chat_history, indent=2))
 
                 self.planner_post_translator.raw_text_to_post(
@@ -312,8 +318,12 @@ class Planner(Role):
                     validation_func=check_post_validity,
                 )
 
+            set_span_status(current_span, "OK")
+
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
+            set_span_status(current_span, "ERROR", str(e))
+            current_span.record_exception(e)
             post_proxy.error(f"failed to parse LLM output due to {str(e)}")
             post_proxy.update_attachment(
                 "".join(llm_output),
@@ -335,6 +345,7 @@ class Planner(Role):
                 self.ask_self_cnt += 1
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
+
         return post_proxy.end()
 
     def get_examples(self) -> List[Conversation]:

@@ -4,8 +4,6 @@ from typing import List, Optional, Tuple
 
 from injector import inject
 
-from taskweaver.module.tracer import get_current_span, tracer
-
 
 class FunctionCallValidator(ast.NodeVisitor):
     @inject
@@ -26,7 +24,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 function_name = node.func.id
                 if function_name in self.blocked_functions:
                     self.errors.append(
-                        f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                        f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                         f"=> Function '{node.func.id}' is not allowed.",
                     )
                     return False
@@ -35,7 +33,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 function_name = node.func.attr
                 if function_name in self.blocked_functions:
                     self.errors.append(
-                        f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                        f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                         f"=> Function '{function_name}' is not allowed.",
                     )
                     return False
@@ -51,12 +49,12 @@ class FunctionCallValidator(ast.NodeVisitor):
                 module_name = alias.name
             if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
                 self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                     f"=> Importing module '{module_name}' is not allowed. ",
                 )
             elif len(self.allowed_modules) == 0:
                 self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                     f"=> Importing module '{module_name}' is not allowed. ",
                 )
 
@@ -67,12 +65,12 @@ class FunctionCallValidator(ast.NodeVisitor):
             module_name = node.module
         if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
             self.errors.append(
-                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                 f"=>  Importing from module '{node.module}' is not allowed.",
             )
         elif len(self.allowed_modules) == 0:
             self.errors.append(
-                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                 f"=>  Importing from module '{node.module}' is not allowed.",
             )
 
@@ -125,19 +123,12 @@ def separate_magics_and_code(input_code: str) -> Tuple[List[str], str, List[str]
     return magics, python_code_str, package_install_commands
 
 
-@tracer.start_as_current_span("CodeVerification.code_snippet_verification")
 def code_snippet_verification(
     code_snippet: str,
     code_verification_on: bool = False,
     allowed_modules: List[str] = [],
     blocked_functions: List[str] = [],
 ) -> Optional[List[str]]:
-    current_span = get_current_span()
-    current_span.set_attribute("code_verification_on", code_verification_on)
-    if code_verification_on:
-        current_span.set_attribute("allowed_modules", str(allowed_modules))
-        current_span.set_attribute("blocked_functions", str(blocked_functions))
-
     if not code_verification_on:
         return None
     errors = []

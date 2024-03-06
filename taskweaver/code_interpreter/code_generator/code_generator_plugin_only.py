@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,6 +13,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -49,6 +51,7 @@ class CodeGeneratorPluginOnly(Role):
         config: CodeGeneratorPluginOnlyConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
@@ -84,6 +87,7 @@ class CodeGeneratorPluginOnly(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -115,13 +119,16 @@ class CodeGeneratorPluginOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
-        llm_response = self.llm_api.chat_completion(
-            messages=prompt,
-            tools=tools,
-            tool_choice="auto",
-            response_format=None,
-            stream=False,
-        )
+        with get_tracer().start_span("CodeGeneratorPluginOnly.reply.chat_completion") as span:
+            span.set_attribute("prompt", json.dumps(prompt, indent=2))
+
+            llm_response = self.llm_api.chat_completion(
+                messages=prompt,
+                tools=tools,
+                tool_choice="auto",
+                response_format=None,
+                stream=False,
+            )
         if llm_response["role"] == "assistant":
             post_proxy.update_message(llm_response["content"])
             return post_proxy.end()
