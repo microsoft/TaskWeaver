@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import re
@@ -287,3 +288,6 @@ class AppConfigSource:
             return val
         else:
             raise ValueError(f"Invalid dict config value {val}")
+
+    def clone(self):
+        return copy.deepcopy(self)

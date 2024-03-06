@@ -1,5 +1,4 @@
 import abc
-import copy
 from typing import Any, Generator, List, Optional
 
 from injector import inject
@@ -17,8 +16,14 @@ class ExtLLMModuleConfig(ModuleConfig):
         self.ext_llm_config_mapping = {}
 
         for key, config_dict in self.ext_llm_config_dicts.items():
-            config = copy.deepcopy(self.src)
-            config.in_memory_store = config_dict
+            config = self.src.clone()
+            for k, v in config_dict.items():
+                config.set_config_value(
+                    var_name=k,
+                    var_type="str",
+                    value=v,
+                    source="override",
+                )  # override the LLM config from extra llms
             self.ext_llm_config_mapping[key] = config
 
 
