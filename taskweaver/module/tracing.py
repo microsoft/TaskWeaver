@@ -11,6 +11,7 @@ class TracingConfig(ModuleConfig):
         self.enabled = self._get_bool("enabled", False)
         self.endpoint = self._get_str("endpoint", "http://127.0.0.1:4318/v1/traces")
         self.service_name = self._get_str("service_name", "taskweaver.opentelemetry.tracer")
+        self.exporter = self._get_str("exporter", "otlp")
 
 
 _tracer = None
@@ -38,7 +39,7 @@ class Tracing:
             from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
             from opentelemetry.sdk.resources import SERVICE_NAME, Resource
             from opentelemetry.sdk.trace import TracerProvider
-            from opentelemetry.sdk.trace.export import BatchSpanProcessor
+            from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
             from opentelemetry.trace import StatusCode
         except ImportError:
             raise ImportError(
@@ -55,14 +56,20 @@ class Tracing:
             },
         )
 
-        _provider = TracerProvider(resource=resource)
+        provider = TracerProvider(resource=resource)
 
-        otlp_exporter = OTLPSpanExporter(endpoint=self.config.endpoint)
-        processor = BatchSpanProcessor(otlp_exporter)
-        _provider.add_span_processor(processor)
+        if self.config.exporter == "otlp":
+            exporter = OTLPSpanExporter(endpoint=self.config.endpoint)
+        elif self.config.exporter == "console":
+            exporter = ConsoleSpanExporter()
+        else:
+            raise ValueError(f"Unknown exporter: {self.config.exporter}")
+
+        processor = BatchSpanProcessor(exporter)
+        provider.add_span_processor(processor)
 
         # Sets the global default tracer provider
-        trace.set_tracer_provider(_provider)
+        trace.set_tracer_provider(provider)
 
         _tracer = trace.get_tracer(__name__)
         _trace = trace
@@ -110,7 +117,7 @@ class DummyTracer:
     def set_attribute(self, key, value):
         pass
 
-    def set_status(self, status_code, status_message):
+    def set_status(self, status_code, status_message: Optional[str] = None):
         pass
 
     def record_exception(self, exception):
