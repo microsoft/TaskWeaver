@@ -41,6 +41,8 @@ class CodeGeneratorPluginOnlyConfig(ModuleConfig):
         self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class CodeGeneratorPluginOnly(Role):
     @inject
@@ -121,6 +123,7 @@ class CodeGeneratorPluginOnly(Role):
             tool_choice="auto",
             response_format=None,
             stream=False,
+            llm_alias=self.config.llm_alias,
         )
         if llm_response["role"] == "assistant":
             post_proxy.update_message(llm_response["content"])

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from injector import inject
 
@@ -30,8 +30,11 @@ class ModuleConfig(object):
     def _get_bool(self, key: str, default: Optional[bool]) -> bool:
         return self.src.get_bool(self._config_key(key), default)
 
-    def _get_list(self, key: str, default: Optional[List[str]]) -> List[str]:
+    def _get_list(self, key: str, default: Optional[List[Any]]) -> List[Any]:
         return self.src.get_list(self._config_key(key), default)
+
+    def _get_dict(self, key: str, default: Optional[dict]) -> dict:
+        return self.src.get_dict(self._config_key(key), default)
 
     def _get_int(self, key: str, default: Optional[int]) -> int:
         return self.src.get_int(self._config_key(key), default)

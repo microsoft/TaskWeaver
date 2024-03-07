@@ -8,6 +8,25 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm.util import ChatMessageType
 
 
+class ExtLLMModuleConfig(ModuleConfig):
+    def _configure(self) -> None:
+        self._set_name("ext_llms")
+
+        self.ext_llm_config_dicts = self._get_dict("llm_configs", {})
+        self.ext_llm_config_mapping = {}
+
+        for key, config_dict in self.ext_llm_config_dicts.items():
+            config = self.src.clone()
+            for k, v in config_dict.items():
+                config.set_config_value(
+                    var_name=k,
+                    var_type="str",
+                    value=v,
+                    source="override",
+                )  # override the LLM config from extra llms
+            self.ext_llm_config_mapping[key] = config
+
+
 class LLMModuleConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("llm")
