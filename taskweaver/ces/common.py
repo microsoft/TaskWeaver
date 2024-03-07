@@ -126,3 +126,7 @@ class Manager(ABC):
         cwd: Optional[str] = None,
     ) -> Client:
         ...
+
+    @abstractmethod
+    def get_kernel_mode(self) -> Literal["local", "container"] | None:
+        ...

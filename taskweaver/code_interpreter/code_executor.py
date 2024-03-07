@@ -9,7 +9,7 @@ from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.plugin.context import ArtifactType
 
-TRUNCATE_CHAR_LENGTH = 1000
+TRUNCATE_CHAR_LENGTH = 1500
 
 
 def get_artifact_uri(execution_id: str, file: str, use_local_uri: bool) -> str:
@@ -57,6 +57,7 @@ class CodeExecutor:
             session_dir=workspace,
             cwd=execution_cwd,
         )
+        self.exec_kernel_mode = self.exec_mgr.get_kernel_mode()
         self.client_started: bool = False
         self.plugin_registry = plugin_registry
         self.plugin_loaded: bool = False
@@ -214,3 +215,6 @@ class CodeExecutor:
             lines.append("")
 
         return "\n".join([" " * indent + ln for ln in lines])
+
+    def get_execution_mode(self) -> Literal["local", "container"] | None:
+        return self.exec_kernel_mode
