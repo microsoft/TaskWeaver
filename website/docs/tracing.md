@@ -44,7 +44,7 @@ It basically requires you to install the `opentelemetry-api`, `opentelemetry-sdk
 and `opentelemetry-instrumentation` packages.
 After installing the packages, you can enable tracing by setting the `tracing.enabled=true` in the project configuration file.
 
-Next, you need to set up a frontend to view the traces. We recommend using [Jaeger](https://www.jaegertracing.io/), 
+Next, you need to set up a trace collector and a frontend to collect and view the traces. We recommend using [Jaeger](https://www.jaegertracing.io/), 
 which is a popular open-source tracing system.
 To start, please visit the [Getting Started](https://www.jaegertracing.io/docs/getting-started/) page of Jaeger.
 An "All-in-one" Docker image is available, which is easy to start and use.
@@ -78,7 +78,7 @@ to trace the function calls.
 When you need to create a context for tracing, you can use
 
 ```python
-with not get_tracer().start_as_current_span("span_name") as span:
+with get_tracer().start_as_current_span("span_name") as span:
     # your code
 ```
 
