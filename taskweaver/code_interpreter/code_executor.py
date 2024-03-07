@@ -80,7 +80,8 @@ class CodeExecutor:
                 self.load_plugin()
                 self.plugin_loaded = True
 
-        result = self.exec_client.execute_code(exec_id, code)
+        with get_tracer().start_as_current_span("CodeExecutor.execute_code"):
+            result = self.exec_client.execute_code(exec_id, code)
 
         if result.is_success:
             for artifact in result.artifact:
