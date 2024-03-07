@@ -62,7 +62,6 @@ class PlannerConfig(ModuleConfig):
 
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
-    ROLE_NAME: str = "Planner"
 
     @inject
     def __init__(
@@ -71,18 +70,16 @@ class Planner(Role):
         logger: TelemetryLogger,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
+        workers: Dict[str, Role],
         round_compressor: Optional[RoundCompressor],
         post_translator: PostTranslator,
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
-        self.config = config
-        self.logger = logger
-        self.event_emitter = event_emitter
+        super().__init__(config, logger, event_emitter)
+
         self.llm_api = llm_api
-        # if plugin_only:
-        #     self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
-        # else:
-        #     self.available_plugins = plugin_registry.get_list()
+
+        self.workers = workers
 
         self.planner_post_translator = post_translator
 
@@ -90,23 +87,13 @@ class Planner(Role):
 
         if self.config.use_example:
             self.examples = self.get_examples()
-        # if len(self.available_plugins) == 0:
-        #     self.logger.warning("No plugin is loaded for Planner.")
-        #     self.plugin_description = "No plugin functions loaded."
-        # else:
-        #     self.plugin_description = "    " + "\n    ".join(
-        #         [f"{plugin.spec.plugin_description()}" for plugin in self.available_plugins],
-        #     )
+
         self.instruction_template = self.prompt_data["instruction_template"]
-        # self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(
-        #     plugin_description=self.plugin_description,
-        # )
+
         self.response_schema = self.prompt_data["planner_response_schema"]
 
-        # self.instruction = self.instruction_template.format(
-        #     planner_response_schema=self.response_schema,
-        #     CI_introduction=self.code_interpreter_introduction,
-        # )
+        self.instruction = self.compose_sys_prompt()
+
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
@@ -122,17 +109,21 @@ class Planner(Role):
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
 
+        self.recipient_alias_set = set([alias for alias, _ in self.workers.items()])
+
         self.logger.info("Planner initialized successfully")
 
-    def compose_sys_prompt(self, roles: Dict[str, Role]):
-        role_description = ""
-        for role_name, role in roles.items():
-            role_description += f"{role.get_intro()}\n\n"
+    def compose_sys_prompt(self):
+        worker_description = ""
+        for alias, role in self.workers.items():
+            worker_description += f"{alias}:\n{role.get_intro()}\n\n"
 
-        self.instruction = self.instruction_template.format(
+        instruction = self.instruction_template.format(
             planner_response_schema=self.response_schema,
-            role_intro=role_description,
+            worker_intro=worker_description,
         )
+
+        return instruction
 
     def compose_conversation_for_prompt(
         self,
@@ -154,7 +145,7 @@ class Planner(Role):
 
             for post in chat_round.post_list:
                 if post.send_from == "Planner":
-                    if post.send_to == "User" or post.send_to == "CodeInterpreter":
+                    if post.send_to == "User" or post.send_to in self.recipient_alias_set:
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
                         )

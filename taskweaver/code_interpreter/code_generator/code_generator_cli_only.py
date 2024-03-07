@@ -49,10 +49,9 @@ class CodeGeneratorCLIOnly(Role):
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
-        self.config = config
-        self.logger = logger
+        super().__init__(config, logger, event_emitter)
+
         self.llm_api = llm_api
-        self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 

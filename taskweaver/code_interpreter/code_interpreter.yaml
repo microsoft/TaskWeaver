@@ -1,4 +1,4 @@
-name_in_prompt: CodeInterpreter
+alias: CodeInterpreter
 intro : |-
   - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
   - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.

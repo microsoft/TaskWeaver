@@ -25,12 +25,7 @@ class AppSessionConfig(ModuleConfig):
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        # self.code_gen_mode = self._get_enum(
-        #     "code_gen_mode",
-        #     options=["plugin_only", "cli_only", "python"],
-        #     default="python",
-        # )
-        self.roles = self._get_list("roles", ["code_interpreter"])
+        self.workers = self._get_list("workers", ["code_interpreter"])
 
 
 class Session:
@@ -63,13 +58,7 @@ class Session:
 
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
-        self.planner = self.session_injector.create_object(
-            Planner,
-            {
-                "plugin_only": True if self.config.code_gen_mode == "plugin_only" else False,
-            },
-        )
-        self.session_injector.binder.bind(Planner, self.planner)
+
         self.code_executor = self.session_injector.create_object(
             CodeExecutor,
             {
@@ -80,25 +69,16 @@ class Session:
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
 
-        # if self.config.code_gen_mode == "plugin_only":
-        #     self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
-        # elif self.config.code_gen_mode == "cli_only":
-        #     self.code_interpreter = self.session_injector.get(CodeInterpreterCLIOnly)
-        # elif self.config.code_gen_mode == "python":
-        #     self.code_interpreter = self.session_injector.get(CodeInterpreter)
-        # else:
-        #     raise ValueError(
-        #         f"Unknown code_gen_mode: {self.config.code_gen_mode}, "
-        #         f"only support 'plugin_only', 'cli_only', 'python'",
-        #     )
-
-        self.roles = {}
+        self.worker_instances = {}
         for sub_cls in Role.__subclasses__():
+            if sub_cls is Planner:
+                continue
             role_instance = self.session_injector.get(sub_cls)
-            if role_instance.config.name in self.config.roles:
-                self.roles[role_instance.config.name] = role_instance
+            if role_instance.name in self.config.workers:
+                self.worker_instances[role_instance.get_alias()] = role_instance
 
-        self.planner.compose_sys_prompt(self.roles)
+        self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
+        self.session_injector.binder.bind(Planner, self.planner)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
@@ -142,8 +122,8 @@ class Session:
                     ),
                     use_back_up_engine=use_back_up_engine,
                 )
-            elif recipient in self.config.roles:
-                reply_post = self.roles[recipient].reply(
+            elif recipient in self.worker_instances.keys():
+                reply_post = self.worker_instances[recipient].reply(
                     self.memory,
                     prompt_log_path=os.path.join(
                         self.workspace,

@@ -83,7 +83,7 @@ class CodeInterpreter(Role):
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
-        self.config = config
+        super().__init__(config, logger, event_emitter)
 
         self.generator = generator
         self.generator.configure_verification(
@@ -97,7 +97,14 @@ class CodeInterpreter(Role):
         self.event_emitter = event_emitter
         self.retry_count = 0
 
+        self.plugin_description = "    " + "\n    ".join(
+            [f"{plugin.spec.plugin_description()}" for plugin in generator.plugin_pool],
+        )
+
         self.logger.info("CodeInterpreter initialized successfully.")
+
+    def get_intro(self) -> str:
+        return self.intro.format(plugin_description=self.plugin_description)
 
     def reply(
         self,

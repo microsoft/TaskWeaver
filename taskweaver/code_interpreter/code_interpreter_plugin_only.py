@@ -30,11 +30,9 @@ class CodeInterpreterPluginOnly(Role):
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
+        super().__init__(config, logger, event_emitter)
         self.generator = generator
         self.executor = executor
-        self.logger = logger
-        self.config = config
-        self.event_emitter = event_emitter
         self.retry_count = 0
         self.return_index = 0
 

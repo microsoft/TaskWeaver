@@ -13,7 +13,7 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
-from taskweaver.module.event_emitter import PostEventProxy
+from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -62,13 +62,14 @@ class CodeGenerator(Role):
         config: CodeGeneratorConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
         post_translator: PostTranslator,
         experience_generator: ExperienceGenerator,
     ):
-        self.config = config
-        self.logger = logger
+        super().__init__(config, logger, event_emitter)
+
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
