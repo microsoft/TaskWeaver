@@ -81,7 +81,8 @@ const sidebars = {
     'code_verification',
     'code_execution',
     'FAQ',
-    'cli_only'
+    'cli_only',
+    'training',
   ],
   
 };
