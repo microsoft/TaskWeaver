@@ -10,7 +10,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
-from taskweaver.module.tracing import Tracing, get_current_span, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
 from taskweaver.workspace.workspace import Workspace
 
@@ -46,6 +46,7 @@ class Session:
     ) -> None:
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
+        self.tracing = tracing
         self.session_injector = app_injector.create_child_injector()
         self.config = config
 
@@ -118,20 +119,19 @@ class Session:
     @tracing_decorator
     def _send_text_message(self, message: str) -> Round:
         chat_round = self.memory.create_round(user_query=message)
-        current_span = get_current_span()
-        current_span.set_attribute("round_id", chat_round.id)
-        current_span.set_attribute("round_index", self.round_index)
-        current_span.set_attribute("message", message)
+
+        self.tracing.set_span_attribute("round_id", chat_round.id)
+        self.tracing.set_span_attribute("round_index", self.round_index)
+        self.tracing.set_span_attribute("message", message)
 
         self.event_emitter.start_round(chat_round.id)
 
-        @tracing_decorator
+        @tracing_decorator_non_class
         def _send_message(recipient: str, post: Post) -> Post:
-            current_span = get_current_span()
-            current_span.set_attribute("in.from", post.send_from)
-            current_span.set_attribute("in.recipient", recipient)
-            current_span.set_attribute("in.message", post.message)
-            current_span.set_attribute("in.attachments", str(post.attachment_list))
+            self.tracing.set_span_attribute("in.from", post.send_from)
+            self.tracing.set_span_attribute("in.recipient", recipient)
+            self.tracing.set_span_attribute("in.message", post.message)
+            self.tracing.set_span_attribute("in.attachments", str(post.attachment_list))
 
             chat_round.add_post(post)
 
@@ -158,13 +158,6 @@ class Session:
                 )
             else:
                 raise Exception(f"Unknown recipient {recipient}")
-
-            current_span.set_attribute("out.from", reply_post.send_from)
-            current_span.set_attribute("out.to", reply_post.send_to)
-            current_span.set_attribute("out.message", reply_post.message)
-            current_span.set_attribute("out.attachments", str(reply_post.attachment_list))
-
-            set_span_status(current_span, "OK")
 
             return reply_post
 
@@ -206,8 +199,6 @@ class Session:
             self.round_index += 1
             chat_round.change_round_state("finished")
 
-            set_span_status(current_span, "OK")
-
         except Exception as e:
             import traceback
 
@@ -217,12 +208,12 @@ class Session:
 
             err_message = f"Cannot process your request due to Exception: {str(e)} \n {stack_trace_str}"
 
-            set_span_status(current_span, "ERROR", err_message)
-            current_span.record_exception(e)
+            self.tracing.set_span_status("ERROR", err_message)
+            self.tracing.set_span_exception(e)
             self.event_emitter.emit_error(err_message)
 
         finally:
-            current_span.set_attribute("internal_chat_num", self.internal_chat_num)
+            self.tracing.set_span_attribute("internal_chat_num", self.internal_chat_num)
 
             self.internal_chat_num = 0
             self.logger.dump_log_file(
@@ -243,10 +234,9 @@ class Session:
         files: Optional[List[Dict[Literal["name", "path", "content"], Any]]] = None,
     ) -> Round:
         # init span with session_id
-        current_span = get_current_span()
-        current_span.set_attribute("session_id", self.session_id)
-        current_span.set_attribute("message", message)
-        current_span.set_attribute("files", str(files))
+        self.tracing.set_span_attribute("session_id", self.session_id)
+        self.tracing.set_span_attribute("message", message)
+        self.tracing.set_span_attribute("files", str(files))
 
         message_prefix = ""
         if files is not None:
@@ -261,31 +251,29 @@ class Session:
 
         with self.event_emitter.handle_events_ctx(event_handler):
             chat_round = self._send_text_message(message_prefix + message)
-            current_span.set_attribute("round_id", chat_round.id)
-            set_span_status(current_span, "OK" if chat_round.state == "finished" else "ERROR")
-            if chat_round.state == "finished":
-                current_span.set_attribute("reply_to_user", chat_round.post_list[-1].message)
+
+            self.tracing.set_span_attribute("round_id", chat_round.id)
+            if chat_round.state != "finished":
+                self.tracing.set_span_status("ERROR", "Chat round is not finished successfully.")
+            else:
+                self.tracing.set_span_attribute("reply_to_user", chat_round.post_list[-1].message)
 
             return chat_round
 
     @tracing_decorator
     def _upload_file(self, name: str, path: Optional[str] = None, content: Optional[bytes] = None) -> str:
-        current_span = get_current_span()
-
         target_name = name.split("/")[-1]
         target_path = self.get_full_path(self.execution_cwd, target_name)
-        current_span.set_attribute("target_path", target_path)
+        self.tracing.set_span_attribute("target_path", target_path)
         if path is not None:
             shutil.copyfile(path, target_path)
-            set_span_status(current_span, "OK")
             return target_name
         if content is not None:
             with open(target_path, "wb") as f:
                 f.write(content)
-            set_span_status(current_span, "OK")
             return target_name
 
-        set_span_status(current_span, "ERROR", "path or file_content must be provided")
+        self.tracing.set_span_status("ERROR", "path or file_content must be provided")
         raise ValueError("path or file_content")
 
     def get_full_path(self, *file_path: str, in_execution_cwd: bool = False) -> str:

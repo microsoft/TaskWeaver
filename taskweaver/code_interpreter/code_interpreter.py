@@ -12,7 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -96,6 +96,7 @@ class CodeInterpreter(Role):
 
         self.executor = executor
         self.logger = logger
+        self.tracing = tracing
         self.event_emitter = event_emitter
         self.retry_count = 0
 
@@ -108,8 +109,6 @@ class CodeInterpreter(Role):
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
-        current_span = get_current_span()
-
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         post_proxy.update_status("generating code")
         self.generator.reply(
@@ -127,7 +126,6 @@ class CodeInterpreter(Role):
             )
             update_execution(post_proxy, "NONE", "No code is executed.")
 
-            set_span_status(current_span, "OK", "No code is generated.")
             return post_proxy.end()
 
         code = next(
@@ -137,7 +135,7 @@ class CodeInterpreter(Role):
 
         if code is None:
             # no code is generated is usually due to the failure of parsing the llm output
-            set_span_status(current_span, "ERROR", "Failed to generate code.")
+            self.tracing.set_span_status("ERROR", "Failed to generate code.")
 
             update_verification(
                 post_proxy,
@@ -163,10 +161,10 @@ class CodeInterpreter(Role):
 
             return post_proxy.end()
 
-        current_span.set_attribute("code", code.content)
+        self.tracing.set_span_attribute("code", code.content)
         post_proxy.update_status("verifying code")
 
-        current_span.set_status("code_verification_on", self.config.code_verification_on)
+        self.tracing.set_span_attribute("code_verification_on", self.config.code_verification_on)
         self.logger.info(f"Code to be verified: {code.content}")
         with get_tracer().start_as_current_span("CodeInterpreter.verify_code") as span:
             span.set_attribute("code", code.content)
@@ -176,7 +174,6 @@ class CodeInterpreter(Role):
                 allowed_modules=self.config.allowed_modules,
                 blocked_functions=self.config.blocked_functions,
             )
-            span.set_attribute("code_verify_errors", code_verify_errors)
 
         if code_verify_errors is None:
             update_verification(
@@ -193,8 +190,8 @@ class CodeInterpreter(Role):
             update_verification(post_proxy, "INCORRECT", code_error)
             post_proxy.update_message(code_error)
 
-            set_span_status(current_span, "ERROR", "Code verification failed.")
-            current_span.set_attribute("code_error", code_error)
+            self.tracing.set_span_status("ERROR", "Code verification failed.")
+            self.tracing.set_span_attribute("verification_error", code_error)
 
             if self.retry_count < self.config.max_retry_count:
                 post_proxy.update_attachment(
@@ -268,10 +265,14 @@ class CodeInterpreter(Role):
             )
             self.retry_count += 1
 
-        if exec_result.is_success:
-            set_span_status(current_span, "OK", "Code executed successfully.")
-        else:
-            set_span_status(current_span, "ERROR", "Failed to run code.")
-        current_span.set_attribute("code_output", code_output)
+        if not exec_result.is_success:
+            self.tracing.set_span_status("ERROR", "Code execution failed.")
 
-        return post_proxy.end()
+        reply_post = post_proxy.end()
+
+        self.tracing.set_span_attribute("out.from", reply_post.send_from)
+        self.tracing.set_span_attribute("out.to", reply_post.send_to)
+        self.tracing.set_span_attribute("out.message", reply_post.message)
+        self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
+
+        return reply_post

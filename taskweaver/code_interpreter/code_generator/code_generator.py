@@ -15,7 +15,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -72,6 +72,7 @@ class CodeGenerator(Role):
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
@@ -335,8 +336,6 @@ class CodeGenerator(Role):
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
-        current_span = get_current_span()
-
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -346,9 +345,9 @@ class CodeGenerator(Role):
         # obtain the query from the last round
         query = rounds[-1].post_list[-1].message
 
-        current_span.set_attribute("query", query)
-        current_span.set_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
-        current_span.set_attribute("use_experience", self.config.use_experience)
+        self.tracing.set_span_attribute("query", query)
+        self.tracing.set_span_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
+        self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
@@ -396,8 +395,7 @@ class CodeGenerator(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
 
-        current_span.set_attribute("code", generated_code)
-        set_span_status(current_span, "OK", "Code generated")
+        self.tracing.set_span_attribute("code", generated_code)
 
         return post_proxy.post
 

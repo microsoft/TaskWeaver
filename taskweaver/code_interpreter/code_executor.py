@@ -7,7 +7,7 @@ from injector import inject
 from taskweaver.ces.common import ExecutionResult, Manager
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.plugin.context import ArtifactType
 
 TRUNCATE_CHAR_LENGTH = 1500
@@ -68,8 +68,7 @@ class CodeExecutor:
 
     @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        current_span = get_current_span()
-        current_span.set_attribute("code", code)
+        self.tracing.set_span_attribute("code", code)
 
         if not self.client_started:
             with get_tracer().start_as_current_span("CodeExecutor.start"):
@@ -102,8 +101,9 @@ class CodeExecutor:
                     )
                     artifact.file_name = file_name
 
-        set_span_status(current_span, "OK" if result.is_success else "ERROR")
-        current_span.set_attribute("result", self.format_code_output(result, with_code=False))
+        if not result.is_success:
+            self.tracing.set_span_status("ERROR", "Code execution failed.")
+        self.tracing.set_span_attribute("result", self.format_code_output(result, with_code=False))
 
         return result
 

@@ -8,7 +8,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 
 
 class RoundCompressorConfig(ModuleConfig):
@@ -37,6 +37,7 @@ class RoundCompressor:
         self.previous_summary: str = "None"
         self.llm_api = llm_api
         self.logger = logger
+        self.tracing = tracing
 
     @tracing_decorator
     def compress_rounds(
@@ -46,9 +47,6 @@ class RoundCompressor:
         use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> Tuple[str, List[Round]]:
-        current_span = get_current_span()
-        current_span.set_attribute("previous_summary", self.previous_summary)
-
         remaining_rounds = len(rounds)
         for _round in rounds:
             if _round.id in self.processed_rounds:
@@ -58,7 +56,6 @@ class RoundCompressor:
 
         # not enough rounds to compress
         if remaining_rounds < (self.rounds_to_compress + self.rounds_to_retain):
-            set_span_status(current_span, "OK", "Not enough rounds to compress")
             return self.previous_summary, rounds[-remaining_rounds:]
 
         chat_summary = self._summarize(
@@ -68,8 +65,7 @@ class RoundCompressor:
             prompt_template=prompt_template,
         )
 
-        current_span.set_attribute("chat_summary", chat_summary)
-        set_span_status(current_span, "OK", "Compressed rounds")
+        self.tracing.set_span_attribute("chat_summary", chat_summary)
 
         if len(chat_summary) > 0:  # if the compression is successful
             self.previous_summary = chat_summary

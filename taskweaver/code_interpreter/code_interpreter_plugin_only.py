@@ -10,7 +10,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -35,6 +35,7 @@ class CodeInterpreterPluginOnly(Role):
         self.generator = generator
         self.executor = executor
         self.logger = logger
+        self.tracing = tracing
         self.config = config
         self.event_emitter = event_emitter
         self.retry_count = 0
@@ -49,8 +50,6 @@ class CodeInterpreterPluginOnly(Role):
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
-        current_span = get_current_span()
-
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         self.generator.reply(
             memory,
@@ -108,15 +107,19 @@ class CodeInterpreterPluginOnly(Role):
                 is_end=True,
             )
 
-            if exec_result.is_success:
-                set_span_status(current_span, "OK", "Code execution succeeded.")
-            else:
-                set_span_status(current_span, "ERROR", "Code execution failed.")
-            current_span.set_attribute("code_output", code_output)
+            if not exec_result.is_success:
+                self.tracing.set_span_status("ERROR", "Code execution failed.")
+            self.tracing.set_span_attribute("code_output", code_output)
         else:
             post_proxy.update_message(
                 "No code is generated because no function is selected.",
             )
-            set_span_status(current_span, "OK", "No code is generated.")
 
-        return post_proxy.end()
+        reply_post = post_proxy.end()
+
+        self.tracing.set_span_attribute("out.from", reply_post.send_from)
+        self.tracing.set_span_attribute("out.to", reply_post.send_to)
+        self.tracing.set_span_attribute("out.message", reply_post.message)
+        self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
+
+        return reply_post

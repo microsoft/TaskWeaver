@@ -12,7 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_current_span, get_tracer, set_span_status, tracing_decorator
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -53,6 +53,7 @@ class CodeGeneratorCLIOnly(Role):
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.llm_api = llm_api
         self.event_emitter = event_emitter
 
@@ -74,8 +75,6 @@ class CodeGeneratorCLIOnly(Role):
         use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
-
-        current_span = get_current_span()
 
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
@@ -120,8 +119,7 @@ class CodeGeneratorCLIOnly(Role):
         post_proxy.update_attachment(llm_response["description"], AttachmentType.thought)
         post_proxy.update_attachment(llm_response["code"], AttachmentType.python)
 
-        current_span.set_attribute("code", llm_response["code"])
-        set_span_status(current_span, "OK", "Code is generated.")
+        self.tracing.set_span_attribute("code", llm_response["code"])
 
         return post_proxy.end()
 
