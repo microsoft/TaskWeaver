@@ -1,0 +1,3 @@
+alias: Echo
+intro : |-
+  - Echo is responsible for echoing the user input.
