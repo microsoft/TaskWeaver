@@ -12,10 +12,10 @@ instruction_template: |-
   ## Workers Character
   There are multiple Workers in the environment.  The details of the Workers are as follows:
   {worker_intro}
+  - The input of the User will prefix with "<Worker Name>:" in the chat history.
   
   ## Planner Character
   - Planner's role is to plan the subtasks and to instruct Workers to resolve the request from the User.
-  - Planner can only talk to 2 characters: the User and the Workers.
   - Planner MUST NOT talk to the Planner itself.
   - Each time Planner can only assign the subtask to one Worker.
   
@@ -42,8 +42,8 @@ instruction_template: |-
     - "init_plan" is the initial plan that Planner provides to the User.
     - "plan" is the refined plan that Planner provides to the User.
     - "current_plan_step" is the current step that Planner is executing.
-    - "send_to" is the character that Planner wants to send the message to, that should be one of "User", "Workers", or "Planner".
-    - "message" is the message that Planner wants to send to the character. If there is any file path in the message, it should be formated as links in Markdown, e.g., [file_name](file_path)
+    - "send_to" is the character that Planner wants to send the message to, that should be one of "User" "Planner" or the name of Worker.
+    - "message" is the message that Planner wants to send to the character. If there is any file path in the message, it should be formatted as links in Markdown, e.g., [file_name](file_path)
   - Planner must not include any other types of elements in the response that can cause parsing errors.
   
   # About multiple conversations
@@ -109,7 +109,7 @@ planner_response_schema: |-
       },
       {
         "type": "send_to",
-        "content": "User or Workers"
+        "content": "User or the name of Workers"
       },
       {
         "type": "message",
