@@ -14,11 +14,11 @@ DEFAULT_STOP_TOKEN: List[str] = ["<EOS>"]
 
 class OpenAIServiceConfig(LLMServiceConfig):
     def _configure(self) -> None:
-        self._set_name("openai")
-
         # shared common config
         self.api_type = self.llm_module_config.api_type
         assert self.api_type in ["openai", "azure", "azure_ad"], "Invalid API type"
+
+        self._set_name(self.api_type)
 
         shared_api_base = self.llm_module_config.api_base
         self.api_base = self._get_str(

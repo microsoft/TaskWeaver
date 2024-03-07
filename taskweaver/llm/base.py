@@ -77,7 +77,7 @@ class LLMServiceConfig(ModuleConfig):
         super().__init__(src)
 
     def _set_name(self, name: str) -> None:
-        self.name = "llm"
+        self.name = f"llm.{name}"
 
 
 class CompletionService(abc.ABC):
