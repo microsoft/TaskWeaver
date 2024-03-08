@@ -2,6 +2,8 @@ from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
 
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
+
 
 def test_tracing_disabled():
     app_injector = Injector()
@@ -40,6 +42,7 @@ def test_tracing_disabled():
     test_function()
 
 
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
 def test_tracing_enabled():
     app_injector = Injector()
     app_config = AppConfigSource(
