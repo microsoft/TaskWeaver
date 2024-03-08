@@ -31,8 +31,9 @@ class Echo(Role):
         # obtain the query from the last round
         last_post = rounds[-1].post_list[-1]
 
-        return Post.create(
-            message=last_post.message,
-            send_from=self.alias,
-            send_to=last_post.send_from,
-        )
+        post_proxy = self.event_emitter.create_post_proxy(self.alias)
+
+        post_proxy.update_send_to(last_post.send_from)
+        post_proxy.update_message(last_post.message)
+
+        return post_proxy.end()
