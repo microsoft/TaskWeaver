@@ -79,9 +79,16 @@ def generate_md5_hash(content: str) -> str:
 
 
 def import_modules_from_dir(target_dir: str):
-    sys.path.insert(0, target_dir)
+    def import_modules_from_file(file_path: str):
+        if file_path.endswith(".py") and not file_path.startswith("__"):
+            sys.path.insert(0, os.path.dirname(file_path))
+            module_name = os.path.splitext(os.path.basename(file_path))[0]
+            importlib.import_module(module_name)
 
-    for file in os.listdir(target_dir):
-        if file.endswith(".py") and not file.startswith("__"):
-            module_name = os.path.splitext(file)[0]
-            importlib.import_module(f"{module_name}")
+    for root, dirs, files in os.walk(target_dir):
+        for directory in dirs:
+            for file in os.listdir(os.path.join(root, directory)):
+                import_modules_from_file(os.path.join(root, directory, file))
+
+        for file in files:
+            import_modules_from_file(os.path.join(root, file))
