@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import dataclasses
+import importlib
+import inspect
 import json
 import os
 import secrets
+import sys
 from datetime import datetime
 from hashlib import md5
 from typing import Any, Dict
@@ -73,3 +76,12 @@ def json_dump(obj: Any, fp: Any):
 
 def generate_md5_hash(content: str) -> str:
     return md5(content.encode()).hexdigest()
+
+
+def import_modules_from_dir(target_dir: str):
+    sys.path.insert(0, target_dir)
+
+    for file in os.listdir(target_dir):
+        if file.endswith(".py") and not file.startswith("__"):
+            module_name = os.path.splitext(file)[0]
+            importlib.import_module(f"{module_name}")

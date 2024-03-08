@@ -11,6 +11,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.planner.planner import Planner
 from taskweaver.role import Role
+from taskweaver.utils import import_modules_from_dir
 from taskweaver.workspace.workspace import Workspace
 
 
@@ -70,6 +71,12 @@ class Session:
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
 
         self.worker_instances = {}
+        import_modules_from_dir(
+            os.path.join(
+                self.config.src.module_base_path,
+                "ext_role",
+            ),
+        )
         for sub_cls in Role.__subclasses__():
             if sub_cls is Planner:
                 continue
