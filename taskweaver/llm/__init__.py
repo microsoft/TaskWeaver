@@ -1,27 +1,54 @@
 import types
 from typing import Any, Callable, Generator, List, Optional, Type
 
-from injector import Injector, inject
+from injector import Injector, Module, inject, provider
 
+from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.llm.azure_ml import AzureMLService
-from taskweaver.llm.base import CompletionService, EmbeddingService, LLMModuleConfig
+from taskweaver.llm.base import (
+    CompletionService,
+    EmbeddingService,
+    ExtLLMModuleConfig,
+    LLMModuleConfig,
+    LLMServiceConfig,
+)
 from taskweaver.llm.google_genai import GoogleGenAIService
 from taskweaver.llm.mock import MockApiService
 from taskweaver.llm.ollama import OllamaService
 from taskweaver.llm.openai import OpenAIService
 from taskweaver.llm.placeholder import PlaceholderEmbeddingService
+from taskweaver.llm.qwen import QWenService, QWenServiceConfig
 from taskweaver.llm.sentence_transformer import SentenceTransformerService
+from taskweaver.llm.util import ChatMessageType, format_chat_message
+from taskweaver.llm.zhipuai import ZhipuAIService
 
-from .qwen import QWenService
-from .util import ChatMessageType, format_chat_message
-from .zhipuai import ZhipuAIService
+llm_completion_config_map = {
+    "openai": OpenAIService,
+    "azure": OpenAIService,
+    "azure_ad": OpenAIService,
+    "azure_ml": AzureMLService,
+    "ollama": OllamaService,
+    "google_genai": GoogleGenAIService,
+    "qwen": QWenService,
+    "zhipuai": ZhipuAIService,
+}
+
+# TODO
+llm_embedding_config_map = {}
 
 
 class LLMApi(object):
     @inject
-    def __init__(self, config: LLMModuleConfig, injector: Injector) -> None:
+    def __init__(
+        self,
+        config: LLMModuleConfig,
+        injector: Injector,
+        ext_llms_config: Optional[ExtLLMModuleConfig] = None,
+    ):
         self.config = config
         self.injector = injector
+        self.ext_llm_injector = Injector([])
+        self.ext_llms = {}  # extra llm models
 
         if self.config.api_type in ["openai", "azure", "azure_ad"]:
             self._set_completion_service(OpenAIService)
@@ -69,6 +96,13 @@ class LLMApi(object):
             self._set_completion_service(MockApiService)
             self._set_embedding_service(MockApiService)
 
+        if ext_llms_config is not None:
+            for key, config in ext_llms_config.ext_llm_config_mapping.items():
+                api_type = config.get_str("llm.api_type")
+                assert api_type in llm_completion_config_map, f"API type {api_type}  is not supported"
+                llm_completion_service = self._get_completion_service(config)
+                self.ext_llms[key] = llm_completion_service
+
     def _set_completion_service(self, svc: Type[CompletionService]) -> None:
         self.completion_service: CompletionService = self.injector.get(svc)
         self.injector.binder.bind(svc, to=self.completion_service)
@@ -76,6 +110,15 @@ class LLMApi(object):
     def _set_embedding_service(self, svc: Type[EmbeddingService]) -> None:
         self.embedding_service: EmbeddingService = self.injector.get(svc)
         self.injector.binder.bind(svc, to=self.embedding_service)
+
+    def _get_completion_service(self, config) -> CompletionService:
+        self.ext_llm_injector.binder.bind(AppConfigSource, to=config)
+        api_type = config.get_str("llm.api_type")
+        return self.ext_llm_injector.get(llm_completion_config_map[api_type])
+
+    def _get_embedding_service(self, svc: Type[EmbeddingService]) -> EmbeddingService:
+        # TODO
+        pass
 
     def chat_completion(
         self,
@@ -86,10 +129,20 @@ class LLMApi(object):
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
+        llm_alias: Optional[str] = None,
         **kwargs: Any,
     ) -> ChatMessageType:
         msg: ChatMessageType = format_chat_message("assistant", "")
-        for msg_chunk in self.completion_service.chat_completion(
+        if llm_alias is not None and llm_alias != "":
+            if llm_alias in self.ext_llms:
+                completion_service = self.ext_llms[llm_alias]
+            else:
+                raise ValueError(
+                    f"Cannot import extra LLM model {llm_alias}, ",
+                )
+        else:
+            completion_service = self.completion_service
+        for msg_chunk in completion_service.chat_completion(
             messages,
             use_backup_engine,
             stream,
@@ -115,10 +168,20 @@ class LLMApi(object):
         top_p: Optional[float] = None,
         stop: Optional[List[str]] = None,
         use_smoother: bool = True,
+        llm_alias: Optional[str] = None,
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         def get_generator() -> Generator[ChatMessageType, None, None]:
-            return self.completion_service.chat_completion(
+            if llm_alias is not None and llm_alias != "":
+                if llm_alias in self.ext_llms:
+                    completion_service = self.ext_llms[llm_alias]
+                else:
+                    raise ValueError(
+                        f"Cannot import extra LLM model {llm_alias}, ",
+                    )
+            else:
+                completion_service = self.completion_service
+            return completion_service.chat_completion(
                 messages,
                 use_backup_engine,
                 stream,

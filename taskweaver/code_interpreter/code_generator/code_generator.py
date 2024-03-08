@@ -56,6 +56,8 @@ class CodeGeneratorConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class CodeGenerator(Role):
     @inject
@@ -367,12 +369,12 @@ class CodeGenerator(Role):
 
         with get_tracer().start_as_current_span("CodeGenerator.reply.raw_text_to_post") as span:
             span.set_attribute("prompt", json.dumps(prompt, indent=2))
-
             self.post_translator.raw_text_to_post(
                 llm_output=self.llm_api.chat_completion_stream(
                     prompt,
                     use_backup_engine=use_back_up_engine,
                     use_smoother=True,
+                    llm_alias=self.config.llm_alias,
                 ),
                 post_proxy=post_proxy,
                 early_stop=early_stop,

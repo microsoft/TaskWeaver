@@ -59,6 +59,8 @@ class ExperienceConfig(ModuleConfig):
         )
         self.retrieve_threshold = self._get_float("retrieve_threshold", 0.2)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class ExperienceGenerator:
     @inject
@@ -122,7 +124,7 @@ class ExperienceGenerator:
             format_chat_message("user", json.dumps(conversation)),
         ]
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
-        summarized_experience = self.llm_api.chat_completion(prompt)["content"]
+        summarized_experience = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
 
         return summarized_experience
 

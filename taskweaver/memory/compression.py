@@ -20,6 +20,8 @@ class RoundCompressorConfig(ModuleConfig):
         assert self.rounds_to_compress > 0, "rounds_to_compress must be greater than 0"
         assert self.rounds_to_retain > 0, "rounds_to_retain must be greater than 0"
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class RoundCompressor:
     @inject
@@ -93,7 +95,7 @@ class RoundCompressor:
             ]
             with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
                 span.set_attribute("prompt", json.dumps(prompt, indent=2))
-                new_summary = self.llm_api.chat_completion(prompt, use_backup_engine=use_back_up_engine)["content"]
+                new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
                 span.set_attribute("summary", new_summary)
 
             self.processed_rounds.update([_round.id for _round in rounds])
