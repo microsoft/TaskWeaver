@@ -86,6 +86,8 @@ class TaskWeaverApp(object):
                 cur_dir = next_path
 
     def _init_app_modules(self) -> None:
-        from taskweaver.llm import LLMApi
+        from taskweaver.llm import LLMApi,PlannerLLMApi,CodeInterpreterLLMApi
 
-        self.app_injector.get(LLMApi)
+        # self.app_injector.get(LLMApi)
+        self.app_injector.get(PlannerLLMApi)
+        self.app_injector.get(CodeInterpreterLLMApi)

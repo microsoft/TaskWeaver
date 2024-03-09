@@ -5,7 +5,7 @@ import numpy as np
 from injector import inject
 from sklearn.metrics.pairwise import cosine_similarity
 
-from taskweaver.llm import LLMApi
+from taskweaver.llm import LLMApi,PlannerLLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.utils import generate_md5_hash, write_yaml
 
@@ -62,7 +62,8 @@ class PluginSelector:
     def __init__(
         self,
         plugin_registry: PluginRegistry,
-        llm_api: LLMApi,
+        # llm_api: LLMApi,
+        llm_api: PlannerLLMApi,
         plugin_only: bool = False,
     ):
         if plugin_only:

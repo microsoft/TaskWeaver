@@ -8,7 +8,7 @@ from injector import inject
 from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMApi, format_chat_message
+from taskweaver.llm import LLMApi, format_chat_message,PlannerLLMApi
 from taskweaver.logging import TelemetryLogger
 from taskweaver.utils import read_yaml, write_yaml
 
@@ -63,7 +63,8 @@ class ExperienceGenerator:
     @inject
     def __init__(
         self,
-        llm_api: LLMApi,
+        # llm_api: LLMApi,
+        llm_api: PlannerLLMApi,
         config: ExperienceConfig,
         logger: TelemetryLogger,
     ):

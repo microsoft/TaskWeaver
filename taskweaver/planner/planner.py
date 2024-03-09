@@ -7,7 +7,7 @@ from typing import Iterable, List, Optional
 from injector import inject
 
 from taskweaver.config.module_config import ModuleConfig
-from taskweaver.llm import LLMApi
+from taskweaver.llm import PlannerLLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
@@ -61,6 +61,7 @@ class PlannerConfig(ModuleConfig):
         self.use_experience = self._get_bool("use_experience", False)
 
 
+
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
     ROLE_NAME: str = "Planner"
@@ -71,7 +72,8 @@ class Planner(Role):
         config: PlannerConfig,
         logger: TelemetryLogger,
         event_emitter: SessionEventEmitter,
-        llm_api: LLMApi,
+        # llm_api: LLMApi,
+        llm_api: PlannerLLMApi,
         plugin_registry: PluginRegistry,
         round_compressor: Optional[RoundCompressor],
         post_translator: PostTranslator,

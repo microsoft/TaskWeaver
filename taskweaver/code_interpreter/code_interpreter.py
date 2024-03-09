@@ -51,7 +51,6 @@ class CodeInterpreterConfig(ModuleConfig):
             ],
         )
 
-
 def update_verification(
     response: PostEventProxy,
     status: Literal["NONE", "INCORRECT", "CORRECT"] = "NONE",
