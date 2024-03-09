@@ -1,6 +1,3 @@
-kiet is here
-dsfdjslfjsdlfksjdklf
-dfsdfasflkkjkjk
 
 <h1 align="center">
     <img src="./.asset/logo.color.svg" width="45" /> TaskWeaver
