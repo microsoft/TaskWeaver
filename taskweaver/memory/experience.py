@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.logging import TelemetryLogger
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.utils import read_yaml, write_yaml
 
 
@@ -68,10 +69,12 @@ class ExperienceGenerator:
         llm_api: LLMApi,
         config: ExperienceConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
     ):
         self.config = config
         self.llm_api = llm_api
         self.logger = logger
+        self.tracing = tracing
 
         self.default_prompt_template = read_yaml(self.config.default_exp_prompt_path)["content"]
 
@@ -103,6 +106,7 @@ class ExperienceGenerator:
 
         return conv_data
 
+    @tracing_decorator
     def summarize_experience(
         self,
         exp_id: str,
@@ -119,10 +123,12 @@ class ExperienceGenerator:
             format_chat_message("system", system_instruction),
             format_chat_message("user", json.dumps(conversation)),
         ]
+        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
         summarized_experience = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
 
         return summarized_experience
 
+    @tracing_decorator
     def refresh(
         self,
         target_role: Literal["Planner", "CodeInterpreter", "All"],
@@ -206,6 +212,7 @@ class ExperienceGenerator:
 
             self.logger.info("Experience obj saved.")
 
+    @tracing_decorator
     def load_experience(
         self,
         target_role: Literal["Planner", "CodeInterpreter", "All"],
@@ -245,6 +252,7 @@ class ExperienceGenerator:
 
             self.experience_list.append(Experience(**experience))
 
+    @tracing_decorator
     def retrieve_experience(self, user_query: str) -> List[Tuple[Experience, float]]:
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
 

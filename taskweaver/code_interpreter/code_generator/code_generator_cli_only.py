@@ -12,6 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -46,11 +47,13 @@ class CodeGeneratorCLIOnly(Role):
         self,
         config: CodeGeneratorCLIOnlyConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.llm_api = llm_api
         self.event_emitter = event_emitter
 
@@ -63,6 +66,7 @@ class CodeGeneratorCLIOnly(Role):
         self.os_name = platform.system()
         self.cli_name = os.environ.get("SHELL") or os.environ.get("COMSPEC")
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -71,6 +75,7 @@ class CodeGeneratorCLIOnly(Role):
         use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
+
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -89,11 +94,13 @@ class CodeGeneratorCLIOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt}, prompt_log_path)
 
-        llm_response = self.llm_api.chat_completion(
-            messages=prompt,
-            response_format=None,
-            stream=False,
-        )
+        with get_tracer().start_as_current_span("CodeGeneratorCLIOnly.reply.chat_completion") as span:
+            span.set_attribute("prompt", json.dumps(prompt, indent=2))
+            llm_response = self.llm_api.chat_completion(
+                messages=prompt,
+                response_format=None,
+                stream=False,
+            )
         try:
             llm_response = json.loads(llm_response["content"])
         except json.JSONDecodeError:
@@ -111,6 +118,8 @@ class CodeGeneratorCLIOnly(Role):
 
         post_proxy.update_attachment(llm_response["description"], AttachmentType.thought)
         post_proxy.update_attachment(llm_response["code"], AttachmentType.python)
+
+        self.tracing.set_span_attribute("code", llm_response["code"])
 
         return post_proxy.end()
 

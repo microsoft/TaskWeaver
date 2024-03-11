@@ -1,3 +1,4 @@
+import json
 from typing import Callable, List, Set, Tuple
 
 from injector import inject
@@ -7,6 +8,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 
 
 class RoundCompressorConfig(ModuleConfig):
@@ -28,6 +30,7 @@ class RoundCompressor:
         llm_api: LLMApi,
         config: RoundCompressorConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
     ):
         self.config = config
         self.processed_rounds: Set[str] = set()
@@ -36,7 +39,9 @@ class RoundCompressor:
         self.previous_summary: str = "None"
         self.llm_api = llm_api
         self.logger = logger
+        self.tracing = tracing
 
+    @tracing_decorator
     def compress_rounds(
         self,
         rounds: List[Round],
@@ -62,12 +67,15 @@ class RoundCompressor:
             prompt_template=prompt_template,
         )
 
+        self.tracing.set_span_attribute("chat_summary", chat_summary)
+
         if len(chat_summary) > 0:  # if the compression is successful
             self.previous_summary = chat_summary
             return chat_summary, rounds[-self.rounds_to_retain :]
         else:
             return self.previous_summary, rounds[-remaining_rounds:]
 
+    @tracing_decorator
     def _summarize(
         self,
         rounds: List[Round],
@@ -85,7 +93,11 @@ class RoundCompressor:
                 format_chat_message("system", system_instruction),
                 format_chat_message("user", chat_history_str),
             ]
-            new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
+            with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
+                span.set_attribute("prompt", json.dumps(prompt, indent=2))
+                new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
+                span.set_attribute("summary", new_summary)
+
             self.processed_rounds.update([_round.id for _round in rounds])
             return new_summary
         except Exception as e:

@@ -10,6 +10,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
+from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
 from taskweaver.workspace.workspace import Workspace
 
@@ -40,12 +41,13 @@ class Session:
         workspace: Workspace,
         app_injector: Injector,
         logger: TelemetryLogger,
+        tracing: Tracing,
         config: AppSessionConfig,  # TODO: change to SessionConfig
     ) -> None:
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
+        self.tracing = tracing
         self.session_injector = app_injector.create_child_injector()
-
         self.config = config
 
         self.session_id: str = session_id
@@ -110,14 +112,27 @@ class Session:
 
         self.logger.info(f"Session {self.session_id} is initialized")
 
+    @tracing_decorator
     def update_session_var(self, variables: Dict[str, str]):
         self.session_var.update(variables)
 
+    @tracing_decorator
     def _send_text_message(self, message: str) -> Round:
         chat_round = self.memory.create_round(user_query=message)
+
+        self.tracing.set_span_attribute("round_id", chat_round.id)
+        self.tracing.set_span_attribute("round_index", self.round_index)
+        self.tracing.set_span_attribute("message", message)
+
         self.event_emitter.start_round(chat_round.id)
 
+        @tracing_decorator_non_class
         def _send_message(recipient: str, post: Post) -> Post:
+            self.tracing.set_span_attribute("in.from", post.send_from)
+            self.tracing.set_span_attribute("in.recipient", recipient)
+            self.tracing.set_span_attribute("in.message", post.message)
+            self.tracing.set_span_attribute("in.attachments", str(post.attachment_list))
+
             chat_round.add_post(post)
 
             use_back_up_engine = True if recipient == post.send_from else False
@@ -190,10 +205,16 @@ class Session:
             stack_trace_str = traceback.format_exc()
             self.logger.error(stack_trace_str)
             chat_round.change_round_state("failed")
+
             err_message = f"Cannot process your request due to Exception: {str(e)} \n {stack_trace_str}"
+
+            self.tracing.set_span_status("ERROR", err_message)
+            self.tracing.set_span_exception(e)
             self.event_emitter.emit_error(err_message)
 
         finally:
+            self.tracing.set_span_attribute("internal_chat_num", self.internal_chat_num)
+
             self.internal_chat_num = 0
             self.logger.dump_log_file(
                 chat_round,
@@ -205,12 +226,18 @@ class Session:
             self.event_emitter.end_round(chat_round.id)
             return chat_round
 
+    @tracing_decorator
     def send_message(
         self,
         message: str,
         event_handler: Optional[SessionEventHandler] = None,
         files: Optional[List[Dict[Literal["name", "path", "content"], Any]]] = None,
     ) -> Round:
+        # init span with session_id
+        self.tracing.set_span_attribute("session_id", self.session_id)
+        self.tracing.set_span_attribute("message", message)
+        self.tracing.set_span_attribute("files", str(files))
+
         message_prefix = ""
         if files is not None:
             file_names: List[str] = []
@@ -223,11 +250,21 @@ class Session:
                 message_prefix += f"files added: {', '.join(file_names)}.\n"
 
         with self.event_emitter.handle_events_ctx(event_handler):
-            return self._send_text_message(message_prefix + message)
+            chat_round = self._send_text_message(message_prefix + message)
 
+            self.tracing.set_span_attribute("round_id", chat_round.id)
+            if chat_round.state != "finished":
+                self.tracing.set_span_status("ERROR", "Chat round is not finished successfully.")
+            else:
+                self.tracing.set_span_attribute("reply_to_user", chat_round.post_list[-1].message)
+
+            return chat_round
+
+    @tracing_decorator
     def _upload_file(self, name: str, path: Optional[str] = None, content: Optional[bytes] = None) -> str:
         target_name = name.split("/")[-1]
         target_path = self.get_full_path(self.execution_cwd, target_name)
+        self.tracing.set_span_attribute("target_path", target_path)
         if path is not None:
             shutil.copyfile(path, target_path)
             return target_name
@@ -235,6 +272,8 @@ class Session:
             with open(target_path, "wb") as f:
                 f.write(content)
             return target_name
+
+        self.tracing.set_span_status("ERROR", "path or file_content must be provided")
         raise ValueError("path or file_content")
 
     def get_full_path(self, *file_path: str, in_execution_cwd: bool = False) -> str:
@@ -247,6 +286,7 @@ class Session:
             ),
         )
 
+    @tracing_decorator
     def stop(self) -> None:
         self.logger.info(f"Session {self.session_id} is stopped")
         self.code_executor.stop()

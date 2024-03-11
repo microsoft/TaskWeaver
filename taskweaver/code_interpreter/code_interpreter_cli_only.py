@@ -9,6 +9,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -26,12 +27,14 @@ class CodeInterpreterCLIOnly(Role):
         generator: CodeGeneratorCLIOnly,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
         self.generator = generator
         self.executor = executor
         self.logger = logger
+        self.tracing = tracing
         self.config = config
         self.event_emitter = event_emitter
         self.retry_count = 0
@@ -39,6 +42,7 @@ class CodeInterpreterCLIOnly(Role):
 
         self.logger.info("CodeInterpreter initialized successfully.")
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -59,10 +63,13 @@ class CodeInterpreterCLIOnly(Role):
             return post_proxy.end()
 
         code_to_exec = "! " + code
-        exec_result = self.executor.execute_code(
-            exec_id=post_proxy.post.id,
-            code=code_to_exec,
-        )
+        with get_tracer().start_as_current_span("CodeInterpreterCLIOnly.execute_code") as span:
+            span.set_attribute("code_to_exec", code_to_exec)
+
+            exec_result = self.executor.execute_code(
+                exec_id=post_proxy.post.id,
+                code=code_to_exec,
+            )
 
         CLI_res = exec_result.stderr if len(exec_result.stderr) != 0 else exec_result.stdout
         post_proxy.update_message(
@@ -70,4 +77,15 @@ class CodeInterpreterCLIOnly(Role):
             is_end=True,
         )
 
-        return post_proxy.end()
+        if not exec_result.is_success:
+            self.tracing.set_span_status("ERROR", "Code execution failed.")
+        self.tracing.set_span_attribute("code_output", CLI_res)
+
+        reply_post = post_proxy.end()
+
+        self.tracing.set_span_attribute("out.from", reply_post.send_from)
+        self.tracing.set_span_attribute("out.to", reply_post.send_to)
+        self.tracing.set_span_attribute("out.message", reply_post.message)
+        self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
+
+        return reply_post
