@@ -82,7 +82,7 @@ const sidebars = {
     'code_execution',
     'FAQ',
     'cli_only',
-    'training',
+    'tracing',
   ],
   
 };
