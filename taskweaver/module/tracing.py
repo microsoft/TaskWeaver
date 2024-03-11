@@ -10,7 +10,7 @@ class TracingConfig(ModuleConfig):
         self._set_name("tracing")
         self.enabled = self._get_bool("enabled", False)
         self.endpoint = self._get_str("endpoint", "http://127.0.0.1:4318/v1/traces")
-        self.service_name = self._get_str("service_name", "taskweaver.opentelemetry.tracer")
+        self.service_name = self._get_str("service_name", "taskweaver.otlp.tracer")
         self.exporter = self._get_str("exporter", "otlp")
 
 
