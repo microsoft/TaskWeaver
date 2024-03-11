@@ -76,6 +76,13 @@ def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
                 size="large",
             )
             elements.append(image)
+        elif file_path.endswith((".mp3", ".wav", ".flac")):
+            audio = cl.Audio(
+                name="converted_speech",
+                display="inline",
+                path=file_path if os.path.isabs(file_path) else os.path.join(session_cwd_path, file_path),
+            )
+            elements.append(audio)
         else:
             if file_path.endswith(".csv"):
                 import pandas as pd
@@ -377,6 +384,7 @@ async def start():
             "For more information, please refer to the documentation ("
             "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
         )
+
 
 @cl.on_chat_end
 async def end():

@@ -1,0 +1,25 @@
+name: text_classification
+enabled: false
+required: false
+description: >-
+   text_classification can access a list of English text and classify each of them into a label from the provided label list.
+examples:
+  labels = text_classification(["This is a super nice API!"], ["positive", "negative"])
+
+parameters:
+  - name: input_list
+    type: list
+    required: true
+    description: >-
+      a list of English sentences that need to be classified into labels.
+  - name: label_list
+    type: list
+    required: true
+    description: >-
+      a list of labels that the input string can be classified into.
+
+returns:
+  - name: predicted_labels
+    type: list
+    description: >-
+      a list of labels that the input string can be classified into. 

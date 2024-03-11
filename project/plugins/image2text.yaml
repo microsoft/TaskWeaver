@@ -1,0 +1,21 @@
+name: image2text
+enabled: false
+required: false
+description: >-
+  image2text can load an image and convert it into text by using OCR. 
+
+examples:
+  result = image2text("./image.jpg")
+
+parameters:
+  - name: image_path
+    type: str
+    required: true
+    description: >-
+      The path to the image file.
+
+returns:
+  - name: result
+    type: list
+    description: >-
+      The output will be in a list of tuple format, each tuple contains a bounding box, the text detected and confident level, respectively.
