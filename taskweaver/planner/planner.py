@@ -16,6 +16,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -60,6 +61,8 @@ class PlannerConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
@@ -70,6 +73,7 @@ class Planner(Role):
         self,
         config: PlannerConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         plugin_registry: PluginRegistry,
@@ -80,6 +84,7 @@ class Planner(Role):
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.event_emitter = event_emitter
         self.llm_api = llm_api
         if plugin_only:
@@ -234,6 +239,7 @@ class Planner(Role):
 
         return chat_history
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -244,6 +250,9 @@ class Planner(Role):
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
+        self.tracing.set_span_attribute("user_query", user_query)
+        self.tracing.set_span_attribute("use_experience", self.config.use_experience)
+
         if self.config.use_experience:
             selected_experiences = self.experience_generator.retrieve_experience(user_query)
         else:
@@ -280,6 +289,7 @@ class Planner(Role):
                 chat_history,
                 use_backup_engine=use_back_up_engine,
                 use_smoother=True,
+                llm_alias=self.config.llm_alias,
             )
 
         llm_output: List[str] = []
@@ -301,14 +311,19 @@ class Planner(Role):
                         except GeneratorExit:
                             pass
 
-            self.planner_post_translator.raw_text_to_post(
-                post_proxy=post_proxy,
-                llm_output=stream_filter(llm_stream),
-                validation_func=check_post_validity,
-            )
+            with get_tracer().start_as_current_span("Planner.reply.raw_text_to_post") as span:
+                span.set_attribute("prompt", json.dumps(chat_history, indent=2))
+
+                self.planner_post_translator.raw_text_to_post(
+                    post_proxy=post_proxy,
+                    llm_output=stream_filter(llm_stream),
+                    validation_func=check_post_validity,
+                )
 
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
+            self.tracing.set_span_status("ERROR", str(e))
+            self.tracing.set_span_exception(e)
             post_proxy.error(f"failed to parse LLM output due to {str(e)}")
             post_proxy.update_attachment(
                 "".join(llm_output),
@@ -330,7 +345,15 @@ class Planner(Role):
                 self.ask_self_cnt += 1
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
-        return post_proxy.end()
+
+        reply_post = post_proxy.end()
+
+        self.tracing.set_span_attribute("out.from", reply_post.send_from)
+        self.tracing.set_span_attribute("out.to", reply_post.send_to)
+        self.tracing.set_span_attribute("out.message", reply_post.message)
+        self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
+
+        return reply_post
 
     def get_examples(self) -> List[Conversation]:
         example_conv_list = load_examples(self.config.example_base_path)

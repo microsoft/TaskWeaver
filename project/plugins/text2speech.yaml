@@ -1,0 +1,21 @@
+name: text2speech
+enabled: false
+required: false
+description: >-
+  text2speech plugin is used to convert text to English speech as audio file
+
+examples:
+  result = text2speech("This is a sample text")
+
+parameters:
+  - name: input
+    type: str
+    required: true
+    description: >-
+      The input text to be converted to speech
+
+returns:
+  - name: filepath
+    type: str
+    description: >-
+      The text description of the audio file path

@@ -72,10 +72,17 @@ def file_display(files: List[Tuple[str, str]], session_cwd_path: str):
             image = cl.Image(
                 name=file_path,
                 display="inline",
-                path=file_path,
+                path=file_path if os.path.isabs(file_path) else os.path.join(session_cwd_path, file_path),
                 size="large",
             )
             elements.append(image)
+        elif file_path.endswith((".mp3", ".wav", ".flac")):
+            audio = cl.Audio(
+                name="converted_speech",
+                display="inline",
+                path=file_path if os.path.isabs(file_path) else os.path.join(session_cwd_path, file_path),
+            )
+            elements.append(audio)
         else:
             if file_path.endswith(".csv"):
                 import pandas as pd
@@ -365,6 +372,27 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
 async def start():
     user_session_id = cl.user_session.get("id")
     app_session_dict[user_session_id] = app.get_session()
+    exec_kernel_mode = app_session_dict[user_session_id].code_executor.get_execution_mode()
+    print(f"Starting session in `{exec_kernel_mode}` mode")
+    if exec_kernel_mode == "local":
+        print(
+            "Code running in local mode "
+            "may incur security risks, such as file system access. "
+            "Please be cautious when executing code. "
+            "For higher security, consider using the `container` mode by setting "
+            "the `execution_service.kernel_mode` to `container`. "
+            "For more information, please refer to the documentation ("
+            "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
+        )
+
+
+@cl.on_chat_end
+async def end():
+    user_session_id = cl.user_session.get("id")
+    app_session = app_session_dict[user_session_id]
+    print(f"Stopping session {app_session.session_id}")
+    app_session.stop()
+    app_session_dict.pop(user_session_id)
 
 
 @cl.on_message
@@ -374,7 +402,6 @@ async def main(message: cl.Message):
     session_cwd_path = session.execution_cwd
 
     # display loader before sending message
-
     async with cl.Step(name="", show_input=True, root=True) as root_step:
         response_round = await cl.make_async(session.send_message)(
             message.content,
@@ -384,7 +411,7 @@ async def main(message: cl.Message):
                     "path": element.path,
                 }
                 for element in message.elements
-                if element.type == "file"
+                if element.type == "file" or element.type == "image"
             ],
             event_handler=ChainLitMessageUpdater(root_step),
         )
@@ -423,7 +450,6 @@ async def main(message: cl.Message):
                 f"{img_prefix}[{file_name}]({file_path})",
                 file_name,
             )
-
         elements = file_display(files, session_cwd_path)
         await cl.Message(
             author="TaskWeaver",

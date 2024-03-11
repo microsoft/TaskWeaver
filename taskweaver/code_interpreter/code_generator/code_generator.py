@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List, Optional
 
@@ -14,6 +15,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -54,6 +56,8 @@ class CodeGeneratorConfig(ModuleConfig):
 
         self.use_experience = self._get_bool("use_experience", False)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class CodeGenerator(Role):
     @inject
@@ -62,6 +66,7 @@ class CodeGenerator(Role):
         config: CodeGeneratorConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        tracing: Tracing,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
         post_translator: PostTranslator,
@@ -69,6 +74,7 @@ class CodeGenerator(Role):
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
@@ -109,7 +115,7 @@ class CodeGenerator(Role):
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
 
-        self.logger.info("CodeInterpreter initialized successfully")
+        self.logger.info("CodeGenerator initialized successfully")
 
     def configure_verification(
         self,
@@ -322,6 +328,7 @@ class CodeGenerator(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
@@ -330,6 +337,7 @@ class CodeGenerator(Role):
         use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
+
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -338,6 +346,10 @@ class CodeGenerator(Role):
 
         # obtain the query from the last round
         query = rounds[-1].post_list[-1].message
+
+        self.tracing.set_span_attribute("query", query)
+        self.tracing.set_span_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
+        self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
@@ -355,15 +367,19 @@ class CodeGenerator(Role):
             else:
                 return False
 
-        self.post_translator.raw_text_to_post(
-            llm_output=self.llm_api.chat_completion_stream(
-                prompt,
-                use_backup_engine=use_back_up_engine,
-                use_smoother=True,
-            ),
-            post_proxy=post_proxy,
-            early_stop=early_stop,
-        )
+        with get_tracer().start_as_current_span("CodeGenerator.reply.raw_text_to_post") as span:
+            span.set_attribute("prompt", json.dumps(prompt, indent=2))
+            self.post_translator.raw_text_to_post(
+                llm_output=self.llm_api.chat_completion_stream(
+                    prompt,
+                    use_backup_engine=use_back_up_engine,
+                    use_smoother=True,
+                    llm_alias=self.config.llm_alias,
+                ),
+                post_proxy=post_proxy,
+                early_stop=early_stop,
+            )
+
         post_proxy.update_send_to("Planner")
         generated_code = ""
         for attachment in post_proxy.post.attachment_list:
@@ -380,6 +396,8 @@ class CodeGenerator(Role):
 
         if prompt_log_path is not None:
             self.logger.dump_log_file(prompt, prompt_log_path)
+
+        self.tracing.set_span_attribute("code", generated_code)
 
         return post_proxy.post
 

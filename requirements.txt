@@ -12,6 +12,7 @@ jsonschema==4.20.0
 injector>=0.21.0
 ijson>=3.2.3
 requests>=2.31.0
+docker>=7.0.0
 
 # Code Execution related
 ipykernel==6.26.0
@@ -22,5 +23,7 @@ plotly>=5.14.1
 pytest>=7.0.0
 vcrpy>=5.0.0
 colorama>=0.4.6
+
+
 
 

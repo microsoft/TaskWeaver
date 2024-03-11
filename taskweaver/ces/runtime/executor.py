@@ -60,7 +60,7 @@ class RuntimePlugin(EnvPlugin):
 
             module_name = self.module_name
             with tempfile.TemporaryDirectory() as temp_dir:
-                module_path = os.path.join(temp_dir, f"{self.name}.py")
+                module_path = os.path.join(str(temp_dir), f"{self.name}.py")
                 with open(module_path, "w") as f:
                     f.write(self.impl)
 
