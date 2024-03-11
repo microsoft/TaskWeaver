@@ -1,0 +1,21 @@
+name: speech2text
+enabled: false
+required: false
+description: >-
+  speech2text plugin is used to convert speech to text using the Whisper model
+
+examples:
+  result = speech2text("./audio.wav")
+
+parameters:
+  - name: audio_path
+    type: str
+    required: true
+    description: >-
+      The path to the audio file
+
+returns:
+  - name: result
+    type: str
+    description: >-
+      The text result of the speech to text conversion
