@@ -240,7 +240,6 @@ class MockApiService(CompletionService, EmbeddingService):
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -268,7 +267,6 @@ class MockApiService(CompletionService, EmbeddingService):
             new_value = format_chat_message("assistant", "")
             for chunk in self.base_completion_service.chat_completion(
                 messages,
-                use_backup_engine,
                 stream,
                 temperature,
                 max_tokens,

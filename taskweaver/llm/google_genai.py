@@ -92,7 +92,6 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -102,7 +101,6 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
     ) -> Generator[ChatMessageType, None, None]:
         return self._chat_completion(
             messages=messages,
-            use_backup_engine=use_backup_engine,
             stream=stream,
             temperature=temperature,
             max_tokens=max_tokens,
@@ -114,7 +112,6 @@ class GoogleGenAIService(CompletionService, EmbeddingService):
     def _chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,

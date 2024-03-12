@@ -46,7 +46,6 @@ class RoundCompressor:
         self,
         rounds: List[Round],
         rounds_formatter: Callable,
-        use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> Tuple[str, List[Round]]:
         remaining_rounds = len(rounds)
@@ -63,7 +62,6 @@ class RoundCompressor:
         chat_summary = self._summarize(
             rounds[-remaining_rounds : -self.rounds_to_retain],
             rounds_formatter,
-            use_back_up_engine=use_back_up_engine,
             prompt_template=prompt_template,
         )
 
@@ -80,7 +78,6 @@ class RoundCompressor:
         self,
         rounds: List[Round],
         rounds_formatter: Callable,
-        use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> str:
         assert "{PREVIOUS_SUMMARY}" in prompt_template, "Prompt template must contain {PREVIOUS_SUMMARY}"
@@ -93,6 +90,7 @@ class RoundCompressor:
                 format_chat_message("system", system_instruction),
                 format_chat_message("user", chat_history_str),
             ]
+
             with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
                 span.set_attribute("prompt", json.dumps(prompt, indent=2))
                 new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]

@@ -208,7 +208,6 @@ def test_skip_planning():
     response_post = planner.reply(
         memory,
         prompt_log_path=None,
-        use_back_up_engine=False,
     )
 
     assert response_post.message == "Please process this request: count the rows of /home/data.csv"
