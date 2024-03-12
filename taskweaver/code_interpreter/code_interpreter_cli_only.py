@@ -47,14 +47,12 @@ class CodeInterpreterCLIOnly(Role):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         self.generator.reply(
             memory,
             post_proxy=post_proxy,
             prompt_log_path=prompt_log_path,
-            use_back_up_engine=use_back_up_engine,
         )
 
         code = post_proxy.post.get_attachment(type=AttachmentType.python)[0]

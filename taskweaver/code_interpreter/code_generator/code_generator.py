@@ -181,7 +181,6 @@ class CodeGenerator(Role):
                 rounds_formatter=lambda _rounds: str(
                     self.compose_conversation(_rounds, plugins, add_requirements=False),
                 ),
-                use_back_up_engine=True,
                 prompt_template=self.compression_template,
             )
 
@@ -334,7 +333,6 @@ class CodeGenerator(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
@@ -372,7 +370,6 @@ class CodeGenerator(Role):
             self.post_translator.raw_text_to_post(
                 llm_output=self.llm_api.chat_completion_stream(
                     prompt,
-                    use_backup_engine=use_back_up_engine,
                     use_smoother=True,
                     llm_alias=self.config.llm_alias,
                 ),

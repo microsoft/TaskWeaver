@@ -107,7 +107,6 @@ class CodeInterpreter(Role):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
         post_proxy.update_status("generating code")
@@ -115,7 +114,6 @@ class CodeInterpreter(Role):
             memory,
             post_proxy,
             prompt_log_path,
-            use_back_up_engine,
         )
 
         if post_proxy.post.message is not None and post_proxy.post.message != "":  # type: ignore

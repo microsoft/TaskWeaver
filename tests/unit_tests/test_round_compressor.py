@@ -43,7 +43,6 @@ def test_round_compressor():
     summary, retained = compressor.compress_rounds(
         [round1],
         lambda x: x,
-        use_back_up_engine=False,
     )
     assert summary == "None"
     assert len(retained) == 1
@@ -55,7 +54,6 @@ def test_round_compressor():
     summary, retained = compressor.compress_rounds(
         [round1, round2],
         lambda x: x,
-        use_back_up_engine=False,
     )
     assert summary == "None"
     assert len(retained) == 2
@@ -66,7 +64,6 @@ def test_round_compressor():
     summary, retained = compressor.compress_rounds(
         [round1, round2, round3],
         lambda x: x,
-        use_back_up_engine=False,
     )
     assert summary == "None"
     assert len(retained) == 3
@@ -77,7 +74,6 @@ def test_round_compressor():
     summary, retained = compressor.compress_rounds(
         [round1, round2, round3, round4],
         lambda x: x,
-        use_back_up_engine=False,
     )
     assert summary == "None"
     assert len(retained) == 4

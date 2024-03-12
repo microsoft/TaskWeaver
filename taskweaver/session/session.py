@@ -135,9 +135,6 @@ class Session:
 
             chat_round.add_post(post)
 
-            use_back_up_engine = True if recipient == post.send_from else False
-            self.logger.info(f"Use back up engine: {use_back_up_engine}")
-
             if recipient == "Planner":
                 reply_post = self.planner.reply(
                     self.memory,
@@ -145,7 +142,6 @@ class Session:
                         self.workspace,
                         f"planner_prompt_log_{chat_round.id}_{post.id}.json",
                     ),
-                    use_back_up_engine=use_back_up_engine,
                 )
             elif recipient == "CodeInterpreter":
                 reply_post = self.code_interpreter.reply(
@@ -154,7 +150,6 @@ class Session:
                         self.workspace,
                         f"code_generator_prompt_log_{chat_round.id}_{post.id}.json",
                     ),
-                    use_back_up_engine=use_back_up_engine,
                 )
             else:
                 raise Exception(f"Unknown recipient {recipient}")

@@ -96,7 +96,6 @@ class CodeGeneratorPluginOnly(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
