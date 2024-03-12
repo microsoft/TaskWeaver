@@ -361,6 +361,14 @@ class CodeGenerator(Role):
 
         prompt = self.compose_prompt(rounds, self.plugin_pool, selected_experiences)
 
+        self.tracing.add_prompt_size(
+            data=json.dumps(prompt),
+            labels={
+                "from": post_proxy.post.send_from,
+                "direction": "input",
+            },
+        )
+
         def early_stop(_type: AttachmentType, value: str) -> bool:
             if _type in [AttachmentType.text, AttachmentType.python, AttachmentType.sample]:
                 return True

@@ -93,10 +93,27 @@ class RoundCompressor:
                 format_chat_message("system", system_instruction),
                 format_chat_message("user", chat_history_str),
             ]
+
+            self.tracing.add_prompt_size(
+                data=json.dumps(prompt),
+                labels={
+                    "from": "Compression",
+                    "direction": "input",
+                },
+            )
+
             with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
                 span.set_attribute("prompt", json.dumps(prompt, indent=2))
                 new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
                 span.set_attribute("summary", new_summary)
+
+            self.tracing.add_prompt_size(
+                data=new_summary,
+                labels={
+                    "from": "Compression",
+                    "direction": "output",
+                },
+            )
 
             self.processed_rounds.update([_round.id for _round in rounds])
             return new_summary

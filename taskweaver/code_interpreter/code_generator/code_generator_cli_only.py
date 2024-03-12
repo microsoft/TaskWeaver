@@ -94,6 +94,13 @@ class CodeGeneratorCLIOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt}, prompt_log_path)
 
+        self.tracing.add_prompt_size(
+            data=json.dumps(prompt),
+            labels={
+                "from": post_proxy.post.send_from,
+                "direction": "input",
+            },
+        )
         with get_tracer().start_as_current_span("CodeGeneratorCLIOnly.reply.chat_completion") as span:
             span.set_attribute("prompt", json.dumps(prompt, indent=2))
             llm_response = self.llm_api.chat_completion(

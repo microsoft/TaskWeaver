@@ -263,6 +263,14 @@ class Planner(Role):
         post_proxy.update_status("composing prompt")
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
+        self.tracing.add_prompt_size(
+            data=json.dumps(chat_history),
+            labels={
+                "from": "Planner",
+                "direction": "input",
+            },
+        )
+
         def check_post_validity(post: Post):
             assert post.send_to is not None, "LLM failed to generate send_to field"
             assert post.send_to != "Planner", "LLM failed to generate correct send_to field: Planner"
@@ -347,7 +355,6 @@ class Planner(Role):
             self.logger.dump_log_file(chat_history, prompt_log_path)
 
         reply_post = post_proxy.end()
-
         self.tracing.set_span_attribute("out.from", reply_post.send_from)
         self.tracing.set_span_attribute("out.to", reply_post.send_to)
         self.tracing.set_span_attribute("out.message", reply_post.message)

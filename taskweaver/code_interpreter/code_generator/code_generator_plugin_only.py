@@ -125,6 +125,14 @@ class CodeGeneratorPluginOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
+        self.tracing.add_prompt_size(
+            data=json.dumps(prompt) + json.dumps(tools),
+            labels={
+                "from": post_proxy.post.send_from,
+                "direction": "input",
+            },
+        )
+
         with get_tracer().start_span("CodeGeneratorPluginOnly.reply.chat_completion") as span:
             span.set_attribute("prompt", json.dumps(prompt, indent=2))
 

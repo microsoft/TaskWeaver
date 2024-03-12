@@ -124,7 +124,21 @@ class ExperienceGenerator:
             format_chat_message("user", json.dumps(conversation)),
         ]
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+        self.tracing.add_prompt_size(
+            data=json.dumps(prompt),
+            labels={
+                "from": "ExperienceSummarizer",
+                "direction": "input",
+            },
+        )
         summarized_experience = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
+        self.tracing.add_prompt_size(
+            data=summarized_experience,
+            labels={
+                "from": "ExperienceSummarizer",
+                "direction": "output",
+            },
+        )
 
         return summarized_experience
 
