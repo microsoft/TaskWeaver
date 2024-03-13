@@ -1,13 +1,12 @@
 version: '3'
 services:
   optl-collector:
-    image: otel/opentelemetry-collector
+    image: otel/opentelemetry-collector:0.96.0
     command: ["--config=/etc/collector-config.yaml"]
     volumes:
       - ./collector-config.yaml:/etc/collector-config.yaml
     ports:
       - "4317:4317" # Expose the gRPC receiver port for the first collector
-      - "4318:4318" # Expose the HTTP receiver port for the first collector (if needed)
     depends_on:
       - jaeger
 
@@ -17,7 +16,7 @@ services:
       - "16686:16686" # Jaeger UI
 
   prometheus:
-    image: prom/prometheus
+    image: prom/prometheus:latest
     ports:
       - "9090:9090" # Prometheus UI
     volumes:

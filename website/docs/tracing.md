@@ -7,6 +7,7 @@ which is one of the most popular open-source observability frameworks. This allo
 - The time consumed by each role and major components of TaskWeaver.
 - The prompts sent to the LLM and the responses received from the LLM.
 - The status of the tasks and the errors encountered.
+- The number of tokens consumed by each role.
 
 The following screenshot shows a trace of a simple task: analyzing an uploaded file.
 
@@ -38,25 +39,134 @@ Here is the call graph of the trace:
 
 ## How to enable tracing
 
+
+
 Tracing is by default disabled. To enable tracing, you need to install packages required by OpenTelemetry.
 Please check the [OpenTelemetry website](https://opentelemetry.io/docs/languages/python/) for the installation guide.
 It basically requires you to install the `opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-exporter-otlp`, 
 and `opentelemetry-instrumentation` packages.
+To count the number of tokens consumed during task execution, you also need to install the [tiktoken](https://github.com/openai/tiktoken) package.
+We now only support the tokenizers of the OpenAI models.
 After installing the packages, you can enable tracing by setting the `tracing.enabled=true` in the project configuration file.
+The default tokenizer target model is `gpt-4`, if you want to use another model, you can set the `tracing.tokenizer_target_model` 
+in the project configuration file.
+You can find the available models in the [tiktoken code](https://github.com/openai/tiktoken/blob/main/tiktoken/model.py).
 
-Next, you need to set up a trace collector and a frontend to collect and view the traces. We recommend using [Jaeger](https://www.jaegertracing.io/), 
-which is a popular open-source tracing system.
-To start, please visit the [Getting Started](https://www.jaegertracing.io/docs/getting-started/) page of Jaeger.
-An "All-in-one" Docker image is available, which is easy to start and use.
-This docker image includes both the OpenTelemetry collector and the Jaeger frontend.
-If the container is running at the same host as the TaskWeaver, you don't need to configure anything else.
-Otherwise, you need to set the `tracing.endpoint` in the project configuration file to the endpoint of the OpenTelemetry collector.
-The default endpoint of the OpenTelemetry collector is `http://127.0.0.1:4318/v1/traces`.
 
-After running the docker image, you can access the Jaeger frontend at `http://localhost:16686`.
-Now, when you run TaskWeaver, issue a task, and access the Jaeger frontend, you can see the traces of the task execution.
-On the left side panel, you can select the Service dropdown to filter the traces by the service name.
-The service name of TaskWeaver is `taskweaver.opentelemetry.tracer`.
+Next, we need to set up the infrastructure for tracing. The following diagram shows the architecture of a toy tracing system.
+The instrumentation in the TaskWeaver code will send the traces and metrics to the OpenTelemetry collector. 
+An OpenTelemetry collector is a component that receives traces and metrics from the instrumentation, does some processing, and exports them to
+another collector or a backend. In our case, we configure the collector to export the traces to a [Jaeger](https://www.jaegertracing.io/) backend and the metrics 
+to a [Prometheus](https://prometheus.io/) backend.
+![Tracing Architecture](../static/img/tracing-arch.png)
+
+Both Jaeger and Prometheus are popular open-source monitoring systems. We have prepared a docker-compose file to set up the infrastructure
+in `/TaskWeaver/tracing_configure/docker-compose.yaml`. 
+The content of the file is as follows:
+```yaml
+version: '3'
+services:
+  optl-collector:
+    image: otel/opentelemetry-collector:0.96.0
+    command: ["--config=/etc/collector-config.yaml"]
+    volumes:
+      - ./collector-config.yaml:/etc/collector-config.yaml
+    ports:
+      - "4317:4317" # Expose the gRPC receiver port for the collector
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    ports:
+      - "16686:16686" # Jaeger UI
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090" # Prometheus UI
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    depends_on:
+      - optl-collector
+```
+If you read the file, you can see that we use the `otl/opentelemetry-collector` image to set up the OpenTelemetry collector,
+We only expose the gRPC receiver port for the collector, which is `4317`.
+The collector configuration file is `collector-config.yaml`, which is mounted to the container.
+The configuration file is as follows:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp:
+    endpoint: "jaeger:4317"
+    tls:
+      insecure: true
+  prometheus:
+    endpoint: "0.0.0.0:9464"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      exporters: [debug]
+```
+Because Jaeger is compatible with the OpenTelemetry collector, we can export the traces to Jaeger by setting the `otlp` exporter.
+We also export the metrics to Prometheus by setting the `prometheus` exporter. 
+The `prometheus-config.yml` file is the configuration file for Prometheus, which is as follows:
+```yaml
+scrape_configs:
+  - job_name: optl-collector
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["optl-collector:9464"]
+```
+We only scrape the metrics from the OpenTelemetry collector.
+
+With all the files in place, you can run the following command to set up the infrastructure:
+```bash
+cd /TaskWeaver/tracing_configure
+docker-compose up
+```
+You shall see a bunch of logs from the containers.
+Take a look at the logs to see if there are any errors.
+If no errors are found, you can access the Prometheus frontend at `http://localhost:9090` and the Jaeger frontend at `http://localhost:16686`.
+In this setup, we assume you are running the containers on the same machine of TaskWeaver. 
+If you are running the containers on different machines, you need to configure the endpoint of the OpenTelemetry collector in the TaskWeaver configuration file.
+The default endpoint is `http://127.0.0.1:4317`, you can set the `tracing.endpoint` in the project configuration file to change the endpoint address.
+
+## How to view the metrics
+
+In the first section, we have explained how to view the traces in the Jaeger frontend.
+Viewing the metrics in the Prometheus frontend is more complicated as each metric is a time series.
+A time series is a sequence of data points, which are usually timestamped.
+OpenTelemetry allows to add attributes to the metrics, so that you can filter the metrics by the attributes.
+In our current implementation, we only have one metric called `prompt_size` which records the size of the prompt sent to the LLM.
+The prompt size is accumulated at the trace level, i.e., each trace you can see in the Jaeger frontend has its `prompt_size` metric.
+In Prometheus, you should be able to see a time series for the `prompt_size` metric, namely `prompt_size_total`.
+`prompt_size_total` is the accumulated prompt size of all the traces which increases monotonically.
+
+We annotate the traces with the following attributes:
+- trace_id: The ID of the trace you can find in the Jaeger frontend.
+- span_id: The ID of the span you can find in the Jaeger frontend.
+- 
+
 
 ## How to customize tracing
 
