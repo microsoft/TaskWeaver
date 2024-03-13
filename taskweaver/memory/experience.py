@@ -124,18 +124,20 @@ class ExperienceGenerator:
             format_chat_message("user", json.dumps(conversation)),
         ]
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+        prompt_size = self.tracing.count_tokens(json.dumps(prompt))
+        self.tracing.set_span_attribute("prompt_size", prompt_size)
         self.tracing.add_prompt_size(
-            data=json.dumps(prompt),
+            size=prompt_size,
             labels={
-                "from": "ExperienceSummarizer",
                 "direction": "input",
             },
         )
         summarized_experience = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
+        output_size = self.tracing.count_tokens(summarized_experience)
+        self.tracing.set_span_attribute("output_size", output_size)
         self.tracing.add_prompt_size(
-            data=summarized_experience,
+            size=output_size,
             labels={
-                "from": "ExperienceSummarizer",
                 "direction": "output",
             },
         )

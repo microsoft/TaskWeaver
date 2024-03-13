@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Literal, Optional
 
 from injector import inject
 
@@ -99,8 +99,8 @@ class Tracing:
         # To get the tokeniser corresponding to a specific model in the OpenAI API:
         _enc = tiktoken.encoding_for_model(self.config.tokenizer_target_model)
 
+    @staticmethod
     def set_span_status(
-        self,
         status_code: Literal["OK", "ERROR"],
         status_message: Optional[str] = None,
     ):
@@ -113,40 +113,38 @@ class Tracing:
             status_message = None
         span.set_status(status_code, status_message)
 
-    def set_span_attribute(self, key, value):
+    @staticmethod
+    def set_span_attribute(key, value):
         if _trace is None:
             return
 
         span = _trace.get_current_span()
         span.set_attribute(key, value)
 
-    def set_span_exception(self, exception):
+    @staticmethod
+    def set_span_exception(exception):
         if _trace is None:
             return
 
         span = _trace.get_current_span()
         span.record_exception(exception)
 
-    def add_prompt_size(self, data: Union[int, str] = 0, labels: Optional[Dict[str, str]] = None):
+    @staticmethod
+    def add_prompt_size(size: int = 0, labels: Optional[Dict[str, str]] = None):
         if _meter is None:
             return
 
-        trace_id = format(_trace.get_current_span().get_span_context().trace_id, "032x")
-        span_id = format(_trace.get_current_span().get_span_context().span_id, "016x")
-        metadata = {"trace_id": trace_id, "span_id": span_id}
-        metadata.update(labels or {})
-        if isinstance(data, int):
-            _counters["prompt_size"].add(
-                data,
-                metadata,
-            )
-        elif isinstance(data, str):
-            _counters["prompt_size"].add(
-                len(_enc.encode(data)),
-                metadata,
-            )
-        else:
-            raise ValueError(f"Unknown data type: {type(data)}")
+        _counters["prompt_size"].add(
+            size,
+            labels or {},
+        )
+
+    @staticmethod
+    def count_tokens(data: str) -> int:
+        if _enc is None:
+            return 0
+
+        return len(_enc.encode(data))
 
 
 class DummyTracer:

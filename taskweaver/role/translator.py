@@ -63,10 +63,11 @@ class PostTranslator:
                         s.close()
                     except GeneratorExit:
                         pass
+                output_size = self.tracing.count_tokens(full_llm_content)
+                self.tracing.set_span_attribute("output_size", output_size)
                 self.tracing.add_prompt_size(
-                    data=full_llm_content,
+                    size=output_size,
                     labels={
-                        "from": post_proxy.post.send_from,
                         "direction": "output",
                     },
                 )

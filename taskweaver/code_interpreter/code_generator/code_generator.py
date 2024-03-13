@@ -15,7 +15,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -360,11 +360,12 @@ class CodeGenerator(Role):
             selected_experiences = None
 
         prompt = self.compose_prompt(rounds, self.plugin_pool, selected_experiences)
-
+        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+        prompt_size = self.tracing.count_tokens(json.dumps(prompt))
+        self.tracing.set_span_attribute("prompt_size", prompt_size)
         self.tracing.add_prompt_size(
-            data=json.dumps(prompt),
+            size=prompt_size,
             labels={
-                "from": post_proxy.post.send_from,
                 "direction": "input",
             },
         )
@@ -375,18 +376,16 @@ class CodeGenerator(Role):
             else:
                 return False
 
-        with get_tracer().start_as_current_span("CodeGenerator.reply.raw_text_to_post") as span:
-            span.set_attribute("prompt", json.dumps(prompt, indent=2))
-            self.post_translator.raw_text_to_post(
-                llm_output=self.llm_api.chat_completion_stream(
-                    prompt,
-                    use_backup_engine=use_back_up_engine,
-                    use_smoother=True,
-                    llm_alias=self.config.llm_alias,
-                ),
-                post_proxy=post_proxy,
-                early_stop=early_stop,
-            )
+        self.post_translator.raw_text_to_post(
+            llm_output=self.llm_api.chat_completion_stream(
+                prompt,
+                use_backup_engine=use_back_up_engine,
+                use_smoother=True,
+                llm_alias=self.config.llm_alias,
+            ),
+            post_proxy=post_proxy,
+            early_stop=early_stop,
+        )
 
         post_proxy.update_send_to("Planner")
         generated_code = ""

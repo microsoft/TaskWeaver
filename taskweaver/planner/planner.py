@@ -16,7 +16,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -263,14 +263,6 @@ class Planner(Role):
         post_proxy.update_status("composing prompt")
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
-        self.tracing.add_prompt_size(
-            data=json.dumps(chat_history),
-            labels={
-                "from": "Planner",
-                "direction": "input",
-            },
-        )
-
         def check_post_validity(post: Post):
             assert post.send_to is not None, "LLM failed to generate send_to field"
             assert post.send_to != "Planner", "LLM failed to generate correct send_to field: Planner"
@@ -319,14 +311,21 @@ class Planner(Role):
                         except GeneratorExit:
                             pass
 
-            with get_tracer().start_as_current_span("Planner.reply.raw_text_to_post") as span:
-                span.set_attribute("prompt", json.dumps(chat_history, indent=2))
+            self.tracing.set_span_attribute("prompt", json.dumps(chat_history, indent=2))
+            prompt_size = self.tracing.count_tokens(json.dumps(chat_history))
+            self.tracing.set_span_attribute("prompt_size", prompt_size)
+            self.tracing.add_prompt_size(
+                size=prompt_size,
+                labels={
+                    "direction": "input",
+                },
+            )
 
-                self.planner_post_translator.raw_text_to_post(
-                    post_proxy=post_proxy,
-                    llm_output=stream_filter(llm_stream),
-                    validation_func=check_post_validity,
-                )
+            self.planner_post_translator.raw_text_to_post(
+                post_proxy=post_proxy,
+                llm_output=stream_filter(llm_stream),
+                validation_func=check_post_validity,
+            )
 
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")

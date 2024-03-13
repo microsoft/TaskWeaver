@@ -13,7 +13,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -125,25 +125,34 @@ class CodeGeneratorPluginOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
+        prompt_size = self.tracing.count_tokens(json.dumps(prompt)) + self.tracing.count_tokens(json.dumps(tools))
+        self.tracing.set_span_attribute("prompt_size", prompt_size)
         self.tracing.add_prompt_size(
-            data=json.dumps(prompt) + json.dumps(tools),
+            size=prompt_size,
             labels={
-                "from": post_proxy.post.send_from,
                 "direction": "input",
             },
         )
 
-        with get_tracer().start_span("CodeGeneratorPluginOnly.reply.chat_completion") as span:
-            span.set_attribute("prompt", json.dumps(prompt, indent=2))
+        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
 
-            llm_response = self.llm_api.chat_completion(
-                messages=prompt,
-                tools=tools,
-                tool_choice="auto",
-                response_format=None,
-                stream=False,
-                llm_alias=self.config.llm_alias,
-            )
+        llm_response = self.llm_api.chat_completion(
+            messages=prompt,
+            tools=tools,
+            tool_choice="auto",
+            response_format=None,
+            stream=False,
+            llm_alias=self.config.llm_alias,
+        )
+
+        output_size = self.tracing.count_tokens(llm_response["content"])
+        self.tracing.set_span_attribute("output_size", output_size)
+        self.tracing.add_prompt_size(
+            size=output_size,
+            labels={
+                "direction": "output",
+            },
+        )
 
         if llm_response["role"] == "assistant":
             post_proxy.update_message(llm_response["content"])
@@ -157,7 +166,10 @@ class CodeGeneratorPluginOnly(Role):
                 self.selected_plugin_pool.filter_unused_plugins(code=llm_response["content"])
             return post_proxy.end()
         else:
-            self.tracing.set_span_status("ERROR", "Unexpected response from LLM")
+            self.tracing.set_span_status(
+                "ERROR",
+                f"Unexpected response from LLM {llm_response}",
+            )
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
 
