@@ -1,4 +1,4 @@
-# Multi LLM APIs for Different Components
+# Multi LLM APIs
 
 In some cases, you may want to use different LLMs for different components. 
 For example, you may want to use OpenAI GPT-4 for the Planner but use Google gemini-pro for the CodeInterpreter.

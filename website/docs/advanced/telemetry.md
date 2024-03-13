@@ -1,4 +1,4 @@
-# Tracing
+# Telemetry
 
 TaskWeaver now supports tracing with OpenTelemetry, 
 which is one of the most popular open-source observability frameworks. This allows you to trace the following:
@@ -10,7 +10,7 @@ which is one of the most popular open-source observability frameworks. This allo
 
 The following screenshot shows a trace of a simple task: analyzing an uploaded file.
 
-![Tracing](../static/img/trace.png)
+![Tracing](../../static/img/trace.png)
 
 From this view, you can see the timeline of the task execution, which breaks majorly into 
 three parts:
@@ -27,14 +27,14 @@ We can click the span (a unit of work in the trace) to see the details of the sp
 
 The screenshot below shows the prompt of the CodeGenerator to the LLM:
 
-![Tracing Prompt](../static/img/trace_prompt.png)
+![Tracing Prompt](../../static/img/trace_prompt.png)
 
 We also recorded the generated code, the posts between different roles, etc. in the trace.
 
 There are also views of the trace, for example the call graph view, which shows the call hierarchy of the spans.
 Here is the call graph of the trace:
 
-![Tracing Call Graph](../static/img/trace_graph.png)
+![Tracing Call Graph](../../static/img/trace_graph.png)
 
 ## How to enable tracing
 
