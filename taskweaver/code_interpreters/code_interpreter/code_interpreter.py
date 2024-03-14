@@ -21,7 +21,13 @@ from taskweaver.role import Role
 class CodeInterpreterConfig(ModuleConfig):
     def _configure(self):
         self._set_name("code_interpreter")
-        self.use_local_uri = self._get_bool("use_local_uri", False)
+        self.use_local_uri = self._get_bool(
+            "use_local_uri",
+            self.src.get_bool(
+                "use_local_uri",
+                True,
+            ),
+        )
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
         # for verification

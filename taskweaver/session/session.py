@@ -26,7 +26,12 @@ class AppSessionConfig(ModuleConfig):
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.workers = self._get_list("workers", ["code_interpreters"])
+        self.workers = self._get_list("workers", ["code_interpreter"])
+
+        num_code_interpreters = len([w for w in self.workers if w.startswith("code_interpreter")])
+        assert num_code_interpreters == 1, (
+            f"Only single code_interpreter is allowed, " f"but {num_code_interpreters} are provided."
+        )
 
 
 class Session:
