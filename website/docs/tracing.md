@@ -26,10 +26,11 @@ We can clearly see that, currently, the task execution is dominated by the calls
 
 We can click the span (a unit of work in the trace) to see the details of the span, including the logs and the attributes.
 
-The screenshot below shows the prompt of the CodeGenerator to the LLM:
+The screenshot below shows the details of the span of Planner's reply function:
 
 ![Tracing Prompt](../static/img/trace_prompt.png)
 
+From this view, we can see the user query, the prompt sent to the LLM, and the tokens consumed (prompt_size and output_size) by the LLM.
 We also recorded the generated code, the posts between different roles, etc. in the trace.
 
 There are also views of the trace, for example the call graph view, which shows the call hierarchy of the spans.
@@ -52,8 +53,18 @@ The default tokenizer target model is `gpt-4`, if you want to use another model,
 in the project configuration file.
 You can find the available models in the [tiktoken code](https://github.com/openai/tiktoken/blob/main/tiktoken/model.py).
 
+A typical configuration for tracing in the project configuration file is as follows:
+```json
+{
+  "tracing.enabled": true,
+  "tracing.exporter": "otlp",
+  "tracing.endpoint": "http://127.0.0.1:4317",
+  "tracing.tokenizer_target_model": "gpt-4"
+}
+```
 
 Next, we need to set up the infrastructure for tracing. The following diagram shows the architecture of a toy tracing system.
+It is a toy system and the data is not persisted. In a real-world scenario, you need to set up a more robust system.
 The instrumentation in the TaskWeaver code will send the traces and metrics to the OpenTelemetry collector. 
 An OpenTelemetry collector is a component that receives traces and metrics from the instrumentation, does some processing, and exports them to
 another collector or a backend. In our case, we configure the collector to export the traces to a [Jaeger](https://www.jaegertracing.io/) backend and the metrics 
@@ -158,14 +169,37 @@ Viewing the metrics in the Prometheus frontend is more complicated as each metri
 A time series is a sequence of data points, which are usually timestamped.
 OpenTelemetry allows to add attributes to the metrics, so that you can filter the metrics by the attributes.
 In our current implementation, we only have one metric called `prompt_size` which records the size of the prompt sent to the LLM.
-The prompt size is accumulated at the trace level, i.e., each trace you can see in the Jaeger frontend has its `prompt_size` metric.
 In Prometheus, you should be able to see a time series for the `prompt_size` metric, namely `prompt_size_total`.
 `prompt_size_total` is the accumulated prompt size of all the traces which increases monotonically.
 
-We annotate the traces with the following attributes:
-- trace_id: The ID of the trace you can find in the Jaeger frontend.
-- span_id: The ID of the span you can find in the Jaeger frontend.
-- 
+We annotate the traces with the only one attribute called `direction`, which can be either `input` or `output`.
+They are indicating the input prompt size and the LLM response output size, respectively.
+
+![Tracing Metrics](../static/img/prometheus_chart.png)
+
+You can query the metrics in the Prometheus frontend. The query language is called PromQL which is quite powerful.
+You can refer to the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/) for the details of the query language.
+The query for the above chart is `increase(prompt_size_total[10m]))`,
+which means to show the increase of the prompt size in the last 10 minutes sliding window.
+
+If you want to use Grafana to visualize the metrics, you can set up a Grafana instance and add Prometheus as the data source.
+This can be done by appending the following content to the `docker-compose.yaml` file:
+```yaml
+    grafana:
+        image: grafana/grafana-enterprise:latest
+        ports:
+          - "3000:3000" # Grafana UI
+        environment:
+          - GF_SECURITY_ADMIN_PASSWORD=secret # You should change 'secret' to a password of your choosing
+          - GF_USERS_ALLOW_SIGN_UP=false
+        volumes:
+          - grafana_data:/var/lib/grafana
+        depends_on:
+          - prometheus
+
+volumes:
+  grafana_data:
+```
 
 
 ## How to customize tracing
@@ -182,6 +216,7 @@ which is a wrapper of the OpenTelemetry SDK. The `Tracing` class provides the fo
 - set_span_status: Set the status of the span.
 - set_span_attribute: Set the attribute of the span.
 - set_span_exception: Set the exception of the span.
+- add_prompt_size: Add the prompt size to the span.
 
 In addition, we define the decorator `tracing_decorator` (or the non-class version `tracing_decorator_non_class`) 
 to trace the function calls.
