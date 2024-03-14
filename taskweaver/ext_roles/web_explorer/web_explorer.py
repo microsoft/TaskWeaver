@@ -14,6 +14,7 @@ from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.role import Role
+from taskweaver.utils import read_yaml
 
 try:
     from PIL import Image
@@ -42,6 +43,7 @@ class SeleniumDriver:
         chrome_driver_path: str = None,
         chrome_executable_path: str = None,
         action_delay: int = 5,
+        js_script: str = None,
     ):
         # Set up Chrome options
         chrome_options = Options()
@@ -67,6 +69,7 @@ class SeleniumDriver:
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
 
         self.action_delay = action_delay
+        self.js_script = js_script
 
     def open(self, url: str):
         self.driver.get(url)
@@ -74,106 +77,8 @@ class SeleniumDriver:
     def save_screenshot(self, filename: str):
         self.driver.save_screenshot(filename + "_no_labels.png")
 
-        script = """
-        (function() {
-            function removeDataLabelNumberAttributes() {
-              const elementsWithAttribute = document.querySelectorAll('[data-label-number]');
-
-              elementsWithAttribute.forEach(el => {
-                el.removeAttribute('data-label-number');
-              });
-            }
-            removeDataLabelNumberAttributes();
-
-            const elementSelectors = {
-              'a': 'a[href]:not([href^="#"]):not([tabindex="-1"])',
-              'button': 'button:not([disabled]):not([tabindex="-1"])',
-              'input': 'input:not([type="hidden"]):not([disabled]):not([readonly]):not([tabindex="-1"])',
-              'select': 'select:not([disabled]):not([tabindex="-1"])',
-              'textarea': 'textarea:not([disabled]):not([readonly]):not([tabindex="-1"])',
-              'role-button': '[role="button"]:not([disabled]):not([tabindex="-1"])',
-              'role-link': '[role="link"]:not([tabindex="-1"])',
-              'role-menu': 'ul[role="menu"] > li',
-              'role-tab': '[role="tab"]:not([tabindex="-1"])',
-              'role-combobox': '[role="combobox"]:not([tabindex="-1"])',
-              'role-listbox': '[role="listbox"]:not([tabindex="-1"])',
-              'role-option': '[role="option"]:not([tabindex="-1"])',
-              'role-switch': '[role="switch"]:not([tabindex="-1"])',
-              'contenteditable': '[contenteditable]:not([tabindex="-1"])'
-            };
-
-            const colors = {
-              'a': 'blue',
-              'button': 'green',
-              'input': 'orange',
-              'select': 'red',
-              'textarea': 'purple',
-              'role-button': 'pink',
-              'role-link': 'cyan',
-              'role-menu': 'skyblue',
-              'role-tab': 'brown',
-              'role-combobox': 'magenta',
-              'role-listbox': 'lime',
-              'role-option': 'darkblue',
-              'role-switch': 'olive',
-              'contenteditable': 'teal'
-            };
-
-
-            function createLabelElement(index, rect, color) {
-              const labelElement = document.createElement('div');
-              labelElement.textContent = index;
-              labelElement.style.position = 'absolute';
-              labelElement.style.left = `${rect.left + window.scrollX}px`; // Add scrollX position
-              labelElement.style.top = `${rect.top + rect.height / 2 - 6 + window.scrollY}px`; // Add scrollY position
-              labelElement.style.background = color;
-              labelElement.style.color = 'white';
-              labelElement.style.padding = '2px';
-              labelElement.style.borderRadius = '4px';
-              labelElement.style.fontSize = '12px';
-              labelElement.style.zIndex = '10000';
-              labelElement.setAttribute('label-element-number', index.toString());
-
-              return labelElement;
-            }
-
-            function isElementInViewport(el) {
-              const rect = el.getBoundingClientRect();
-              const windowHeight = (window.innerHeight || document.documentElement.clientHeight);
-              const windowWidth = (window.innerWidth || document.documentElement.clientWidth);
-
-              return (
-                rect.top < windowHeight && // Check if the top edge is below the viewport's top
-                rect.left < windowWidth && // Check if the left edge is inside the viewport's right
-                rect.bottom > 0 && // Check if the bottom edge is above the viewport's bottom
-                rect.right > 0 // Check if the right edge is inside the viewport's left
-              );
-            }
-
-            const elements = [];
-            let index = 0;
-
-            Object.keys(elementSelectors).forEach(type => {
-              Array.from(document.querySelectorAll(elementSelectors[type]))
-                .filter(el => {
-                  const style = window.getComputedStyle(el);
-                  return style.display !== 'none' && style.visibility !== 'hidden' && isElementInViewport(el);
-                })
-                .forEach(el => {
-                  const rect = el.getBoundingClientRect();
-                  const color = colors[type];
-                  const labelElement = createLabelElement(index, rect, color);
-                el.setAttribute('data-label-number', index.toString());
-                document.body.appendChild(labelElement);
-                elements.push({ element: el, type: type });
-                index++;
-              });
-          });
-        })();
-        """
-
         # Execute the JavaScript to add labels to the page
-        self.driver.execute_script(script)
+        self.driver.execute_script(self.js_script)
 
         self.driver.save_screenshot(filename + "_with_labels.png")
 
@@ -374,88 +279,7 @@ class SeleniumDriver:
 
 
 class VisionPlanner:
-    prompt: str = """You need to help a user do this task: {objective}
-
-    ## Available actions
-    Your available actions are:
-    - open a URL, e.g., {{"open": "https://www.google.com", "description": "what and why you want to open"}}
-    - click on a web element, e.g., {{"click": "123", "description": "what and why you want to click"}}
-    - type a message, e.g., {{"type": "123", "text": "hello world", "description": "what you want to type"}}
-    - view the content on the current page, e.g., {{"view": "what you want to see", "description": "what you see from the image"}}
-    - scroll up, e.g., {{"scroll_up": "", "description": "why you want to scroll up"}}
-    - scroll down, e.g., {{"scroll_down": "", "description": "why you want to scroll down"}}
-    - refresh the page, e.g., {{"refresh": "", "description": "why you want to refresh"}}
-    - go back to the previous page when you are stuck, e.g., {{"back": "", "description": "why you want to go back"}}
-    - go forward to the next page, e.g., {{"forward": "", "description": "why you want to go forward"}}
-    - find key words on the page and goto the first one, e.g., {{"find": "Christmas", "description": "why you want to find"}}
-    - take a screenshot so that you can check the action result, e.g., {{"screenshot": "", "description": "why you want to take a screenshot"}}
-    - stop if you consider the task is done or you need to get input from the user, e.g., {{"stop": "the 
-    outcome of the task or information you need from user", "description": "why you want to stop"}}
-    - press enter on the active element, e.g., {{"enter": "", "description": "why you want to press enter"}}
-
-    ## On the response format
-    You can plan multiple actions at once.
-    For example, you can type "Wikipedia" in the search box and click the search button after that.
-    You must pack all the actions into a JSON list. The actions will be taken following the order of the list.
-    You must respond in JSON only with no other fluff or bad things will happen.
-    The JSON keys must ONLY be one of the above actions, following the examples above.
-    Do not return the JSON inside a code block or anything else like ``` or ```json.
-
-    ## Previous actions
-    To achieve the objective, you have already taken the following actions:
-    {previous_action}
-
-    ## On screenshot
-    When you take a screenshot, you will see an image. This is the only way you can see the web page.
-    The typical interaction is to choose an action, then take screenshot to check the result, and so on.
-    If you did not take a screenshot, you will not be able to see the web page and you will not be able to take any actions further.
-    This image is the current state of the page which consists of two images, one with labeling (right) and the other without labeling (left).
-    The label is to help you identify the web elements on the page.
-    Each label is a number at the left upper corner of the web element.
-    You can refer to the image without labeling to see what the web elements are without blocking the view of the page.
-    You must first take a screenshot before planning any interactions (click and type) with the elements because they all require a element label only available on the screenshot.
-    You can take only one screenshot at each step. Otherwise, you will get confused.
-
-    ## On stop
-    You can plan a "stop" action to indicate that the objective is fulfilled or you need to get input from the user.
-    If the objective is to find certain information on the page, you need to put the information in the "stop" action.
-    Otherwise, the user will not know what you have found.
-    Make sure you fill meaningful information in the "stop" action.
-
-    ## Examples
-
-    ### Example 1
-    objective: Search iphone on google
-    step 1 plan:
-    [{{"open": "https://www.google.com", "description": "open the google for search"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 2 plan:
-    [{{"type": "123", "text": "iphone", "description": "type the key words into the search text box"}}, {{"click": "232", "description": "click the search button to trigger the search process"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 3 plan:
-    [{{"view": "I can see the search result of iphone in google", "description": "I see the results"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 4 plan:
-    [{{"stop": "The objective is fulfilled. I can see the search result of iphone in google."}}]
-
-    ### Example 2
-    objective: On Microsoft's Wikipedia page, there is a image of "Five year history graph". What is the price range of Microsoft in that image?
-    step 1 plan:
-    [{{"open": "https://google.com", "description": "open the google for search"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 2 plan:
-    [{{"type": "123", "text": "Microsoft Wikipedia", "description": "type the key words into the search text box"}}, {{"click": "232", "description": "click the search button to trigger the search process"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 3 plan:
-    [{{"click": "123", "description": "click the Wikipedia link to go to the Wikipedia page"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 4 plan:
-    [{{"view": "I can see the Wikipedia page of Microsoft", "description": "I want to see the Wikipedia page"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 5 plan:
-    [{{"scroll_down": "", "description": "scroll down to see the image"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 6 plan:
-    [{{"scroll_down": "", "description": "scroll down to see the image again"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 7 plan:
-    [{{"view": "I can see the image of Five year history graph", "description": "The price range is between 15$ to 37$"}}, {{"screenshot":"", "description":"view the search page for planning next actions"}}]
-    step 8 plan:
-    [{{"stop": "The objective is fulfilled. The price range is between 15$ to 37$."}}]
-    """
-
-    def __init__(self, api_key: str, endpoint: str, driver: SeleniumDriver):
+    def __init__(self, api_key: str, endpoint: str, driver: SeleniumDriver, prompt: str = None):
         self.gpt4v_key = api_key
         self.gpt4v_endpoint = endpoint
 
@@ -466,6 +290,7 @@ class VisionPlanner:
         self.driver = driver
         self.previous_actions = []
         self.step = 0
+        self.prompt = prompt
 
     def get_actions(
         self,
@@ -610,6 +435,7 @@ class VisionPlanner:
 class WebExplorerConfig(ModuleConfig):
     def _configure(self):
         self._set_name("web_explorer")
+        self.config_file_path = self._get_str("prompt_file_path", "web_explorer_config.yaml")
 
 
 class WebExplorer(Role):
@@ -629,17 +455,20 @@ class WebExplorer(Role):
     def initialize(self):
         driver = None
         try:
+            config = read_yaml(self.config.config_file_path)
             GPT4V_KEY = os.environ.get("GPT4V_KEY")
             GPT4V_ENDPOINT = os.environ.get("GPT4V_ENDPOINT")
             driver = SeleniumDriver(
                 chrome_driver_path=os.environ.get("CHROME_DRIVER_PATH"),
                 chrome_executable_path=os.environ.get("CHROME_EXECUTABLE_PATH"),
                 mobile_emulation=False,
+                js_script=config["js_script"],
             )
             self.vision_planner = VisionPlanner(
                 api_key=GPT4V_KEY,
                 endpoint=GPT4V_ENDPOINT,
                 driver=driver,
+                prompt=config["prompt"],
             )
         except Exception as e:
             if driver is not None:
@@ -664,7 +493,7 @@ class WebExplorer(Role):
             )
         except Exception as e:
             post_proxy.update_message(
-                (f"Failed to achieve the objective due to {e}. " "Please check the log for more details."),
+                f"Failed to achieve the objective due to {e}. " "Please check the log for more details.",
             )
 
         return post_proxy.end()
