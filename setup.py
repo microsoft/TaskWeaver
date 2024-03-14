@@ -77,7 +77,7 @@ try:
         ],
         package_data={
             "taskweaver.planner": ["*"],  # prompt
-            "taskweaver.code_interpreter.code_generator": ["*"],  # prompt
+            "taskweaver.code_interpreters.code_generator": ["*"],  # prompt
         },
         entry_points={
             "console_scripts": ["taskweaver=taskweaver.__main__:main"],

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
+from taskweaver.code_interpreters.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message

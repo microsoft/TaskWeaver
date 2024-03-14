@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreter.code_executor import CodeExecutor
+from taskweaver.code_interpreters.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
@@ -26,7 +26,7 @@ class AppSessionConfig(ModuleConfig):
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.workers = self._get_list("workers", ["code_interpreter"])
+        self.workers = self._get_list("workers", ["code_interpreters"])
 
 
 class Session:
@@ -60,6 +60,13 @@ class Session:
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
 
+        # import all code interpreters
+        import_modules_from_dir(
+            os.path.join(
+                self.config.src.module_base_path,
+                "code_interpreters",
+            ),
+        )
         self.code_executor = self.session_injector.create_object(
             CodeExecutor,
             {
@@ -74,9 +81,10 @@ class Session:
         import_modules_from_dir(
             os.path.join(
                 self.config.src.module_base_path,
-                "ext_role",
+                "ext_roles",
             ),
         )
+
         for sub_cls in Role.__subclasses__():
             if sub_cls is Planner:
                 continue

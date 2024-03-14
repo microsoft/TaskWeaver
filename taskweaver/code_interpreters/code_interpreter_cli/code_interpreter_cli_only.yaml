@@ -1,0 +1,3 @@
+alias: CodeInterpreter
+intro : |-
+    CodeInterpreter can understand the user request and generate command line interface (CLI) commands to complete tasks.

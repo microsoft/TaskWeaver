@@ -29,7 +29,7 @@ class TaskWeaverApp(object):
             **(kwargs or {}),
         }
         if use_local_uri is not None:
-            config["code_interpreter.use_local_uri"] = use_local_uri
+            config["code_interpreters.use_local_uri"] = use_local_uri
         config_src = AppConfigSource(
             config_file_path=app_config_file,
             config=config,
