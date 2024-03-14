@@ -118,18 +118,6 @@ planner_response_schema: |-
     ]
   }
 
-#code_interpreter_introduction : |-
-#  - Workers is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
-#  - Workers can access the files, data base, web and other resources in the environment via generated Python code.
-#  - Workers has the following plugin functions and their required parameters need to be provided before the execution:
-#  {plugin_description}
-#  - Workers can only talk to the Planner.
-#  - Workers can only follow one instruction at a time.
-#  - Workers returns the execution results, generated Python code, or error messages to the Planner.
-#  - Workers is stateful and it remembers the execution results of the previous rounds.
-#  - The input of Workers will be prefixed with "Workers:" in the chat history.
-  
-
 experience_instruction: |-
   # Experience And Lessons
   Before starting planning, please refer to the following experiences and lessons learned from the previous tasks and include them in your plan.

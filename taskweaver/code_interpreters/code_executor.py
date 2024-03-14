@@ -52,7 +52,7 @@ class CodeExecutor:
         self.workspace = workspace
         self.execution_cwd = execution_cwd
         self.exec_mgr = exec_mgr
-        self.exec_client = exec_mgr.get_session_client(
+        self.exec_client = self.exec_mgr.get_session_client(
             session_id,
             session_dir=workspace,
             cwd=execution_cwd,
