@@ -9,8 +9,7 @@ You can refer to [taskweaver_as_a_lib](./usage/library.md) to see how to setup a
 - `max_internal_chat_round_num`: the maximum number of internal chat rounds between Planner and Code Interpreter. 
   If the number of internal chat rounds exceeds this number, the session will be terminated. 
   The default value is `10`.
-- `code_interpreter_only`: allow users to directly communicate with the Code Interpreter.
-   In this mode, users can only send messages to the Code Interpreter and receive messages from the Code Interpreter.
+- `planner_only_mode`: allow users to directly communicate with the backend Worker, e.g., Code Interpreter.
    Here is an example:
 
 ``````bash

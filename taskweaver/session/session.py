@@ -19,7 +19,7 @@ class AppSessionConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("session")
 
-        self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
+        self.no_planner_mode = self._get_bool("no_planner_mode", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
         self.experience_dir = self._get_path(
             "experience_dir",
@@ -152,7 +152,7 @@ class Session:
             return reply_post
 
         try:
-            if not self.config.code_interpreter_only:
+            if not self.config.no_planner_mode:
                 post = Post.create(message=message, send_from="User", send_to="Planner")
                 while True:
                     post = _send_message(post.send_to, post)
@@ -169,22 +169,27 @@ class Session:
                             f"Internal chat round number exceeds the limit of {self.max_internal_chat_round_num}",
                         )
             else:
+                assert len(self.worker_instances) == 1, (
+                    "Only single worker is allowed in no_planner_mode "
+                    "because the user message will be sent to the worker directly."
+                )
+                worker_name = list(self.worker_instances.keys())[0]
                 post = Post.create(
                     message=message,
                     send_from="Planner",
-                    send_to="CodeInterpreter",
+                    send_to=worker_name,
                 )
                 while True:
                     if post.send_to == "Planner":
                         reply_post = Post.create(
                             message=post.message,
-                            send_from="CodeInterpreter",
+                            send_from=worker_name,
                             send_to="User",
                         )
                         chat_round.add_post(reply_post)
                         break
                     else:
-                        post = _send_message("CodeInterpreter", post)
+                        post = _send_message(worker_name, post)
 
             self.round_index += 1
             chat_round.change_round_state("finished")

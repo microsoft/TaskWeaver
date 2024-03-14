@@ -11,7 +11,6 @@ from taskweaver.logging import LoggingModule
 from taskweaver.memory.experience import ExperienceGenerator
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--target_role", type=str, choices=["Planner", "CodeInterpreter"], required=True)
 parser.add_argument(
     "--project_dir",
     type=str,
@@ -54,11 +53,11 @@ class ExperienceManager:
         self.experience_generator = app_injector.create_object(ExperienceGenerator)
 
     def refresh(self):
-        self.experience_generator.refresh(args.target_role)
+        self.experience_generator.refresh()
         print("Refreshed experience list")
 
     def delete_experience(self, exp_id: str):
-        self.experience_generator.delete_experience(exp_id=exp_id, target_role=args.target_role)
+        self.experience_generator.delete_experience(exp_id=exp_id)
         print(f"Deleted experience with id: {exp_id}")
 
     def delete_raw_experience(self, exp_id: str):
@@ -70,7 +69,7 @@ class ExperienceManager:
         print(f"Deleted handcraft experience with id: {exp_id}")
 
     def show(self):
-        self.experience_generator.load_experience(args.target_role)
+        self.experience_generator.load_experience()
         if len(self.experience_generator.experience_list) == 0:
             print("No experience found")
             return

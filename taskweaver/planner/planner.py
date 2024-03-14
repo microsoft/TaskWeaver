@@ -1,4 +1,3 @@
-import json
 import os
 import types
 from json import JSONDecodeError
@@ -47,16 +46,6 @@ class PlannerConfig(ModuleConfig):
             ),
         )
 
-        self.skip_planning = self._get_bool("skip_planning", False)
-        with open(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "dummy_plan.json",
-            ),
-            "r",
-        ) as f:
-            self.dummy_plan = json.load(f)
-
         self.use_experience = self._get_bool("use_experience", False)
 
 
@@ -102,8 +91,8 @@ class Planner(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            self.experience_generator.refresh(target_role="All")
-            self.experience_generator.load_experience(target_role="All")
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
@@ -268,17 +257,12 @@ class Planner(Role):
             ), "LLM failed to generate correct attachment type: current_plan_step"
 
         post_proxy.update_status("calling LLM endpoint")
-        if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
-            self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
-            llm_stream = [
-                format_chat_message("assistant", json.dumps(self.config.dummy_plan)),
-            ]
-        else:
-            llm_stream = self.llm_api.chat_completion_stream(
-                chat_history,
-                use_backup_engine=use_back_up_engine,
-                use_smoother=True,
-            )
+
+        llm_stream = self.llm_api.chat_completion_stream(
+            chat_history,
+            use_backup_engine=use_back_up_engine,
+            use_smoother=True,
+        )
 
         llm_output: List[str] = []
         try:

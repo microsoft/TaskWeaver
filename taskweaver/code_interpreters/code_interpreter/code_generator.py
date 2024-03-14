@@ -103,8 +103,8 @@ class CodeGenerator(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            # # self.experience_generator.refresh(target_role="All", prompt=experience_prompt_template)
-            self.experience_generator.load_experience(target_role="All")
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
