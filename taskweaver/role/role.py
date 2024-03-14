@@ -47,5 +47,8 @@ class Role:
     def get_alias(self) -> str:
         return self.alias
 
+    def set_alias(self, alias: str) -> None:
+        self.alias = alias
+
     def reply(self, memory: Memory, **kwargs) -> Post:
         pass

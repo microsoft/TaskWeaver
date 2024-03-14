@@ -72,13 +72,13 @@ class CodeGeneratorCLIOnly(Role):
         assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 
-        prompt = _compose_prompt(
+        prompt = self._compose_prompt(
             system_instructions=self.instruction_template.format(
-                ROLE_NAME=self.role_name,
+                ROLE_NAME=self.alias,
                 OS_NAME=self.os_name,
             ),
             rounds=rounds,
@@ -113,18 +113,18 @@ class CodeGeneratorCLIOnly(Role):
 
         return post_proxy.end()
 
+    def _compose_prompt(
+        self,
+        system_instructions: str,
+        rounds: List[Round],
+    ) -> List[ChatMessageType]:
+        prompt = [format_chat_message(role="system", message=system_instructions)]
 
-def _compose_prompt(
-    system_instructions: str,
-    rounds: List[Round],
-) -> List[ChatMessageType]:
-    prompt = [format_chat_message(role="system", message=system_instructions)]
+        for _round in rounds:
+            for post in _round.post_list:
+                if post.send_to == self.alias:
+                    prompt.append(format_chat_message(role="user", message=post.message))
+                elif post.send_from == self.alias:
+                    prompt.append(format_chat_message(role="assistant", message=post.message))
 
-    for _round in rounds:
-        for post in _round.post_list:
-            if post.send_to == "CodeInterpreter":
-                prompt.append(format_chat_message(role="user", message=post.message))
-            elif post.send_from == "CodeInterpreter":
-                prompt.append(format_chat_message(role="assistant", message=post.message))
-
-    return prompt
+        return prompt

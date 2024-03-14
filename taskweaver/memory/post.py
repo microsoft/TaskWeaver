@@ -15,7 +15,7 @@ class Post:
     A post is the message used to communicate between two roles.
     It should always have a text_message to denote the string message,
     while other data formats should be put in the attachment.
-    The role can be either a User, a Planner, or a CodeInterpreter.
+    The role can be either a User, a Planner, or others.
 
     Args:
         id: the unique id of the post.

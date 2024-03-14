@@ -32,12 +32,13 @@ class CodeInterpreterCLIOnly(Role):
         super().__init__(config, logger, event_emitter)
 
         self.generator = generator
+        self.generator.set_alias(self.alias)
         self.executor = executor
 
         self.retry_count = 0
         self.return_index = 0
 
-        self.logger.info("CodeInterpreter initialized successfully.")
+        self.logger.info(f"{self.alias} initialized successfully.")
 
     def reply(
         self,
@@ -45,7 +46,7 @@ class CodeInterpreterCLIOnly(Role):
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
-        post_proxy = self.event_emitter.create_post_proxy("CodeInterpreter")
+        post_proxy = self.event_emitter.create_post_proxy(self.alias)
         self.generator.reply(
             memory,
             post_proxy=post_proxy,

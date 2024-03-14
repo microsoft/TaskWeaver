@@ -231,7 +231,7 @@ class CodeGenerator(Role):
                     )
                     is_first_post = False
 
-                if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
+                if post.send_from == "Planner" and post.send_to == self.alias:
                     # to avoid planner imitating the below handcrafted format,
                     # we merge plan and query message in the code generator here
                     user_query = conversation_round.user_query
@@ -245,14 +245,14 @@ class CodeGenerator(Role):
                         )
 
                     user_feedback = "None"
-                    if last_post is not None and last_post.send_from == "CodeInterpreter":
+                    if last_post is not None and last_post.send_from == self.alias:
                         user_feedback = format_code_feedback(last_post)
 
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=user_feedback,
                         MESSAGE=f"{enrichment}{post.message}",
                     )
-                elif post.send_from == post.send_to == "CodeInterpreter":
+                elif post.send_from == post.send_to == self.alias:
                     # for code correction
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=format_code_feedback(post),
@@ -266,7 +266,7 @@ class CodeGenerator(Role):
                         if_format_send_to=False,
                         ignored_types=ignored_types,
                     )
-                elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
+                elif post.send_from == self.alias and post.send_to == "Planner":
                     if is_final_post:
                         # This user message is added to make the conversation complete
                         # It is used to make sure the last assistant message has a feedback
@@ -333,7 +333,7 @@ class CodeGenerator(Role):
         assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 

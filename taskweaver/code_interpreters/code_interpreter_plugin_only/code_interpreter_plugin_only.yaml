@@ -1,2 +1,5 @@
-alias: CodeInterpreter-PluginOnly
+alias: PluginOrchestrator
 intro : |-
+  PluginOrchestrator is responsible for orchestrating the plugin functions to complete the subtasks assigned by the Planner.
+  PluginOrchestrator has the following plugin functions and their required parameters need to be provided before the execution:
+  {plugin_description}

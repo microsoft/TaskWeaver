@@ -92,7 +92,7 @@ class CodeGeneratorPluginOnly(Role):
         assert post_proxy is not None, "Post proxy is not provided."
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 
@@ -101,7 +101,7 @@ class CodeGeneratorPluginOnly(Role):
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
         # obtain the user query from the last round
-        prompt, tools = _compose_prompt(
+        prompt, tools = self._compose_prompt(
             system_instructions=self.instruction_template.format(
                 ROLE_NAME=self.role_name,
             ),
@@ -133,19 +133,19 @@ class CodeGeneratorPluginOnly(Role):
         else:
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
+    def _compose_prompt(
+        self,
+        system_instructions: str,
+        rounds: List[Round],
+        plugin_pool: List[PluginEntry],
+    ) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
+        functions = [plugin.format_function_calling() for plugin in plugin_pool]
+        prompt = [format_chat_message(role="system", message=system_instructions)]
+        for _round in rounds:
+            for post in _round.post_list:
+                if post.send_from == "Planner" and post.send_to == self.alias:
+                    prompt.append(format_chat_message(role="user", message=post.message))
+                elif post.send_from == self.alias and post.send_to == "Planner":
+                    prompt.append(format_chat_message(role="assistant", message=post.message))
 
-def _compose_prompt(
-    system_instructions: str,
-    rounds: List[Round],
-    plugin_pool: List[PluginEntry],
-) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
-    functions = [plugin.format_function_calling() for plugin in plugin_pool]
-    prompt = [format_chat_message(role="system", message=system_instructions)]
-    for _round in rounds:
-        for post in _round.post_list:
-            if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
-                prompt.append(format_chat_message(role="user", message=post.message))
-            elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
-                prompt.append(format_chat_message(role="assistant", message=post.message))
-
-    return prompt, functions
+        return prompt, functions
