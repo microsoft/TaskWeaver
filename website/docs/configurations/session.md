@@ -1,8 +1,8 @@
-# Session
+# Session Configuration
 
 `session` is the entrance of TaskWeaver. 
 It is responsible for the communication between the user and TaskWeaver.
-You can refer to [taskweaver_as_a_lib](./usage/library.md) to see how to setup a TaskWeaver session and start chatting with TaskWeaver.
+You can refer to [taskweaver_as_a_lib](../usage/library.md) to see how to setup a TaskWeaver session and start chatting with TaskWeaver.
 
 
 ## Session Configration
@@ -64,7 +64,7 @@ array([0.09918602, 0.68732778, 0.44413814, 0.4756623 , 0.48302334,
        0.8286594 , 0.80994359, 0.35677263, 0.45719317, 0.68240194])
 ``````
 - `code_gen_mode`: code generation mode.
-  - `plugin_only`: please refer to [plugin_only_mode](./customization/plugin/plugin_only.md) for more details.
+  - `plugin_only`: please refer to [plugin_only_mode](../customization/plugin/plugin_only.md) for more details.
   - `cli_only`: allow users to directly communicate with the Command Line Interface (CLI) in natural language.
     CodeInterpreter will generate CLI commands (e.g., bash/powershell), instead of Python code, to fulfill the user's request.
   

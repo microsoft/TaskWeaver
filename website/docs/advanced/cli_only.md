@@ -18,6 +18,6 @@ Just add the following configuration to the project configuration file `taskweav
   "session.code_gen_mode": "cli_only"
 }
 ```
-Please refer to the [session](./session.md) documentation for more details.
+Please refer to the [session](../configurations/session.md) documentation for more details.
 
 Note: It is better to enable `session.code_interpreter_only` when CLI only mode is enabled.
