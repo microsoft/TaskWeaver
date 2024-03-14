@@ -25,17 +25,17 @@ services:
     depends_on:
       - optl-collector
 
-  grafana:
-    image: grafana/grafana-enterprise:latest
-    ports:
-      - "3000:3000" # Grafana UI
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=secret # You should change 'secret' to a password of your choosing
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
+#  grafana:
+#    image: grafana/grafana-enterprise:latest
+#    ports:
+#      - "3000:3000" # Grafana UI
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=secret # You should change 'secret' to a password of your choosing
+#      - GF_USERS_ALLOW_SIGN_UP=false
+#    volumes:
+#      - grafana_data:/var/lib/grafana
+#    depends_on:
+#      - prometheus
 
-volumes:
-  grafana_data:
+#volumes:
+#  grafana_data:
