@@ -128,7 +128,6 @@ class OpenAIService(CompletionService, EmbeddingService):
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -137,7 +136,7 @@ class OpenAIService(CompletionService, EmbeddingService):
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         engine = self.config.model
-        backup_engine = self.config.backup_model
+        self.config.backup_model
 
         temperature = temperature if temperature is not None else self.config.temperature
         max_tokens = max_tokens if max_tokens is not None else self.config.max_tokens
@@ -146,9 +145,6 @@ class OpenAIService(CompletionService, EmbeddingService):
         seed = self.config.seed
 
         try:
-            if use_backup_engine:
-                engine = backup_engine
-
             tools_kwargs = {}
             if "tools" in kwargs and "tool_choice" in kwargs:
                 tools_kwargs["tools"] = kwargs["tools"]

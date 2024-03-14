@@ -226,7 +226,6 @@ class Planner(Role):
                 rounds_formatter=lambda _rounds: str(
                     self.compose_conversation_for_prompt(_rounds),
                 ),
-                use_back_up_engine=True,
                 prompt_template=self.compression_prompt_template,
             )
 
@@ -244,7 +243,6 @@ class Planner(Role):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         rounds = memory.get_role_rounds(role="Planner")
         assert len(rounds) != 0, "No chat rounds found for planner"
@@ -287,7 +285,6 @@ class Planner(Role):
         else:
             llm_stream = self.llm_api.chat_completion_stream(
                 chat_history,
-                use_backup_engine=use_back_up_engine,
                 use_smoother=True,
                 llm_alias=self.config.llm_alias,
             )

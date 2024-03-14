@@ -123,7 +123,6 @@ class LLMApi(object):
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -144,7 +143,6 @@ class LLMApi(object):
             completion_service = self.completion_service
         for msg_chunk in completion_service.chat_completion(
             messages,
-            use_backup_engine,
             stream,
             temperature,
             max_tokens,
@@ -161,7 +159,6 @@ class LLMApi(object):
     def chat_completion_stream(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -183,7 +180,6 @@ class LLMApi(object):
                 completion_service = self.completion_service
             return completion_service.chat_completion(
                 messages,
-                use_backup_engine,
                 stream,
                 temperature,
                 max_tokens,

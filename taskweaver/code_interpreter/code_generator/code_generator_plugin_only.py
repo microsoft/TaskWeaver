@@ -14,7 +14,7 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
-from taskweaver.role import PostTranslator, Role
+from taskweaver.role import Role
 from taskweaver.utils import read_yaml
 
 
@@ -65,7 +65,6 @@ class CodeGeneratorPluginOnly(Role):
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger, event_emitter)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.plugin_pool = [p for p in plugin_registry.get_list() if p.plugin_only is True]
         self.instruction_template = self.prompt_data["content"]
@@ -96,7 +95,6 @@ class CodeGeneratorPluginOnly(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
