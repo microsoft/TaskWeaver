@@ -1,5 +1,5 @@
 # Configuration File
-The configuration file is located at `project/taskweaver_config.json`. 
+An overview of all configurations available in the config file, which is located at `project/taskweaver_config.json`. 
 You can edit this file to configure TaskWeaver.
 The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`. 
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
