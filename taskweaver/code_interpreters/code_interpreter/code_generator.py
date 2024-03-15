@@ -400,6 +400,7 @@ class CodeGenerator(Role):
         if self.config.load_example:
             return load_examples(
                 folder=self.config.example_base_path,
+                role_set={self.alias, "Planner"},
             )
         return []
 

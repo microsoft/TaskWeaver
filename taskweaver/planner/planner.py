@@ -65,10 +65,12 @@ class Planner(Role):
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
         super().__init__(config, logger, event_emitter)
+        self.alias = "Planner"
 
         self.llm_api = llm_api
 
         self.workers = workers
+        self.recipient_alias_set = set([alias for alias, _ in self.workers.items()])
 
         self.planner_post_translator = post_translator
 
@@ -97,8 +99,6 @@ class Planner(Role):
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
-
-        self.recipient_alias_set = set([alias for alias, _ in self.workers.items()])
 
         self.logger.info("Planner initialized successfully")
 
@@ -133,7 +133,7 @@ class Planner(Role):
                     conv_init_message += "\n" + summary_message
 
             for post in chat_round.post_list:
-                if post.send_from == "Planner":
+                if post.send_from == self.alias:
                     if post.send_to == "User" or post.send_to in self.recipient_alias_set:
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
@@ -145,7 +145,7 @@ class Planner(Role):
                             ),
                         )
                     elif (
-                        post.send_to == "Planner"
+                        post.send_to == self.alias
                     ):  # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
@@ -227,7 +227,7 @@ class Planner(Role):
         prompt_log_path: Optional[str] = None,
         use_back_up_engine: bool = False,
     ) -> Post:
-        rounds = memory.get_role_rounds(role="Planner")
+        rounds = memory.get_role_rounds(role=self.alias)
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
@@ -236,14 +236,14 @@ class Planner(Role):
         else:
             selected_experiences = None
 
-        post_proxy = self.event_emitter.create_post_proxy("Planner")
+        post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
         post_proxy.update_status("composing prompt")
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
         def check_post_validity(post: Post):
             assert post.send_to is not None, "LLM failed to generate send_to field"
-            assert post.send_to != "Planner", "LLM failed to generate correct send_to field: Planner"
+            assert post.send_to != self.alias, f"LLM failed to generate correct send_to field: {self.alias}"
             assert post.message is not None, "LLM failed to generate message field"
             assert len(post.attachment_list) == 3, "LLM failed to generate complete attachments"
             assert (
@@ -308,12 +308,15 @@ class Planner(Role):
                 post_proxy.end(f"Planner failed to generate response because {str(e)}")
                 raise Exception(f"Planner failed to generate response because {str(e)}")
             else:
-                post_proxy.update_send_to("Planner")
+                post_proxy.update_send_to(self.alias)
                 self.ask_self_cnt += 1
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
         return post_proxy.end()
 
     def get_examples(self) -> List[Conversation]:
-        example_conv_list = load_examples(self.config.example_base_path)
+        example_conv_list = load_examples(
+            self.config.example_base_path,
+            role_set=set(self.recipient_alias_set) | {self.alias, "User"},
+        )
         return example_conv_list

@@ -1,5 +1,4 @@
 enabled: True
-role: Echo
 rounds:
   - user_query: echo 'Hello World'
     state: created
