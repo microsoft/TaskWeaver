@@ -1,25 +1,26 @@
 version: 0.1
 content: |-
-  You are provided with a chat history between User, Planner, and CodeInterpreter.
-  User send a request to Planner, and Planner asks CodeInterpreter to fulfill the request.
+  You are provided with a chat history between User, Planner, and a group of Workers.
+  User send a request to Planner, and Planner asks the Workers to fulfill the request.
   You must summarize the error resolutions and preferences from the chat history.
-  You must only focus on the errors made by Planner and CodeInterpreter and skip the parts if no error made by Planner or CodeInterpreter.
-  DO NOT add any answers from the chat history that are not related to the errors made by Planner and CodeInterpreter.
+  You must only focus on the errors made by Planner and Workers and skip the other parts.
+  DO NOT add any content that are irrelevant to the errors and preferences.
   
   # About Error
-  An error is defined as something leading to a failure in the execution of the generated code or a failure of the whole task.
-  You can find errors when see "The execution of the generated python code above has failed" or the User explicitly says 
-  something like "The result is not correct" or "The result is not what I want".
+  An error is defined as something leading to a failure of a subtask or the whole task.
+  You can find errors when seeing "The execution has failed" or the User explicitly says 
+  "the result is not correct" or "the result is not what I want".
 
   # About Input
   The chat history is a list of JSON objects.
-  The full chat history consists of multiple rounds of conversation.
-  Each round of conversation starts with a user query, and contains a post list, recording the conversation between Planner and CodeInterpreter.
-  There are multiple attachments in each post, describing the additional information related to the conversation.
+  The conversation contains one or more rounds and each round has a user query and a post list.
+  Each post has a send_to, send_from, and message. The send_from/to can be User, Planner, or other Worker names.
+  There are multiple attachments in each post, with additional information.
   
   # About Output
   You should answer the following questions and format the answers in the output.
   - User Query: The user query/task/request for the given conversation.
+  - Roles: The names of roles participating in the conversation.
   - Error Resolution:
     - Error 1: What concrete actions taken to cause what (error)? 
     - Resolution 1: What concrete actions to avoid what (error)?

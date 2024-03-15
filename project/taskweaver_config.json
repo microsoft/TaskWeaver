@@ -2,5 +2,5 @@
   "llm.api_base": "https://api.openai.com/v1",
   "llm.api_key": "",
   "llm.model": "gpt-4-1106-preview",
-  "session.workers": ["echo", "code_interpreter_cli_only", "web_explorer"]
+  "session.workers": ["echo", "code_interpreter", "web_explorer"]
 }

@@ -3,7 +3,6 @@ from typing import Dict, List
 
 from PIL import Image
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -20,7 +19,7 @@ class SeleniumDriver:
         js_script: str = None,
     ):
         # Set up Chrome options
-        chrome_options = Options()
+        chrome_options = webdriver.ChromeOptions()
         if mobile_emulation:
             mobile_emulation = {
                 "deviceMetrics": {"width": 375, "height": 812, "pixelRatio": 3.0},
@@ -29,10 +28,10 @@ class SeleniumDriver:
             }
             chrome_options.add_experimental_option("mobileEmulation", mobile_emulation)
             chrome_options.add_experimental_option("excludeSwitches", ["enable-logging"])
-            chrome_options.add_argument("--ignore--errors")
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_argument("--log-level=OFF")
-            chrome_options.add_argument("--allow-insecure-localhost")
-            chrome_options.add_argument("--log-level=3")
+            chrome_options.add_argument("--ignore-certificate-errors")
+            chrome_options.add_argument("--ignore-ssl-errors")
             if chrome_executable_path is not None:
                 chrome_options.binary_location = chrome_executable_path
 

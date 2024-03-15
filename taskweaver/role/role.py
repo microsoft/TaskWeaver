@@ -52,3 +52,6 @@ class Role:
 
     def reply(self, memory: Memory, **kwargs) -> Post:
         pass
+
+    def close(self) -> None:
+        raise NotImplementedError
