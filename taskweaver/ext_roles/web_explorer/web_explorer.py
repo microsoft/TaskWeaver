@@ -37,14 +37,14 @@ class WebExplorer(Role):
         self.logger = logger
         self.config = config
         self.vision_planner: VisionPlanner = None
+        self.driver: SeleniumDriver = None
 
     def initialize(self):
-        driver = None
         try:
             config = read_yaml(self.config.config_file_path)
             GPT4V_KEY = os.environ.get("GPT4V_KEY")
             GPT4V_ENDPOINT = os.environ.get("GPT4V_ENDPOINT")
-            driver = SeleniumDriver(
+            self.driver = SeleniumDriver(
                 chrome_driver_path=os.environ.get("CHROME_DRIVER_PATH"),
                 chrome_executable_path=os.environ.get("CHROME_EXECUTABLE_PATH"),
                 mobile_emulation=False,
@@ -53,12 +53,12 @@ class WebExplorer(Role):
             self.vision_planner = VisionPlanner(
                 api_key=GPT4V_KEY,
                 endpoint=GPT4V_ENDPOINT,
-                driver=driver,
+                driver=self.driver,
                 prompt=config["prompt"],
             )
         except Exception as e:
-            if driver is not None:
-                driver.quit()
+            if self.driver is not None:
+                self.driver.quit()
             raise Exception(f"Failed to initialize the plugin due to: {e}")
 
     def reply(self, memory: Memory, **kwargs) -> Post:
@@ -83,3 +83,8 @@ class WebExplorer(Role):
             )
 
         return post_proxy.end()
+
+    def close(self) -> None:
+        if self.driver is not None:
+            self.driver.quit()
+        super().close()

@@ -265,6 +265,8 @@ class Session:
     def stop(self) -> None:
         self.logger.info(f"Session {self.session_id} is stopped")
         self.code_executor.stop()
+        for worker in self.worker_instances.values():
+            worker.close()
 
     def to_dict(self) -> Dict[str, str]:
         return {

@@ -54,4 +54,4 @@ class Role:
         pass
 
     def close(self) -> None:
-        raise NotImplementedError
+        self.logger.info(f"{self.alias} closed successfully")
