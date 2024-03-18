@@ -124,7 +124,7 @@ class CodeGeneratorPluginOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
-        with get_tracer().start_span("CodeGeneratorPluginOnly.reply.chat_completion") as span:
+        with get_tracer().start_as_current_span("CodeGeneratorPluginOnly.reply.chat_completion") as span:
             span.set_attribute("prompt", json.dumps(prompt, indent=2))
 
             llm_response = self.llm_api.chat_completion(

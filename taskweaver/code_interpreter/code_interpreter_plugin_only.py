@@ -5,12 +5,13 @@ from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
+from taskweaver.code_interpreter.code_verification import code_snippet_verification
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -64,50 +65,63 @@ class CodeInterpreterPluginOnly(Role):
         )
         if len(functions) > 0:
             code: List[str] = []
+            function_names = []
+            variables = []
             for i, f in enumerate(functions):
                 function_name = f["name"]
-                function_args = f["arguments"]
-                function_call = (
-                    f"r{self.return_index + i}={function_name}("
-                    + ", ".join(
-                        [
-                            f'{key}="{value}"' if isinstance(value, str) else f"{key}={value}"
-                            for key, value in function_args.items()
-                        ],
-                    )
-                    + ")"
-                )
+                function_args = json.dumps(f["arguments"])
+                function_call = f"r{self.return_index + i}={function_name}(" + f"**{function_args}" + ")"
                 code.append(function_call)
+                function_names.append(function_name)
+                variables.append(f"r{self.return_index + i}")
+
             code.append(
-                f'{", ".join([f"r{self.return_index + i}" for i in range(len(functions))])}',
+                f'{", ".join(variables)}',
             )
             self.return_index += len(functions)
 
             code_to_exec = "\n".join(code)
             post_proxy.update_attachment(code_to_exec, AttachmentType.python)
 
-            with get_tracer().start_span("executing_code") as span:
-                span.set_tag("code", code_to_exec)
+            code_verify_errors = code_snippet_verification(
+                code_to_exec,
+                True,
+                allowed_modules=[],
+                allowed_functions=function_names,
+                allowed_variables=variables,
+            )
 
+            if code_verify_errors:
+                error_message = "\n".join(code_verify_errors)
+                post_proxy.update_message(
+                    message=f"Code verification failed due to {error_message}. "
+                    "Please revise your request and try again.",
+                    is_end=True,
+                )
+                post_proxy.update_attachment(
+                    error_message,
+                    AttachmentType.verification,
+                )
+            else:
                 exec_result = self.executor.execute_code(
                     exec_id=post_proxy.post.id,
                     code=code_to_exec,
                 )
 
-            code_output = self.executor.format_code_output(
-                exec_result,
-                with_code=True,
-                use_local_uri=self.config.use_local_uri,
-            )
+                code_output = self.executor.format_code_output(
+                    exec_result,
+                    with_code=True,
+                    use_local_uri=self.config.use_local_uri,
+                )
 
-            post_proxy.update_message(
-                code_output,
-                is_end=True,
-            )
+                post_proxy.update_message(
+                    code_output,
+                    is_end=True,
+                )
 
-            if not exec_result.is_success:
-                self.tracing.set_span_status("ERROR", "Code execution failed.")
-            self.tracing.set_span_attribute("code_output", code_output)
+                if not exec_result.is_success:
+                    self.tracing.set_span_status("ERROR", "Code execution failed.")
+                self.tracing.set_span_attribute("code_output", code_output)
         else:
             post_proxy.update_message(
                 "No code is generated because no function is selected.",
