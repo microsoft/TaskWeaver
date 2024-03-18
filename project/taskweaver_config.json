@@ -1,6 +1,5 @@
 {
-  "llm.api_base": "https://console.groq.com/",
-  "llm.api_key": "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",
-  "llm.api_type": "groq",
-  "llm.model": "mixtral-8x7b-32768"
+  "llm.api_base": "https://api.openai.com/v1",
+  "llm.api_key": "",
+  "llm.model": "gpt-4-1106-preview"
 }
