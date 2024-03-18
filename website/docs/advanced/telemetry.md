@@ -69,7 +69,7 @@ The instrumentation in the TaskWeaver code will send the traces and metrics to t
 An OpenTelemetry collector is a component that receives traces and metrics from the instrumentation, does some processing, and exports them to
 another collector or a backend. In our case, we configure the collector to export the traces to a [Jaeger](https://www.jaegertracing.io/) backend and the metrics 
 to a [Prometheus](https://prometheus.io/) backend.
-![Tracing Architecture](../static/img/tracing-arch.png)
+![Tracing Architecture](../../static/img/tracing-arch.png)
 
 Both Jaeger and Prometheus are popular open-source monitoring systems. We have prepared a docker-compose file to set up the infrastructure
 in `/TaskWeaver/tracing_configure/docker-compose.yaml`. 
@@ -175,7 +175,7 @@ In Prometheus, you should be able to see a time series for the `prompt_size` met
 We annotate the traces with the only one attribute called `direction`, which can be either `input` or `output`.
 They are indicating the input prompt size and the LLM response output size, respectively.
 
-![Tracing Metrics](../static/img/prometheus_chart.png)
+![Tracing Metrics](../../static/img/prometheus_chart.png)
 
 You can query the metrics in the Prometheus frontend. The query language is called PromQL which is quite powerful.
 You can refer to the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/) for the details of the query language.
