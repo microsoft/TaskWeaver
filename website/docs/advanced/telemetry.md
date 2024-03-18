@@ -179,7 +179,7 @@ They are indicating the input prompt size and the LLM response output size, resp
 
 You can query the metrics in the Prometheus frontend. The query language is called PromQL which is quite powerful.
 You can refer to the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/basics/) for the details of the query language.
-The query for the above chart is `increase(prompt_size_total[10m]))`,
+The query for the above chart is `increase(prompt_size_total[10m])`,
 which means to show the increase of the token consumption in the last 10 minutes sliding window.
 
 If you want to use Grafana to visualize the metrics, you can set up a Grafana instance and add Prometheus as the data source.
