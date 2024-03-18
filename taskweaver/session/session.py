@@ -183,7 +183,7 @@ class Session:
                     if post.send_to == "Planner":
                         reply_post = Post.create(
                             message=post.message,
-                            send_from="CodeInterpreter",
+                            send_from="Planner",
                             send_to="User",
                         )
                         chat_round.add_post(reply_post)
