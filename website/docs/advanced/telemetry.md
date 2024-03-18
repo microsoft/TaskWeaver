@@ -45,7 +45,7 @@ Here is the call graph of the trace:
 Tracing is by default disabled. To enable tracing, you need to install packages required by OpenTelemetry.
 Please check the [OpenTelemetry website](https://opentelemetry.io/docs/languages/python/) for the installation guide.
 It basically requires you to install the `opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-exporter-otlp`, 
-and `opentelemetry-instrumentation` packages.
+ `opentelemetry-instrumentation` and `tiktoken` packages.
 To count the number of tokens consumed during task execution, you also need to install the [tiktoken](https://github.com/openai/tiktoken) package.
 We now only support the tokenizers of the OpenAI models.
 After installing the packages, you can enable tracing by setting the `tracing.enabled=true` in the project configuration file.
@@ -71,6 +71,19 @@ another collector or a backend. In our case, we configure the collector to expor
 to a [Prometheus](https://prometheus.io/) backend.
 ![Tracing Architecture](../../static/img/tracing-arch.png)
 
+You can run the following command to set up the infrastructure:
+```bash
+cd /TaskWeaver/tracing_configure
+docker-compose up
+```
+You shall see a bunch of logs from the containers.
+Take a look at the logs to see if there are any errors.
+If no errors are found, you can access the Prometheus frontend at `http://localhost:9090` and the Jaeger frontend at `http://localhost:16686`.
+In this setup, we assume you are running the containers on the same machine of TaskWeaver. 
+If you are running the containers on different machines, you need to configure the endpoint of the OpenTelemetry collector in the TaskWeaver configuration file.
+The default endpoint is `http://127.0.0.1:4317`, you can set the `tracing.endpoint` in the project configuration file to change the endpoint address.
+
+## Tracing Infrastructure Configuration
 Both Jaeger and Prometheus are popular open-source monitoring systems. We have prepared a docker-compose file to set up the infrastructure
 in `/TaskWeaver/tracing_configure/docker-compose.yaml`. 
 The content of the file is as follows:
@@ -150,17 +163,6 @@ scrape_configs:
 ```
 We only scrape the metrics from the OpenTelemetry collector.
 
-With all the files in place, you can run the following command to set up the infrastructure:
-```bash
-cd /TaskWeaver/tracing_configure
-docker-compose up
-```
-You shall see a bunch of logs from the containers.
-Take a look at the logs to see if there are any errors.
-If no errors are found, you can access the Prometheus frontend at `http://localhost:9090` and the Jaeger frontend at `http://localhost:16686`.
-In this setup, we assume you are running the containers on the same machine of TaskWeaver. 
-If you are running the containers on different machines, you need to configure the endpoint of the OpenTelemetry collector in the TaskWeaver configuration file.
-The default endpoint is `http://127.0.0.1:4317`, you can set the `tracing.endpoint` in the project configuration file to change the endpoint address.
 
 ## How to view the metrics
 

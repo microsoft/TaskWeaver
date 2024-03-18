@@ -56,6 +56,7 @@ class Tracing:
                 "opentelemetry-api, "
                 "opentelemetry-exporter-otlp, "
                 "opentelemetry-instrumentation, "
+                "tiktoken "
                 "first.",
             )
 
