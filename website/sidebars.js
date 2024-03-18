@@ -39,7 +39,7 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'LLMs',
+      label: 'Supported LLMs',
       link: {
         type: 'generated-index',
         title: 'LLMs',
@@ -47,12 +47,31 @@ const sidebars = {
         slug: '/llms',
       },
       collapsible: true,
-      collapsed: false,
+      collapsed: true,
       items: ['llms/openai', 'llms/aoai', 'llms/liteLLM', 'llms/ollama', 'llms/gemini', 'llms/qwen', 'llms/glm', 'llms/customized_llm_api', 'llms/multi-llm'],
     },
     {
       type: 'category',
+      label: 'Configurations',
+      link: {
+        type: 'generated-index',
+        title: 'LLMs',
+        description: 'Learn about TaskWeaver configurations',
+        slug: 'advanced',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: ['configurations/overview', 'configurations/configurations_in_detail' ],// 'configurations/planner', 'configurations/session', 'configurations/embedding'
+    },
+    {
+      type: 'category',
       label: 'Customization',
+      link: {
+        type: 'generated-index',
+        title: 'LLMs',
+        description: 'Learn how to customize TaskWeaver',
+        slug: 'customization',
+      },
       collapsible: true,
       collapsed: false,
       items: [{
@@ -60,7 +79,7 @@ const sidebars = {
         label: 'Plugin',
         collapsible: true,
         collapsed: true,
-        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/embedding', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl', 'customization/plugin/plugin_only'],
+        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl', 'customization/plugin/plugin_only'],
       },
       {
         type: 'category',
@@ -69,20 +88,30 @@ const sidebars = {
         collapsed: true,
         items: ['customization/example/example'],
       },
+      {
+        type: 'category',
+        label: 'Experience',
+        collapsible: true,
+        collapsed: true,
+        items: ['customization/experience'],
+      },
     ],
     },
+    {
+      type: 'category',
+      label: 'Advanced Features',
+      // link: {
+      //   type: 'generated-index',
+      //   title: 'LLMs',
+      //   description: 'Learn about the advanced features of TaskWeaver',
+      //   slug: 'advanced',
+      // },
+      collapsible: true,
+      collapsed: false,
+      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry'],
+    },
     // 'example',
-    'compression',
-    'configurations',
-    'planner',
-    'session',
-    'run_pytest',
-    'experience',
-    'code_verification',
-    'code_execution',
-    'FAQ',
-    'cli_only',
-    'tracing',
+    'FAQ'
   ],
   
 };
