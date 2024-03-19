@@ -16,7 +16,7 @@ from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
 from taskweaver.utils import read_yaml
 
@@ -308,14 +308,21 @@ class Planner(Role):
                         except GeneratorExit:
                             pass
 
-            with get_tracer().start_as_current_span("Planner.reply.raw_text_to_post") as span:
-                span.set_attribute("prompt", json.dumps(chat_history, indent=2))
+            self.tracing.set_span_attribute("prompt", json.dumps(chat_history, indent=2))
+            prompt_size = self.tracing.count_tokens(json.dumps(chat_history))
+            self.tracing.set_span_attribute("prompt_size", prompt_size)
+            self.tracing.add_prompt_size(
+                size=prompt_size,
+                labels={
+                    "direction": "input",
+                },
+            )
 
-                self.planner_post_translator.raw_text_to_post(
-                    post_proxy=post_proxy,
-                    llm_output=stream_filter(llm_stream),
-                    validation_func=check_post_validity,
-                )
+            self.planner_post_translator.raw_text_to_post(
+                post_proxy=post_proxy,
+                llm_output=stream_filter(llm_stream),
+                validation_func=check_post_validity,
+            )
 
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
@@ -344,7 +351,6 @@ class Planner(Role):
             self.logger.dump_log_file(chat_history, prompt_log_path)
 
         reply_post = post_proxy.end()
-
         self.tracing.set_span_attribute("out.from", reply_post.send_from)
         self.tracing.set_span_attribute("out.to", reply_post.send_to)
         self.tracing.set_span_attribute("out.message", reply_post.message)

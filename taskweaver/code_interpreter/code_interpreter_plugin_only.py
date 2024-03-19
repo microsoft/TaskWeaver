@@ -83,6 +83,7 @@ class CodeInterpreterPluginOnly(Role):
             code_to_exec = "\n".join(code)
             post_proxy.update_attachment(code_to_exec, AttachmentType.python)
 
+            self.tracing.set_span_attribute("code", code_to_exec)
             code_verify_errors = code_snippet_verification(
                 code_to_exec,
                 True,
@@ -93,14 +94,16 @@ class CodeInterpreterPluginOnly(Role):
 
             if code_verify_errors:
                 error_message = "\n".join(code_verify_errors)
+                self.tracing.set_span_attribute("verification_errors", error_message)
+                self.tracing.set_span_status("ERROR", "Code verification failed.")
+                post_proxy.update_attachment(
+                    error_message,
+                    AttachmentType.verification,
+                )
                 post_proxy.update_message(
                     message=f"Code verification failed due to {error_message}. "
                     "Please revise your request and try again.",
                     is_end=True,
-                )
-                post_proxy.update_attachment(
-                    error_message,
-                    AttachmentType.verification,
                 )
             else:
                 exec_result = self.executor.execute_code(

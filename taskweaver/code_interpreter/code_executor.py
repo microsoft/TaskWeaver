@@ -68,19 +68,18 @@ class CodeExecutor:
 
     @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        self.tracing.set_span_attribute("code", code)
-
         if not self.client_started:
-            with get_tracer().start_as_current_span("CodeExecutor.start"):
+            with get_tracer().start_as_current_span("start"):
                 self.start()
                 self.client_started = True
 
         if not self.plugin_loaded:
-            with get_tracer().start_as_current_span("CodeExecutor.load_plugin"):
+            with get_tracer().start_as_current_span("load_plugin"):
                 self.load_plugin()
                 self.plugin_loaded = True
 
-        with get_tracer().start_as_current_span("CodeExecutor.execute_code"):
+        with get_tracer().start_as_current_span("run_code"):
+            self.tracing.set_span_attribute("code", code)
             result = self.exec_client.execute_code(exec_id, code)
 
         if result.is_success:
