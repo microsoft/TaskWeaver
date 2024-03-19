@@ -1,14 +1,14 @@
 # Configuration File
-An overview of all configurations available in the config file, which is located at `project/taskweaver_config.json`. 
+
+An overview of all configurations available in the config file, which is located at `project/taskweaver_config.json`.
 You can edit this file to configure TaskWeaver.
-The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`. 
+The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`.
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
 The following table lists the parameters in the configuration file:
 
 | Parameter                                     | Description                                                                            | Default Value                                                                                                                               |
 |-----------------------------------------------|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
 | `llm.model`                                   | The model name used by the language model.                                             | gpt-4                                                                                                                                       |
-| `llm.backup_model`                            | The model name used for self-correction purposes.                                      | `null`                                                                                                                                      |
 | `llm.api_base`                                | The base URL of the OpenAI API.                                                        | `https://api.openai.com/v1`                                                                                                                 |
 | `llm.api_key`                                 | The API key of the OpenAI API.                                                         | `null`                                                                                                                                      |
 | `llm.api_type`                                | The type of the OpenAI API, could be `openai` or `azure`.                              | `openai`                                                                                                                                    |
@@ -31,15 +31,16 @@ The following table lists the parameters in the configuration file:
 | `code_generator.use_experience`               | Whether to use experience summarized from the previous chat history in code generator. | `false`                                                                                                                                     |                      
 | `code_generator.auto_plugin_selection_topk`   | The number of auto selected plugins in each round.                                     | `3`                                                                                                                                         |
 | `session.max_internal_chat_round_num`         | The maximum number of internal chat rounds between Planner and Code Interpreter.       | `10`                                                                                                                                        |
-| `session.no_planner_mode`                     | Allow users to directly communicate with the backend Workers, e.g, CodeInterpreter     | `false`                                                                                                                                     |
-| `session.workers`                             | The roles included for the conversation.                                               | ["code_interpreter"]                                                                                                                        |
+| `session.roles`                               | The roles included for the conversation.                                               | ["planner", "code_interpreter"]                                                                                                             |
 | `round_compressor.rounds_to_compress`         | The number of rounds to compress.                                                      | `2`                                                                                                                                         |
 | `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                                        | `3`                                                                                                                                         |
 | `execution_service.kernel_mode`               | The mode of the code executor, could be `local` or `container`.                        | `local`                                                                                                                                     |
 
-
 > 💡 $\{AppBaseDir\} is the project directory.
 
-> 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format` to `null`.
+> 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI
+> models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format`
+> to `null`.
 
-> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
+> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression`
+> and `code_generator.prompt_compression`.

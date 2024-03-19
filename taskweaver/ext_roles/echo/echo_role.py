@@ -4,6 +4,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 
 
@@ -18,9 +19,10 @@ class Echo(Role):
         self,
         config: EchoConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
     ):
-        super().__init__(config, logger, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter)
 
     def reply(self, memory: Memory, **kwargs) -> Post:
         rounds = memory.get_role_rounds(

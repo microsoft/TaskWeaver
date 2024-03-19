@@ -20,16 +20,16 @@ class AppSessionConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("session")
 
-        self.no_planner_mode = self._get_bool("no_planner_mode", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
         self.experience_dir = self._get_path(
             "experience_dir",
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.workers = self._get_list("workers", ["code_interpreter"])
+        self.roles = self._get_list("roles", ["planner", "code_interpreter"])
 
-        num_code_interpreters = len([w for w in self.workers if w.startswith("code_interpreter")])
+        assert len(self.roles) > 0, "At least one role should be provided."
+        num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
         assert num_code_interpreters == 1, (
             f"Only single code_interpreter is allowed, " f"but {num_code_interpreters} are provided."
         )
@@ -84,6 +84,9 @@ class Session:
         )
         self.session_injector.binder.bind(CodeExecutor, self.code_executor)
 
+        if len(self.config.roles) == 1 and self.config.roles[0] == "planner":
+            self.logger.info("Planner only mode enabled")
+
         self.worker_instances = {}
         import_modules_from_dir(
             os.path.join(
@@ -96,7 +99,7 @@ class Session:
             if sub_cls is Planner:
                 continue
             role_instance = self.session_injector.get(sub_cls)
-            if role_instance.name in self.config.workers:
+            if role_instance.name in self.config.roles:
                 self.worker_instances[role_instance.get_alias()] = role_instance
 
         self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
@@ -167,7 +170,7 @@ class Session:
             return reply_post
 
         try:
-            if not self.config.no_planner_mode:
+            if "planner" in self.config.roles and len(self.worker_instances) > 0:
                 post = Post.create(message=message, send_from="User", send_to="Planner")
                 while True:
                     post = _send_message(post.send_to, post)
@@ -185,8 +188,8 @@ class Session:
                         )
             else:
                 assert len(self.worker_instances) == 1, (
-                    "Only single worker is allowed in no_planner_mode "
-                    "because the user message will be sent to the worker directly."
+                    "Only single worker role (e.g., code_interpreter) is allowed in no-planner mode "
+                    "because the user message will be sent to the worker role directly."
                 )
                 worker_name = list(self.worker_instances.keys())[0]
                 post = Post.create(

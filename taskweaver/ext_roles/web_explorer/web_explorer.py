@@ -8,6 +8,7 @@ from taskweaver.ext_roles.web_explorer.planner import VisionPlanner
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 from taskweaver.utils import read_yaml
 
@@ -30,9 +31,10 @@ class WebExplorer(Role):
         self,
         config: WebExplorerConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
     ):
-        super().__init__(config, logger, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter)
 
         self.logger = logger
         self.config = config
