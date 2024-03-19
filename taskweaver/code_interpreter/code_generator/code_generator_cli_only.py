@@ -12,8 +12,8 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
-from taskweaver.role import PostTranslator, Role
+from taskweaver.module.tracing import Tracing, tracing_decorator
+from taskweaver.role import Role
 from taskweaver.utils import read_yaml
 
 
@@ -59,7 +59,6 @@ class CodeGeneratorCLIOnly(Role):
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger, event_emitter)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.instruction_template = self.prompt_data["content"]
 
@@ -93,16 +92,37 @@ class CodeGeneratorCLIOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt}, prompt_log_path)
 
-        with get_tracer().start_as_current_span("CodeGeneratorCLIOnly.reply.chat_completion") as span:
-            span.set_attribute("prompt", json.dumps(prompt, indent=2))
-            llm_response = self.llm_api.chat_completion(
-                messages=prompt,
-                response_format=None,
-                stream=False,
-            )
+        prompt_size = self.tracing.count_tokens(json.dumps(prompt))
+        self.tracing.set_span_attribute("prompt_size", prompt_size)
+        self.tracing.add_prompt_size(
+            size=prompt_size,
+            labels={
+                "direction": "input",
+            },
+        )
+
+        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+        llm_response = self.llm_api.chat_completion(
+            messages=prompt,
+            response_format=None,
+            stream=False,
+        )
+
         try:
             llm_response = json.loads(llm_response["content"])
+            output_size = self.tracing.count_tokens(llm_response["content"])
+            self.tracing.set_span_attribute("output_size", output_size)
+            self.tracing.add_prompt_size(
+                size=output_size,
+                labels={
+                    "direction": "output",
+                },
+            )
         except json.JSONDecodeError:
+            self.tracing.set_span_status(
+                "ERROR",
+                f"Failed to decode LLM response {llm_response}.",
+            )
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
         assert "description" in llm_response, "Description is not found in LLM response."

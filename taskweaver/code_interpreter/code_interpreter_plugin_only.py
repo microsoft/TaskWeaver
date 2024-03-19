@@ -10,7 +10,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -86,13 +86,12 @@ class CodeInterpreterPluginOnly(Role):
             code_to_exec = "\n".join(code)
             post_proxy.update_attachment(code_to_exec, AttachmentType.python)
 
-            with get_tracer().start_span("executing_code") as span:
-                span.set_tag("code", code_to_exec)
+            self.tracing.set_span_attribute("code", code_to_exec)
 
-                exec_result = self.executor.execute_code(
-                    exec_id=post_proxy.post.id,
-                    code=code_to_exec,
-                )
+            exec_result = self.executor.execute_code(
+                exec_id=post_proxy.post.id,
+                code=code_to_exec,
+            )
 
             code_output = self.executor.format_code_output(
                 exec_result,
