@@ -94,7 +94,7 @@ class CodeInterpreter(Role):
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
-        super().__init__(config, logger, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter)
 
         self.generator = generator
         self.generator.set_alias(self.alias)
