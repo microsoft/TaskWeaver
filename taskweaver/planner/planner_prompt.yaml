@@ -41,7 +41,7 @@ instruction_template: |-
     - "plan" is the refined plan that Planner provides to the User.
     - "current_plan_step" is the current step that Planner is executing.
     - "send_to" is the character that Planner wants to send the message to, that should be one of "User", "CodeInterpreter", or "Planner".
-    - "message" is the message that Planner wants to send to the character. If there is any file path in the message, it should be formated as links in Markdown, e.g., [file_name](file_path)
+    - "message" is the message that Planner wants to send to the character. If there is any file path in the message, it should be formatted as links in Markdown, e.g., [file_name](file_path)
   - Planner must not include any other types of elements in the response that can cause parsing errors.
   
   # About multiple conversations
@@ -116,7 +116,7 @@ planner_response_schema: |-
     ]
   }
 
-code_interpreter_introduction : |-
+code_interpreter_introduction: |-
   - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
   - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.
   - CodeInterpreter has the following plugin functions and their required parameters need to be provided before the execution:
@@ -126,7 +126,7 @@ code_interpreter_introduction : |-
   - CodeInterpreter returns the execution results, generated Python code, or error messages to the Planner.
   - CodeInterpreter is stateful and it remembers the execution results of the previous rounds.
   - The input of CodeInterpreter will be prefixed with "CodeInterpreter:" in the chat history.
-  
+
 
 experience_instruction: |-
   # Experience And Lessons
