@@ -3,6 +3,7 @@ import enum
 import json
 import logging
 import os
+import platform
 import sys
 import time
 from ast import literal_eval
@@ -249,6 +250,13 @@ class Environment:
             os.makedirs(ces_session_dir, exist_ok=True)
             cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
             os.makedirs(cwd, exist_ok=True)
+
+            if platform.system() != "Windows":
+                # change the permission of the session directory and its subdirectories
+                os.chmod(session.session_dir, 0o755)
+                os.chmod(ces_session_dir, 0o755)
+                os.chmod(cwd, 0o755)
+
             connection_file = self._get_connection_file(session_id, new_kernel_id)
             new_port_start = self.port_start_inside_container
             kernel_env = {
@@ -273,6 +281,7 @@ class Environment:
                     f"{new_port_start + 3}/tcp": None,
                     f"{new_port_start + 4}/tcp": None,
                 },
+                user="taskweaver",
             )
 
             tick = 0

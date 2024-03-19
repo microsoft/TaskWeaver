@@ -1,11 +1,15 @@
 # Use the official Python 3.10 image as the base image  
 FROM python:3.10
+ENV PYTHONUNBUFFERED=1
 
+RUN useradd -m taskweaver
 # Set the working directory to /app
 WORKDIR /app
+RUN chown taskweaver:taskweaver /app
+USER taskweaver
 
 # Copy the requrements file
-COPY requirements.txt /app/requirements.txt
+COPY --chown=taskweaver:taskweaver requirements.txt /app/requirements.txt
 
 # Install any necessary dependencies
 RUN pip install --no-cache-dir -r requirements.txt
@@ -14,11 +18,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # e.g., RUN pip install your-package-name
 
 # Copy the project code
-COPY taskweaver/ces /app/taskweaver/ces
-COPY taskweaver/plugin /app/taskweaver/plugin
-COPY taskweaver/module /app/taskweaver/module
-COPY taskweaver/__init__.py /app/taskweaver/__init__.py
-COPY ces_container/docker_entry.py /app/docker_entry.py
+COPY --chown=taskweaver:taskweaver taskweaver/ces /app/taskweaver/ces
+COPY --chown=taskweaver:taskweaver taskweaver/plugin /app/taskweaver/plugin
+COPY --chown=taskweaver:taskweaver taskweaver/module /app/taskweaver/module
+COPY --chown=taskweaver:taskweaver taskweaver/__init__.py /app/taskweaver/__init__.py
+COPY --chown=taskweaver:taskweaver ces_container/docker_entry.py /app/docker_entry.py
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
