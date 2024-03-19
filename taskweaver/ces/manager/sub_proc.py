@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 
+from taskweaver.ces import Environment, EnvMode
 from taskweaver.ces.common import Client, ExecutionResult, Manager
-from taskweaver.ces.environment import Environment
 
 
 class SubProcessClient(Client):
@@ -57,13 +57,25 @@ class SubProcessManager(Manager):
         self,
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
+        kernel_mode: Optional[Literal["local", "container"]] = "local",
     ) -> None:
         env_id = env_id or os.getenv("TASKWEAVER_ENV_ID", "local")
         env_dir = env_dir or os.getenv(
             "TASKWEAVER_ENV_DIR",
             os.path.realpath(os.getcwd()),
         )
-        self.env = Environment(env_id, env_dir)
+        self.kernel_mode = kernel_mode
+        if self.kernel_mode == "local":
+            env_mode = EnvMode.Local
+        elif self.kernel_mode == "container":
+            env_mode = EnvMode.OutsideContainer
+        else:
+            raise ValueError(f"Invalid kernel mode: {self.kernel_mode}, expected 'local' or 'container'.")
+        self.env = Environment(
+            env_id,
+            env_dir,
+            env_mode=env_mode,
+        )
 
     def initialize(self) -> None:
         pass
@@ -87,3 +99,6 @@ class SubProcessManager(Manager):
             session_dir=session_dir,
             cwd=cwd,
         )
+
+    def get_kernel_mode(self) -> Literal["local", "container"] | None:
+        return self.kernel_mode

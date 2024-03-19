@@ -15,7 +15,7 @@ to guide its planning and code generation.
 An experience tip is about what should do or should not do when seeing a request like this.
 We will add the retrieved experiences to the prompt when received a similar request afterward.
 
-![Save User Experience](./../static/img/experience.png)
+![Save User Experience](../../static/img/experience.png)
 
 
 

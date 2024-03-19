@@ -7,9 +7,10 @@ from injector import inject
 from taskweaver.ces.common import ExecutionResult, Manager
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.plugin.context import ArtifactType
 
-TRUNCATE_CHAR_LENGTH = 1000
+TRUNCATE_CHAR_LENGTH = 1500
 
 
 def get_artifact_uri(execution_id: str, file: str, use_local_uri: bool) -> str:
@@ -47,6 +48,7 @@ class CodeExecutor:
         config: AppConfigSource,
         exec_mgr: Manager,
         plugin_registry: PluginRegistry,
+        tracing: Tracing,
     ) -> None:
         self.session_id = session_id
         self.workspace = workspace
@@ -57,21 +59,28 @@ class CodeExecutor:
             session_dir=workspace,
             cwd=execution_cwd,
         )
+        self.exec_kernel_mode = self.exec_mgr.get_kernel_mode()
         self.client_started: bool = False
         self.plugin_registry = plugin_registry
         self.plugin_loaded: bool = False
         self.config = config
+        self.tracing = tracing
 
+    @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
         if not self.client_started:
-            self.start()
-            self.client_started = True
+            with get_tracer().start_as_current_span("start"):
+                self.start()
+                self.client_started = True
 
         if not self.plugin_loaded:
-            self.load_plugin()
-            self.plugin_loaded = True
+            with get_tracer().start_as_current_span("load_plugin"):
+                self.load_plugin()
+                self.plugin_loaded = True
 
-        result = self.exec_client.execute_code(exec_id, code)
+        with get_tracer().start_as_current_span("run_code"):
+            self.tracing.set_span_attribute("code", code)
+            result = self.exec_client.execute_code(exec_id, code)
 
         if result.is_success:
             for artifact in result.artifact:
@@ -91,6 +100,10 @@ class CodeExecutor:
                         artifact.file_content_encoding,
                     )
                     artifact.file_name = file_name
+
+        if not result.is_success:
+            self.tracing.set_span_status("ERROR", "Code execution failed.")
+        self.tracing.set_span_attribute("result", self.format_code_output(result, with_code=False))
 
         return result
 
@@ -214,3 +227,6 @@ class CodeExecutor:
             lines.append("")
 
         return "\n".join([" " * indent + ln for ln in lines])
+
+    def get_execution_mode(self) -> Literal["local", "container"] | None:
+        return self.exec_kernel_mode

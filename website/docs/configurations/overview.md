@@ -1,5 +1,5 @@
 # Configuration File
-The configuration file is located at `project/taskweaver_config.json`. 
+An overview of all configurations available in the config file, which is located at `project/taskweaver_config.json`. 
 You can edit this file to configure TaskWeaver.
 The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`. 
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
@@ -16,9 +16,10 @@ The following table lists the parameters in the configuration file:
 | `llm.response_format`                         | The response format of the OpenAI API, could be `json_object`, `text` or `null`.       | `json_object`                                                                                                                               |
 | `llm.embedding_api_type`                      | The type of the embedding API                                                          | `sentence_transformers`                                                                                                                     |
 | `llm.embedding_model`                         | The name of the embedding model                                                        | `all-mpnet-base-v2`                                                                                                                         |
+| `ext_llms.llm_configs`                        | The extra LLM configs for different components.                                        | `{}`                                                                                                                                        |
 | `code_interpreter.code_verification_on`       | Whether to enable code verification.                                                   | `false`                                                                                                                                     |
 | `code_interpreter.allowed_modules`            | The list of allowed modules to import in code generation.                              | `["pandas", "matplotlib", "numpy", "sklearn", "scipy", "seaborn", "datetime", "typing"]`, if the list is empty, no modules would be allowed |
-| `code_interpreter.blocked_functions`          | The list of functions to block from code generation.                                   | `["__import__", "eval", "exec", "execfile", "compile", "open", "input", "raw_input", "reload"]`                                            |
+| `code_interpreter.blocked_functions`          | The list of functions to block from code generation.                                   | `["__import__", "eval", "exec", "execfile", "compile", "open", "input", "raw_input", "reload"]`                                             |
 | `logging.log_file`                            | The name of the log file.                                                              | `taskweaver.log`                                                                                                                            |
 | `logging.log_folder`                          | The folder to store the log file.                                                      | `logs`                                                                                                                                      |
 | `plugin.base_path`                            | The folder to store plugins.                                                           | `${AppBaseDir}/plugins`                                                                                                                     |
@@ -38,12 +39,12 @@ The following table lists the parameters in the configuration file:
 | `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                                        | `3`                                                                                                                                         |
 
 
-
 > 💡 $\{AppBaseDir\} is the project directory.
 
 > 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format` to `null`.
 
-> 💡 Read [this](compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
+> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
 
 > 💡 We support to set configurations via environment variables. You need to transform the configuration key to uppercase and replace the dot with underscore. 
 For example, `llm.model` should be set as `LLM_MODEL`, `llm.api_base` should be set as `LLM_API_BASE`, etc.
+

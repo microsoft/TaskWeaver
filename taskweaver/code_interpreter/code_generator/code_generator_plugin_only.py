@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,7 +13,8 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
-from taskweaver.role import PostTranslator, Role
+from taskweaver.module.tracing import Tracing, tracing_decorator
+from taskweaver.role import Role
 from taskweaver.utils import read_yaml
 
 
@@ -41,6 +43,8 @@ class CodeGeneratorPluginOnlyConfig(ModuleConfig):
         self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
+        self.llm_alias = self._get_str("llm_alias", default="", required=False)
+
 
 class CodeGeneratorPluginOnly(Role):
     @inject
@@ -49,17 +53,18 @@ class CodeGeneratorPluginOnly(Role):
         config: CodeGeneratorPluginOnlyConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.llm_api = llm_api
         self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 
-        self.post_translator = PostTranslator(logger, event_emitter)
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.plugin_pool = [p for p in plugin_registry.get_list() if p.plugin_only is True]
         self.instruction_template = self.prompt_data["content"]
@@ -84,14 +89,15 @@ class CodeGeneratorPluginOnly(Role):
 
         return self.selected_plugin_pool.get_plugins()
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
+
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
             role="CodeInterpreter",
@@ -99,6 +105,8 @@ class CodeGeneratorPluginOnly(Role):
         )
 
         user_query = rounds[-1].user_query
+        self.tracing.set_span_attribute("user_query", user_query)
+        self.tracing.set_span_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
@@ -115,24 +123,51 @@ class CodeGeneratorPluginOnly(Role):
         if prompt_log_path is not None:
             self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
 
+        prompt_size = self.tracing.count_tokens(json.dumps(prompt)) + self.tracing.count_tokens(json.dumps(tools))
+        self.tracing.set_span_attribute("prompt_size", prompt_size)
+        self.tracing.add_prompt_size(
+            size=prompt_size,
+            labels={
+                "direction": "input",
+            },
+        )
+
+        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+
         llm_response = self.llm_api.chat_completion(
             messages=prompt,
             tools=tools,
             tool_choice="auto",
             response_format=None,
             stream=False,
+            llm_alias=self.config.llm_alias,
         )
+
+        output_size = self.tracing.count_tokens(llm_response["content"])
+        self.tracing.set_span_attribute("output_size", output_size)
+        self.tracing.add_prompt_size(
+            size=output_size,
+            labels={
+                "direction": "output",
+            },
+        )
+
         if llm_response["role"] == "assistant":
             post_proxy.update_message(llm_response["content"])
             return post_proxy.end()
         elif llm_response["role"] == "function":
             post_proxy.update_attachment(llm_response["content"], AttachmentType.function)
+            self.tracing.set_span_attribute("functions", llm_response["content"])
 
             if self.config.enable_auto_plugin_selection:
                 # here the code is in json format, not really code
                 self.selected_plugin_pool.filter_unused_plugins(code=llm_response["content"])
             return post_proxy.end()
         else:
+            self.tracing.set_span_status(
+                "ERROR",
+                f"Unexpected response from LLM {llm_response}",
+            )
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
 

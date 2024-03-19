@@ -36,7 +36,6 @@ def LLM_API_test():
 
     llm_stream = llm_api.chat_completion_stream(
         messages=[format_chat_message(role="user", message=args.query)],
-        use_backup_engine=False,
         use_smoother=True,
     )
 

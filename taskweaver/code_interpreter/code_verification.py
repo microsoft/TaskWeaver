@@ -24,7 +24,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 function_name = node.func.id
                 if function_name in self.blocked_functions:
                     self.errors.append(
-                        f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                        f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                         f"=> Function '{node.func.id}' is not allowed.",
                     )
                     return False
@@ -33,7 +33,7 @@ class FunctionCallValidator(ast.NodeVisitor):
                 function_name = node.func.attr
                 if function_name in self.blocked_functions:
                     self.errors.append(
-                        f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                        f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                         f"=> Function '{function_name}' is not allowed.",
                     )
                     return False
@@ -49,12 +49,12 @@ class FunctionCallValidator(ast.NodeVisitor):
                 module_name = alias.name
             if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
                 self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                     f"=> Importing module '{module_name}' is not allowed. ",
                 )
             elif len(self.allowed_modules) == 0:
                 self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                     f"=> Importing module '{module_name}' is not allowed. ",
                 )
 
@@ -65,12 +65,12 @@ class FunctionCallValidator(ast.NodeVisitor):
             module_name = node.module
         if len(self.allowed_modules) > 0 and module_name not in self.allowed_modules:
             self.errors.append(
-                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                 f"=>  Importing from module '{node.module}' is not allowed.",
             )
         elif len(self.allowed_modules) == 0:
             self.errors.append(
-                f"Error on line {node.lineno}: {self.lines[node.lineno-1]} "
+                f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
                 f"=>  Importing from module '{node.module}' is not allowed.",
             )
 
