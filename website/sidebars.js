@@ -112,7 +112,6 @@ const sidebars = {
     },
     // 'example',
     'FAQ'
->>>>>>> cdbef4e8d2503ff05c43104a7f10e11cf6febf89
   ],
   
 };
