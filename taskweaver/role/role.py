@@ -7,6 +7,7 @@ from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.tracing import Tracing
 from taskweaver.utils import read_yaml
 
 
@@ -16,10 +17,12 @@ class Role:
         self,
         config: ModuleConfig,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
     ):
         self.config = config
         self.logger = logger
+        self.tracing = tracing
         self.event_emitter = event_emitter
 
         self.name = self.config.name

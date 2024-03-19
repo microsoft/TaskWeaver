@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import re
@@ -5,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
 
 AppConfigSourceType = Literal["override", "env", "json", "app", "default"]
-AppConfigValueType = Literal["str", "int", "float", "bool", "list", "enum", "path"]
+AppConfigValueType = Literal["str", "int", "float", "bool", "list", "enum", "path", "dict"]
 
 
 class AppConfigSourceValue(NamedTuple):
@@ -177,7 +178,7 @@ class AppConfigSource:
 
         return val
 
-    def get_list(self, key: str, default: Optional[List[Any]] = None) -> List[str]:
+    def get_list(self, key: str, default: Optional[List[Any]] = None) -> List[Any]:
         val = self._get_config_value(key, "list", default)
         if isinstance(val, list):
             return val
@@ -280,3 +281,13 @@ class AppConfigSource:
         if path_config.startswith("~"):
             path_config = os.path.expanduser(path_config)
         return path_config
+
+    def get_dict(self, key: str, default: Optional[dict] = None) -> dict:
+        val = self._get_config_value(key, "dict", default)
+        if isinstance(val, dict):
+            return val
+        else:
+            raise ValueError(f"Invalid dict config value {val}")
+
+    def clone(self):
+        return copy.deepcopy(self)

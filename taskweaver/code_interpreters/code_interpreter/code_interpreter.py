@@ -15,6 +15,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import Role
 
 
@@ -89,6 +90,7 @@ class CodeInterpreter(Role):
         generator: CodeGenerator,
         executor: CodeExecutor,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
     ):
@@ -104,6 +106,7 @@ class CodeInterpreter(Role):
 
         self.executor = executor
         self.logger = logger
+        self.tracing = tracing
         self.event_emitter = event_emitter
         self.retry_count = 0
 
@@ -116,11 +119,11 @@ class CodeInterpreter(Role):
     def get_intro(self) -> str:
         return self.intro.format(plugin_description=self.plugin_description)
 
+    @tracing_decorator
     def reply(
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
-        use_back_up_engine: bool = False,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_status("generating code")
@@ -128,7 +131,6 @@ class CodeInterpreter(Role):
             memory,
             post_proxy,
             prompt_log_path,
-            use_back_up_engine,
         )
 
         if post_proxy.post.message is not None and post_proxy.post.message != "":  # type: ignore
@@ -138,6 +140,7 @@ class CodeInterpreter(Role):
                 "No code verification is performed.",
             )
             update_execution(post_proxy, "NONE", "No code is executed.")
+
             return post_proxy.end()
 
         code = next(
@@ -147,6 +150,8 @@ class CodeInterpreter(Role):
 
         if code is None:
             # no code is generated is usually due to the failure of parsing the llm output
+            self.tracing.set_span_status("ERROR", "Failed to generate code.")
+
             update_verification(
                 post_proxy,
                 "NONE",
@@ -171,14 +176,19 @@ class CodeInterpreter(Role):
 
             return post_proxy.end()
 
+        self.tracing.set_span_attribute("code", code.content)
         post_proxy.update_status("verifying code")
+
+        self.tracing.set_span_attribute("code_verification_on", self.config.code_verification_on)
         self.logger.info(f"Code to be verified: {code.content}")
-        code_verify_errors = code_snippet_verification(
-            code.content,
-            self.config.code_verification_on,
-            allowed_modules=self.config.allowed_modules,
-            blocked_functions=self.config.blocked_functions,
-        )
+        with get_tracer().start_as_current_span("CodeInterpreter.verify_code") as span:
+            span.set_attribute("code", code.content)
+            code_verify_errors = code_snippet_verification(
+                code.content,
+                self.config.code_verification_on,
+                allowed_modules=self.config.allowed_modules,
+                blocked_functions=self.config.blocked_functions,
+            )
 
         if code_verify_errors is None:
             update_verification(
@@ -190,9 +200,14 @@ class CodeInterpreter(Role):
             self.logger.info(
                 f"Code verification finished with {len(code_verify_errors)} errors.",
             )
+
             code_error = "\n".join(code_verify_errors)
             update_verification(post_proxy, "INCORRECT", code_error)
             post_proxy.update_message(code_error)
+
+            self.tracing.set_span_status("ERROR", "Code verification failed.")
+            self.tracing.set_span_attribute("verification_error", code_error)
+
             if self.retry_count < self.config.max_retry_count:
                 post_proxy.update_attachment(
                     format_code_correction_message(),
@@ -264,4 +279,15 @@ class CodeInterpreter(Role):
                 AttachmentType.revise_message,
             )
             self.retry_count += 1
-        return post_proxy.end()
+
+        if not exec_result.is_success:
+            self.tracing.set_span_status("ERROR", "Code execution failed.")
+
+        reply_post = post_proxy.end()
+
+        self.tracing.set_span_attribute("out.from", reply_post.send_from)
+        self.tracing.set_span_attribute("out.to", reply_post.send_to)
+        self.tracing.set_span_attribute("out.message", reply_post.message)
+        self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
+
+        return reply_post
