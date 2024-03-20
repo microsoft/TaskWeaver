@@ -6,7 +6,6 @@ from typing import Dict, Iterable, List, Optional
 
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
@@ -17,10 +16,11 @@ from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class PlannerConfig(ModuleConfig):
+class PlannerConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("planner")
         app_dir = self.src.app_base_path

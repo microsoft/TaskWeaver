@@ -1,3 +1,4 @@
 alias: CLIAgent
+module: taskweaver.code_interpreters.code_interpreter_cli.code_interpreter_cli_only.CodeInterpreterCLIOnly
 intro : |-
     CLIAgent can understand the user request in natural language and generate command line interface (CLI) commands to complete tasks.

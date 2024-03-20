@@ -1,4 +1,5 @@
 alias: WebExplorer
+module: taskweaver.ext_roles.web_explorer.web_explorer.WebExplorer
 intro : |-
   WebExplorer can conduct a web browsing task such as find out any information on the web,
   or perform simple actions on a web page such as click, type, etc.

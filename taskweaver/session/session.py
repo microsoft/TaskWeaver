@@ -11,8 +11,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
-from taskweaver.role import Role
-from taskweaver.utils import import_modules_from_dir
+from taskweaver.role.role import RoleEntry, RoleRegistry
 from taskweaver.workspace.workspace import Workspace
 
 
@@ -52,6 +51,7 @@ class Session:
         logger: TelemetryLogger,
         tracing: Tracing,
         config: AppSessionConfig,  # TODO: change to SessionConfig
+        role_registry: RoleRegistry,
     ) -> None:
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
@@ -81,34 +81,20 @@ class Session:
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
 
-        # import all code interpreters
-        import_modules_from_dir(
-            os.path.join(
-                self.config.src.module_base_path,
-                "code_interpreters",
-            ),
-        )
-
-        if len(self.config.roles) == 1 and self.config.roles[0] == "planner":
-            self.logger.info("Planner only mode enabled")
-
         self.worker_instances = {}
-        import_modules_from_dir(
-            os.path.join(
-                self.config.src.module_base_path,
-                "ext_roles",
-            ),
-        )
-
-        for sub_cls in Role.__subclasses__():
-            if sub_cls is Planner:
+        for role_name in self.config.roles:
+            if role_name == "planner":
                 continue
-            role_instance = self.session_injector.get(sub_cls)
-            if role_instance.name in self.config.roles:
-                self.worker_instances[role_instance.get_alias()] = role_instance
+            if role_name not in role_registry.get_role_name_list():
+                raise ValueError(f"Unknown role {role_name}")
+            role_entry = role_registry.get(role_name)
+            self.session_injector.binder.bind(RoleEntry, role_entry)
+            role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
+            self.worker_instances[role_instance.get_alias()] = role_instance
 
-        self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
-        self.session_injector.binder.bind(Planner, self.planner)
+        if "planner" in self.config.roles:
+            self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
+            self.session_injector.binder.bind(Planner, self.planner)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0

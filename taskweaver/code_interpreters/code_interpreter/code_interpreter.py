@@ -10,18 +10,17 @@ from taskweaver.code_interpreters.code_interpreter import (
     format_output_revision_message,
 )
 from taskweaver.code_interpreters.code_verification import code_snippet_verification, format_code_correction_message
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig, RoleEntry
 
 
-class CodeInterpreterConfig(ModuleConfig):
+class CodeInterpreterConfig(RoleConfig):
     def _configure(self):
-        self._set_name("code_interpreter")
         self.use_local_uri = self._get_bool(
             "use_local_uri",
             self.src.get_bool(
@@ -93,8 +92,9 @@ class CodeInterpreter(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
+        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
 
         self.generator = generator
         self.generator.set_alias(self.alias)

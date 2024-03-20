@@ -5,18 +5,17 @@ from injector import inject
 
 from taskweaver.code_interpreters.code_executor import CodeExecutor
 from taskweaver.code_interpreters.code_interpreter_plugin_only import CodeGeneratorPluginOnly
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig
 
 
-class CodeInterpreterConfig(ModuleConfig):
+class CodeInterpreterConfig(RoleConfig):
     def _configure(self):
-        self._set_name("code_interpreter_plugin_only")
         self.use_local_uri = self._get_bool(
             "use_local_uri",
             self.src.get_bool(

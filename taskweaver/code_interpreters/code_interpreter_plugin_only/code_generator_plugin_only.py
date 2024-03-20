@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Tuple
 from injector import inject
 
 from taskweaver.code_interpreters.plugin_selection import PluginSelector, SelectedPluginPool
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
@@ -15,10 +14,11 @@ from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig, RoleEntry
 from taskweaver.utils import read_yaml
 
 
-class CodeGeneratorPluginOnlyConfig(ModuleConfig):
+class CodeGeneratorPluginOnlyConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
@@ -56,8 +56,9 @@ class CodeGeneratorPluginOnly(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
+        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
 
         self.llm_api = llm_api
 

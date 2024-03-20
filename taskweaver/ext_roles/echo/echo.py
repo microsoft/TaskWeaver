@@ -1,16 +1,16 @@
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig, RoleEntry
 
 
-class EchoConfig(ModuleConfig):
+class EchoConfig(RoleConfig):
     def _configure(self):
-        self._set_name("echo")
+        pass
 
 
 class Echo(Role):
@@ -21,8 +21,9 @@ class Echo(Role):
         logger: TelemetryLogger,
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
+        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
 
     def reply(self, memory: Memory, **kwargs) -> Post:
         rounds = memory.get_role_rounds(

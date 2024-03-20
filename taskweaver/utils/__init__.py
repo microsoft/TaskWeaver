@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import glob
 import importlib
 import inspect
 import json
@@ -9,7 +10,7 @@ import secrets
 import sys
 from datetime import datetime
 from hashlib import md5
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 
 def create_id(length: int = 4) -> str:
@@ -78,18 +79,12 @@ def generate_md5_hash(content: str) -> str:
     return md5(content.encode()).hexdigest()
 
 
-def import_modules_from_dir(target_dir: str):
-    def import_modules_from_file(file_path: str):
-        file_name = os.path.basename(file_path)
-        if file_name.endswith(".py") and not file_name.startswith("__"):
-            sys.path.insert(0, os.path.dirname(file_path))
-            module_name = os.path.splitext(file_name)[0]
-            importlib.import_module(module_name)
+def glob_files(path: Union[str, List[str]]) -> list[str]:
+    if isinstance(path, str):
+        return glob.glob(path)
+    else:
+        return [item for sublist in [glob.glob(p) for p in path] for item in sublist]
 
-    for root, dirs, files in os.walk(target_dir):
-        for directory in dirs:
-            for file in os.listdir(os.path.join(root, directory)):
-                import_modules_from_file(os.path.join(root, directory, file))
 
-        for file in files:
-            import_modules_from_file(os.path.join(root, file))
+def import_module(module_name: str):
+    return importlib.import_module(module_name)

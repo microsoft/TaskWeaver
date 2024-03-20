@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
@@ -14,10 +13,11 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class CodeGeneratorCLIOnlyConfig(ModuleConfig):
+class CodeGeneratorCLIOnlyConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")

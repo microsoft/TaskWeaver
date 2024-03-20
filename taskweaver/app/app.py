@@ -11,6 +11,7 @@ from taskweaver.module.execution_service import ExecutionServiceModule
 # if TYPE_CHECKING:
 from taskweaver.session.session import Session
 
+from ..role.role import RoleModule
 from .session_manager import SessionManager, SessionManagerModule
 
 
@@ -37,7 +38,7 @@ class TaskWeaverApp(object):
             app_base_path=app_dir,
         )
         self.app_injector = Injector(
-            [SessionManagerModule, PluginModule, LoggingModule, ExecutionServiceModule],
+            [SessionManagerModule, PluginModule, LoggingModule, ExecutionServiceModule, RoleModule],
         )
         self.app_injector.binder.bind(AppConfigSource, to=config_src)
         self.session_manager: SessionManager = self.app_injector.get(SessionManager)

@@ -4,18 +4,17 @@ from injector import inject
 
 from taskweaver.code_interpreters.code_executor import CodeExecutor
 from taskweaver.code_interpreters.code_interpreter_cli import CodeGeneratorCLIOnly
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig, RoleEntry
 
 
-class CodeInterpreterConfig(ModuleConfig):
+class CodeInterpreterConfig(RoleConfig):
     def _configure(self):
-        self._set_name("code_interpreter_cli_only")
         self.use_local_uri = self._get_bool("use_local_uri", False)
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
@@ -30,8 +29,9 @@ class CodeInterpreterCLIOnly(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
+        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
 
         self.generator = generator
         self.generator.set_alias(self.alias)
