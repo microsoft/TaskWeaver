@@ -1,7 +1,7 @@
 $scriptDirectory = $PSScriptRoot
 Write-Host "The script directory is: $scriptDirectory"
 
-$imageName = "taskweaver/executor"
+$imageName = "taskweavercontainers/taskweaver-executor"
 $taskweaverPath = Join-Path -Path $scriptDirectory -ChildPath "..\taskweaver"
 $dockerfilePath = Join-Path -Path $scriptDirectory -ChildPath "..\ces_container\Dockerfile"
 $contextPath = Join-Path -Path $scriptDirectory -ChildPath "..\"

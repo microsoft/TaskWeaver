@@ -166,6 +166,16 @@ class Environment:
             except docker.errors.DockerException as e:
                 raise docker.errors.DockerException(f"Failed to connect to Docker daemon: {e}. ")
 
+            self.image_name = "taskweavercontainers/taskweaver-executor"
+            try:
+                self.docker_client.images.get(self.image_name)
+            except docker.errors.ImageNotFound:
+                logger.info("Pulling image from docker.io.")
+                try:
+                    self.docker_client.images.pull(self.image_name)
+                except docker.errors.DockerException as e:
+                    raise docker.errors.DockerException(f"Failed to pull image: {e}. ")
+
             self.session_container_dict: Dict[str, str] = {}
             self.port_start_inside_container = port_start_inside_container
         else:
@@ -268,7 +278,7 @@ class Environment:
             }
             # ports will be assigned automatically at the host
             container = self.docker_client.containers.run(
-                image="taskweaver/executor",
+                image=self.image_name,
                 detach=True,
                 environment=kernel_env,
                 volumes={
