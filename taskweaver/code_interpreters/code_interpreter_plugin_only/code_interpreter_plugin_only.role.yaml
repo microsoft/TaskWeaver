@@ -1,5 +1,5 @@
 alias: PluginOrchestrator
-module: taskweaver.code_interpreters.code_interpreter_plugin_only.code_interpreter_plugin_only.CodeInterpreterPluginOnly
+module: taskweaver.code_interpreters.CodeInterpreterPluginOnly
 intro : |-
   PluginOrchestrator is responsible for orchestrating the plugin functions to complete the subtasks assigned by the Planner.
   PluginOrchestrator takes the instructions in natural language from the Planner and leverage the plugin functions to complete the tasks.

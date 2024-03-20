@@ -11,7 +11,7 @@ from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
-from taskweaver.role.role import RoleEntry, RoleRegistry
+from taskweaver.role.role import RoleRegistry
 from taskweaver.workspace.workspace import Workspace
 
 
@@ -88,7 +88,6 @@ class Session:
             if role_name not in role_registry.get_role_name_list():
                 raise ValueError(f"Unknown role {role_name}")
             role_entry = role_registry.get(role_name)
-            self.session_injector.binder.bind(RoleEntry, role_entry)
             role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
             self.worker_instances[role_instance.get_alias()] = role_instance
 
