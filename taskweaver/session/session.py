@@ -29,9 +29,9 @@ class AppSessionConfig(ModuleConfig):
 
         assert len(self.roles) > 0, "At least one role should be provided."
         num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
-        assert num_code_interpreters == 1, (
-            f"Only single code_interpreter is allowed, " f"but {num_code_interpreters} are provided."
-        )
+        assert (
+            num_code_interpreters == 1
+        ), f"Only single code_interpreter is allowed, but {num_code_interpreters} are provided."
 
 
 @dataclass

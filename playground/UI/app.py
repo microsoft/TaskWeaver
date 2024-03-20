@@ -1,3 +1,4 @@
+import atexit
 import functools
 import os
 import re
@@ -31,6 +32,7 @@ from taskweaver.session.session import Session
 
 project_path = os.path.join(repo_path, "project")
 app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
+atexit.register(app.stop)
 app_session_dict: Dict[str, Session] = {}
 
 
