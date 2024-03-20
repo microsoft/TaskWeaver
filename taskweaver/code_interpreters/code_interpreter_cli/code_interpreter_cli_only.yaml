@@ -1,3 +1,3 @@
 alias: CLIAgent
 intro : |-
-    CLIAgent can understand the user request and generate command line interface (CLI) commands to complete tasks.
+    CLIAgent can understand the user request in natural language and generate command line interface (CLI) commands to complete tasks.

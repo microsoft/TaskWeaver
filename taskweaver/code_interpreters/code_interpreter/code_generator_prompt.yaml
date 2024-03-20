@@ -49,8 +49,6 @@ user_message_head: |-
     
     # Request from the User in this round:
     {MESSAGE}
-    
-    
 
 requirements: |-
     Please follow the instructions below to complete the task:

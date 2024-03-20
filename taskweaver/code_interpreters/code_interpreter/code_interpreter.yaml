@@ -1,8 +1,7 @@
 alias: CodeInterpreter
 intro : |-
-  - CodeInterpreter is responsible for generating and running Python code to complete the subtasks assigned by the Planner.
-  - CodeInterpreter can access the files, data base, web and other resources in the environment via generated Python code.
-  - CodeInterpreter has the following plugin functions and their required parameters need to be provided before the execution:
+  - CodeInterpreter takes instruction in natural language from the Planner and generates Python code to complete the tasks.
+  - CodeInterpreter has the following functions and the required parameters need to be provided before execution:
   {plugin_description}
   - CodeInterpreter can only talk to the Planner.
   - CodeInterpreter can only follow one instruction at a time.
