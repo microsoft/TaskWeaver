@@ -14,7 +14,7 @@ from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
-from taskweaver.role.role import RoleConfig, RoleEntry
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
@@ -56,9 +56,8 @@ class CodeGeneratorPluginOnly(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
-        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter, role_entry)
+        super().__init__(config, logger, tracing, event_emitter)
 
         self.llm_api = llm_api
 

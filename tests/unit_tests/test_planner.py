@@ -9,6 +9,7 @@ from taskweaver.logging import LoggingModule
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.role.role import RoleModule, RoleRegistry
 from taskweaver.session import SessionMetadata
 
 
@@ -33,7 +34,7 @@ def test_compose_prompt():
     from taskweaver.planner import Planner
 
     app_injector = Injector(
-        [LoggingModule, PluginModule],
+        [LoggingModule, PluginModule, RoleModule],
     )
     app_config = AppConfigSource(
         config={
@@ -64,7 +65,9 @@ def test_compose_prompt():
         },
     )
     app_injector.binder.bind(CodeExecutor, code_executor)
-    code_interpreter = app_injector.create_object(CodeInterpreter)
+    role_reg = app_injector.get(RoleRegistry)
+    role_entry = role_reg.get("code_interpreter")
+    code_interpreter = app_injector.create_object(CodeInterpreter, {"role_entry": role_entry})
     planner = app_injector.create_object(
         Planner,
         {
@@ -197,7 +200,7 @@ def test_compose_example_for_prompt():
     from taskweaver.planner import Planner
 
     app_injector = Injector(
-        [LoggingModule, PluginModule],
+        [LoggingModule, PluginModule, RoleModule],
     )
     app_config = AppConfigSource(
         config={
@@ -233,7 +236,9 @@ def test_compose_example_for_prompt():
         },
     )
     app_injector.binder.bind(CodeExecutor, code_executor)
-    code_interpreter = app_injector.create_object(CodeInterpreter)
+    role_reg = app_injector.get(RoleRegistry)
+    role_entry = role_reg.get("code_interpreter")
+    code_interpreter = app_injector.create_object(CodeInterpreter, {"role_entry": role_entry})
     planner = app_injector.create_object(
         Planner,
         {
