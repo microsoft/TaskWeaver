@@ -9,6 +9,7 @@ from taskweaver.logging import LoggingModule
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.session import SessionMetadata
 
 
 class DummyManager:
@@ -47,12 +48,18 @@ def test_compose_prompt():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     event_emitter = app_injector.get(SessionEventEmitter)
     app_injector.binder.bind(SessionEventEmitter, event_emitter)
-    code_executor = app_injector.create_object(
-        CodeExecutor,
+    session_metadata = app_injector.create_object(
+        SessionMetadata,
         {
             "session_id": "session_id",
             "workspace": "workspace",
             "execution_cwd": "execution_cwd",
+        },
+    )
+    code_executor = app_injector.create_object(
+        CodeExecutor,
+        {
+            "session_metadata": session_metadata,
             "exec_mgr": DummyManager(),
         },
     )
@@ -210,12 +217,18 @@ def test_compose_example_for_prompt():
     app_injector.binder.bind(AppConfigSource, to=app_config)
     event_emitter = app_injector.get(SessionEventEmitter)
     app_injector.binder.bind(SessionEventEmitter, event_emitter)
-    code_executor = app_injector.create_object(
-        CodeExecutor,
+    session_metadata = app_injector.create_object(
+        SessionMetadata,
         {
             "session_id": "session_id",
             "workspace": "workspace",
             "execution_cwd": "execution_cwd",
+        },
+    )
+    code_executor = app_injector.create_object(
+        CodeExecutor,
+        {
+            "session_metadata": session_metadata,
             "exec_mgr": DummyManager(),
         },
     )

@@ -131,3 +131,8 @@ class CodeInterpreterPluginOnly(Role):
         self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
 
         return reply_post
+
+    def close(self) -> None:
+        self.generator.close()
+        self.executor.stop()
+        super().close()
