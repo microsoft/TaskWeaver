@@ -1,3 +1,4 @@
+import atexit
 import shutil
 import threading
 import time
@@ -407,6 +408,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
         self.session = self.app.get_session()
         self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
+        atexit.register(self.app.stop)
 
     def run(self):
         self._reset_session(first_session=True)
