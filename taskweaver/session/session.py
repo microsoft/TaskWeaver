@@ -1,10 +1,10 @@
 import os
 import shutil
+from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreters.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
@@ -35,6 +35,13 @@ class AppSessionConfig(ModuleConfig):
         )
 
 
+@dataclass
+class SessionMetadata:
+    session_id: str
+    workspace: str
+    execution_cwd: str
+
+
 class Session:
     @inject
     def __init__(
@@ -57,6 +64,13 @@ class Session:
         self.workspace = workspace.get_session_dir(self.session_id)
         self.execution_cwd = os.path.join(self.workspace, "cwd")
 
+        self.metadata = SessionMetadata(
+            session_id=self.session_id,
+            workspace=self.workspace,
+            execution_cwd=self.execution_cwd,
+        )
+        self.session_injector.binder.bind(SessionMetadata, self.metadata)
+
         self.init()
 
         self.round_index = 0
@@ -74,15 +88,6 @@ class Session:
                 "code_interpreters",
             ),
         )
-        self.code_executor = self.session_injector.create_object(
-            CodeExecutor,
-            {
-                "session_id": self.session_id,
-                "workspace": self.workspace,
-                "execution_cwd": self.execution_cwd,
-            },
-        )
-        self.session_injector.binder.bind(CodeExecutor, self.code_executor)
 
         if len(self.config.roles) == 1 and self.config.roles[0] == "planner":
             self.logger.info("Planner only mode enabled")
@@ -302,7 +307,6 @@ class Session:
     @tracing_decorator
     def stop(self) -> None:
         self.logger.info(f"Session {self.session_id} is stopped")
-        self.code_executor.stop()
         for worker in self.worker_instances.values():
             worker.close()
 
