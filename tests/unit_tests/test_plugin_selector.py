@@ -3,7 +3,7 @@ import os
 import pytest
 from injector import Injector
 
-from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector
+from taskweaver.code_interpreter.plugin_selection import PluginSelector
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginModule
 

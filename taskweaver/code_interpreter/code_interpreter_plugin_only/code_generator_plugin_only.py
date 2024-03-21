@@ -4,8 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
-from taskweaver.config.module_config import ModuleConfig
+from taskweaver.code_interpreter.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
@@ -15,10 +14,11 @@ from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class CodeGeneratorPluginOnlyConfig(ModuleConfig):
+class CodeGeneratorPluginOnlyConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
@@ -57,11 +57,9 @@ class CodeGeneratorPluginOnly(Role):
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
-        self.config = config
-        self.logger = logger
-        self.tracing = tracing
+        super().__init__(config, logger, tracing, event_emitter)
+
         self.llm_api = llm_api
-        self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 
@@ -100,7 +98,7 @@ class CodeGeneratorPluginOnly(Role):
 
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 
@@ -111,7 +109,7 @@ class CodeGeneratorPluginOnly(Role):
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
         # obtain the user query from the last round
-        prompt, tools = _compose_prompt(
+        prompt, tools = self._compose_prompt(
             system_instructions=self.instruction_template.format(
                 ROLE_NAME=self.role_name,
             ),
@@ -170,19 +168,19 @@ class CodeGeneratorPluginOnly(Role):
             )
             raise ValueError(f"Unexpected response from LLM: {llm_response}")
 
+    def _compose_prompt(
+        self,
+        system_instructions: str,
+        rounds: List[Round],
+        plugin_pool: List[PluginEntry],
+    ) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
+        functions = [plugin.format_function_calling() for plugin in plugin_pool]
+        prompt = [format_chat_message(role="system", message=system_instructions)]
+        for _round in rounds:
+            for post in _round.post_list:
+                if post.send_from == "Planner" and post.send_to == self.alias:
+                    prompt.append(format_chat_message(role="user", message=post.message))
+                elif post.send_from == self.alias and post.send_to == "Planner":
+                    prompt.append(format_chat_message(role="assistant", message=post.message))
 
-def _compose_prompt(
-    system_instructions: str,
-    rounds: List[Round],
-    plugin_pool: List[PluginEntry],
-) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
-    functions = [plugin.format_function_calling() for plugin in plugin_pool]
-    prompt = [format_chat_message(role="system", message=system_instructions)]
-    for _round in rounds:
-        for post in _round.post_list:
-            if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
-                prompt.append(format_chat_message(role="user", message=post.message))
-            elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
-                prompt.append(format_chat_message(role="assistant", message=post.message))
-
-    return prompt, functions
+        return prompt, functions

@@ -1,6 +1,6 @@
 version: 0.1
 config_var:
-  session.plugin_only_mode: true
+  session.roles: ["planner", "code_interpreter_plugin_only"]
 app_dir: ../project/
 eval_query:
   - user_query: generate 10 random numbers

@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from injector import inject
@@ -88,7 +88,6 @@ class ExperienceGenerator:
     @staticmethod
     def _preprocess_conversation_data(
         conv_data: dict,
-        target_role: Literal["Planner", "CodeInterpreter", "All"],
     ):
         def remove_id_fields(d):
             if isinstance(d, dict):
@@ -111,12 +110,11 @@ class ExperienceGenerator:
         self,
         exp_id: str,
         prompt: Optional[str] = None,
-        target_role: Literal["Planner", "CodeInterpreter", "All"] = "All",
     ):
         raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{exp_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
 
-        conversation = self._preprocess_conversation_data(conversation, target_role)
+        conversation = self._preprocess_conversation_data(conversation)
 
         system_instruction = prompt if prompt else self.default_prompt_template
         prompt = [
@@ -147,7 +145,6 @@ class ExperienceGenerator:
     @tracing_decorator
     def refresh(
         self,
-        target_role: Literal["Planner", "CodeInterpreter", "All"],
         prompt: Optional[str] = None,
     ):
         if not os.path.exists(self.config.experience_dir):
@@ -180,7 +177,7 @@ class ExperienceGenerator:
         to_be_embedded = []
         for idx, exp_id in enumerate(exp_ids):
             rebuild_flag = False
-            exp_file_name = f"{target_role}_exp_{exp_id}.yaml"
+            exp_file_name = f"exp_{exp_id}.yaml"
             if exp_file_name not in os.listdir(self.config.experience_dir):
                 rebuild_flag = True
             else:
@@ -194,7 +191,7 @@ class ExperienceGenerator:
 
             if rebuild_flag:
                 if exp_id in raw_exp_ids:
-                    summarized_experience = self.summarize_experience(exp_id, prompt, target_role)
+                    summarized_experience = self.summarize_experience(exp_id, prompt)
                     experience_obj = Experience(
                         experience_text=summarized_experience,
                         exp_id=exp_id,
@@ -223,7 +220,7 @@ class ExperienceGenerator:
             for i, exp in enumerate(to_be_embedded):
                 exp.embedding = exp_embeddings[i]
                 exp.embedding_model = self.llm_api.embedding_service.config.embedding_model
-                experience_file_path = os.path.join(self.config.experience_dir, f"{target_role}_exp_{exp.exp_id}.yaml")
+                experience_file_path = os.path.join(self.config.experience_dir, f"exp_{exp.exp_id}.yaml")
                 write_yaml(experience_file_path, exp.to_dict())
 
             self.logger.info("Experience obj saved.")
@@ -231,7 +228,6 @@ class ExperienceGenerator:
     @tracing_decorator
     def load_experience(
         self,
-        target_role: Literal["Planner", "CodeInterpreter", "All"],
     ):
         if not os.path.exists(self.config.experience_dir):
             raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
@@ -244,17 +240,17 @@ class ExperienceGenerator:
         exp_ids = [os.path.splitext(os.path.basename(exp_file))[0].split("_")[2] for exp_file in original_exp_files]
         if len(exp_ids) == 0:
             self.logger.warning(
-                f"No experience found for {target_role}."
-                f"Please type /save in the chat window to save raw experience or write handcrafted experience."
+                "No experience found."
+                "Please type /save in the chat window to save raw experience or write handcrafted experience."
                 + self.exception_message_for_refresh,
             )
             return
 
         for exp_id in exp_ids:
-            exp_file = f"{target_role}_exp_{exp_id}.yaml"
+            exp_file = f"exp_{exp_id}.yaml"
             exp_file_path = os.path.join(self.config.experience_dir, exp_file)
             assert os.path.exists(exp_file_path), (
-                f"Experience {exp_file} for {target_role} not found. " + self.exception_message_for_refresh
+                f"Experience {exp_file} not found. " + self.exception_message_for_refresh
             )
 
             experience = read_yaml(exp_file_path)
@@ -302,8 +298,8 @@ class ExperienceGenerator:
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")
 
-    def delete_experience(self, exp_id: str, target_role: Literal["Planner", "CodeInterpreter"]):
-        exp_file_name = f"{target_role}_exp_{exp_id}.yaml"
+    def delete_experience(self, exp_id: str):
+        exp_file_name = f"exp_{exp_id}.yaml"
         self._delete_exp_file(exp_file_name)
 
     def delete_raw_experience(self, exp_id: str):

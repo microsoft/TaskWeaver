@@ -1,17 +1,17 @@
 import os
 import shutil
+from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
-from taskweaver.code_interpreter import CodeInterpreter, CodeInterpreterCLIOnly, CodeInterpreterPluginOnly
-from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
+from taskweaver.role.role import RoleRegistry
 from taskweaver.workspace.workspace import Workspace
 
 
@@ -19,18 +19,26 @@ class AppSessionConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("session")
 
-        self.code_interpreter_only = self._get_bool("code_interpreter_only", False)
         self.max_internal_chat_round_num = self._get_int("max_internal_chat_round_num", 10)
         self.experience_dir = self._get_path(
             "experience_dir",
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.code_gen_mode = self._get_enum(
-            "code_gen_mode",
-            options=["plugin_only", "cli_only", "python"],
-            default="python",
-        )
+        self.roles = self._get_list("roles", ["planner", "code_interpreter"])
+
+        assert len(self.roles) > 0, "At least one role should be provided."
+        num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
+        assert (
+            num_code_interpreters == 1
+        ), f"Only single code_interpreter is allowed, but {num_code_interpreters} are provided."
+
+
+@dataclass
+class SessionMetadata:
+    session_id: str
+    workspace: str
+    execution_cwd: str
 
 
 class Session:
@@ -43,6 +51,7 @@ class Session:
         logger: TelemetryLogger,
         tracing: Tracing,
         config: AppSessionConfig,  # TODO: change to SessionConfig
+        role_registry: RoleRegistry,
     ) -> None:
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
@@ -55,6 +64,13 @@ class Session:
         self.workspace = workspace.get_session_dir(self.session_id)
         self.execution_cwd = os.path.join(self.workspace, "cwd")
 
+        self.metadata = SessionMetadata(
+            session_id=self.session_id,
+            workspace=self.workspace,
+            execution_cwd=self.execution_cwd,
+        )
+        self.session_injector.binder.bind(SessionMetadata, self.metadata)
+
         self.init()
 
         self.round_index = 0
@@ -64,33 +80,20 @@ class Session:
 
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
-        self.planner = self.session_injector.create_object(
-            Planner,
-            {
-                "plugin_only": True if self.config.code_gen_mode == "plugin_only" else False,
-            },
-        )
-        self.session_injector.binder.bind(Planner, self.planner)
-        self.code_executor = self.session_injector.create_object(
-            CodeExecutor,
-            {
-                "session_id": self.session_id,
-                "workspace": self.workspace,
-                "execution_cwd": self.execution_cwd,
-            },
-        )
-        self.session_injector.binder.bind(CodeExecutor, self.code_executor)
-        if self.config.code_gen_mode == "plugin_only":
-            self.code_interpreter = self.session_injector.get(CodeInterpreterPluginOnly)
-        elif self.config.code_gen_mode == "cli_only":
-            self.code_interpreter = self.session_injector.get(CodeInterpreterCLIOnly)
-        elif self.config.code_gen_mode == "python":
-            self.code_interpreter = self.session_injector.get(CodeInterpreter)
-        else:
-            raise ValueError(
-                f"Unknown code_gen_mode: {self.config.code_gen_mode}, "
-                f"only support 'plugin_only', 'cli_only', 'python'",
-            )
+
+        self.worker_instances = {}
+        for role_name in self.config.roles:
+            if role_name == "planner":
+                continue
+            if role_name not in role_registry.get_role_name_list():
+                raise ValueError(f"Unknown role {role_name}")
+            role_entry = role_registry.get(role_name)
+            role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
+            self.worker_instances[role_instance.get_alias()] = role_instance
+
+        if "planner" in self.config.roles:
+            self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
+            self.session_injector.binder.bind(Planner, self.planner)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
         self.internal_chat_num = 0
@@ -143,8 +146,8 @@ class Session:
                         f"planner_prompt_log_{chat_round.id}_{post.id}.json",
                     ),
                 )
-            elif recipient == "CodeInterpreter":
-                reply_post = self.code_interpreter.reply(
+            elif recipient in self.worker_instances.keys():
+                reply_post = self.worker_instances[recipient].reply(
                     self.memory,
                     prompt_log_path=os.path.join(
                         self.workspace,
@@ -157,7 +160,7 @@ class Session:
             return reply_post
 
         try:
-            if not self.config.code_interpreter_only:
+            if "planner" in self.config.roles and len(self.worker_instances) > 0:
                 post = Post.create(message=message, send_from="User", send_to="Planner")
                 while True:
                     post = _send_message(post.send_to, post)
@@ -174,10 +177,15 @@ class Session:
                             f"Internal chat round number exceeds the limit of {self.max_internal_chat_round_num}",
                         )
             else:
+                assert len(self.worker_instances) == 1, (
+                    "Only single worker role (e.g., code_interpreter) is allowed in no-planner mode "
+                    "because the user message will be sent to the worker role directly."
+                )
+                worker_name = list(self.worker_instances.keys())[0]
                 post = Post.create(
                     message=message,
                     send_from="Planner",
-                    send_to="CodeInterpreter",
+                    send_to=worker_name,
                 )
                 while True:
                     if post.send_to == "Planner":
@@ -189,7 +197,7 @@ class Session:
                         chat_round.add_post(reply_post)
                         break
                     else:
-                        post = _send_message("CodeInterpreter", post)
+                        post = _send_message(worker_name, post)
 
             self.round_index += 1
             chat_round.change_round_state("finished")
@@ -284,7 +292,8 @@ class Session:
     @tracing_decorator
     def stop(self) -> None:
         self.logger.info(f"Session {self.session_id} is stopped")
-        self.code_executor.stop()
+        for worker in self.worker_instances.values():
+            worker.close()
 
     def to_dict(self) -> Dict[str, str]:
         return {

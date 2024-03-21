@@ -4,8 +4,7 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreter.code_generator.plugin_selection import PluginSelector, SelectedPluginPool
-from taskweaver.config.module_config import ModuleConfig
+from taskweaver.code_interpreter.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
@@ -14,13 +13,14 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
 from taskweaver.misc.example import load_examples
-from taskweaver.module.event_emitter import PostEventProxy
+from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class CodeGeneratorConfig(ModuleConfig):
+class CodeGeneratorConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
@@ -66,15 +66,14 @@ class CodeGenerator(Role):
         config: CodeGeneratorConfig,
         plugin_registry: PluginRegistry,
         logger: TelemetryLogger,
+        event_emitter: SessionEventEmitter,
         tracing: Tracing,
         llm_api: LLMApi,
         round_compressor: RoundCompressor,
         post_translator: PostTranslator,
         experience_generator: ExperienceGenerator,
     ):
-        self.config = config
-        self.logger = logger
-        self.tracing = tracing
+        super().__init__(config, logger, tracing, event_emitter)
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
@@ -108,8 +107,8 @@ class CodeGenerator(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            # # self.experience_generator.refresh(target_role="All", prompt=experience_prompt_template)
-            self.experience_generator.load_experience(target_role="All")
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
@@ -235,7 +234,7 @@ class CodeGenerator(Role):
                     )
                     is_first_post = False
 
-                if post.send_from == "Planner" and post.send_to == "CodeInterpreter":
+                if post.send_from == "Planner" and post.send_to == self.alias:
                     # to avoid planner imitating the below handcrafted format,
                     # we merge plan and query message in the code generator here
                     user_query = conversation_round.user_query
@@ -249,14 +248,14 @@ class CodeGenerator(Role):
                         )
 
                     user_feedback = "None"
-                    if last_post is not None and last_post.send_from == "CodeInterpreter":
+                    if last_post is not None and last_post.send_from == self.alias:
                         user_feedback = format_code_feedback(last_post)
 
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=user_feedback,
                         MESSAGE=f"{enrichment}{post.message}",
                     )
-                elif post.send_from == post.send_to == "CodeInterpreter":
+                elif post.send_from == post.send_to == self.alias:
                     # for code correction
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=format_code_feedback(post),
@@ -270,7 +269,7 @@ class CodeGenerator(Role):
                         if_format_send_to=False,
                         ignored_types=ignored_types,
                     )
-                elif post.send_from == "CodeInterpreter" and post.send_to == "Planner":
+                elif post.send_from == self.alias and post.send_to == "Planner":
                     if is_final_post:
                         # This user message is added to make the conversation complete
                         # It is used to make sure the last assistant message has a feedback
@@ -338,7 +337,7 @@ class CodeGenerator(Role):
 
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 
@@ -421,6 +420,7 @@ class CodeGenerator(Role):
         if self.config.load_example:
             return load_examples(
                 folder=self.config.example_base_path,
+                role_set={self.alias, "Planner"},
             )
         return []
 

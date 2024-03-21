@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
 from taskweaver.llm.util import ChatMessageType
 from taskweaver.logging import TelemetryLogger
@@ -14,10 +13,11 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class CodeGeneratorCLIOnlyConfig(ModuleConfig):
+class CodeGeneratorCLIOnlyConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
@@ -51,11 +51,8 @@ class CodeGeneratorCLIOnly(Role):
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
     ):
-        self.config = config
-        self.logger = logger
-        self.tracing = tracing
+        super().__init__(config, logger, tracing, event_emitter)
         self.llm_api = llm_api
-        self.event_emitter = event_emitter
 
         self.role_name = self.config.role_name
 
@@ -76,13 +73,13 @@ class CodeGeneratorCLIOnly(Role):
 
         # extract all rounds from memory
         rounds = memory.get_role_rounds(
-            role="CodeInterpreter",
+            role=self.alias,
             include_failure_rounds=False,
         )
 
-        prompt = _compose_prompt(
+        prompt = self._compose_prompt(
             system_instructions=self.instruction_template.format(
-                ROLE_NAME=self.role_name,
+                ROLE_NAME=self.alias,
                 OS_NAME=self.os_name,
             ),
             rounds=rounds,
@@ -142,18 +139,18 @@ class CodeGeneratorCLIOnly(Role):
 
         return post_proxy.end()
 
+    def _compose_prompt(
+        self,
+        system_instructions: str,
+        rounds: List[Round],
+    ) -> List[ChatMessageType]:
+        prompt = [format_chat_message(role="system", message=system_instructions)]
 
-def _compose_prompt(
-    system_instructions: str,
-    rounds: List[Round],
-) -> List[ChatMessageType]:
-    prompt = [format_chat_message(role="system", message=system_instructions)]
+        for _round in rounds:
+            for post in _round.post_list:
+                if post.send_to == self.alias:
+                    prompt.append(format_chat_message(role="user", message=post.message))
+                elif post.send_from == self.alias:
+                    prompt.append(format_chat_message(role="assistant", message=post.message))
 
-    for _round in rounds:
-        for post in _round.post_list:
-            if post.send_to == "CodeInterpreter":
-                prompt.append(format_chat_message(role="user", message=post.message))
-            elif post.send_from == "CodeInterpreter":
-                prompt.append(format_chat_message(role="assistant", message=post.message))
-
-    return prompt
+        return prompt

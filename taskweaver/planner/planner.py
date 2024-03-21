@@ -2,26 +2,25 @@ import json
 import os
 import types
 from json import JSONDecodeError
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional
 
 from injector import inject
 
-from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
-from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
+from taskweaver.role.role import RoleConfig
 from taskweaver.utils import read_yaml
 
 
-class PlannerConfig(ModuleConfig):
+class PlannerConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("planner")
         app_dir = self.src.app_base_path
@@ -49,16 +48,6 @@ class PlannerConfig(ModuleConfig):
             ),
         )
 
-        self.skip_planning = self._get_bool("skip_planning", False)
-        with open(
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "dummy_plan.json",
-            ),
-            "r",
-        ) as f:
-            self.dummy_plan = json.load(f)
-
         self.use_experience = self._get_bool("use_experience", False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
@@ -66,7 +55,6 @@ class PlannerConfig(ModuleConfig):
 
 class Planner(Role):
     conversation_delimiter_message: str = "Let's start the new conversation!"
-    ROLE_NAME: str = "Planner"
 
     @inject
     def __init__(
@@ -76,21 +64,18 @@ class Planner(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
-        plugin_registry: PluginRegistry,
+        workers: Dict[str, Role],
         round_compressor: Optional[RoundCompressor],
         post_translator: PostTranslator,
-        plugin_only: bool = False,
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
-        self.config = config
-        self.logger = logger
-        self.tracing = tracing
-        self.event_emitter = event_emitter
+        super().__init__(config, logger, tracing, event_emitter)
+        self.alias = "Planner"
+
         self.llm_api = llm_api
-        if plugin_only:
-            self.available_plugins = [p for p in plugin_registry.get_list() if p.plugin_only is True]
-        else:
-            self.available_plugins = plugin_registry.get_list()
+
+        self.workers = workers
+        self.recipient_alias_set = set([alias for alias, _ in self.workers.items()])
 
         self.planner_post_translator = post_translator
 
@@ -98,23 +83,13 @@ class Planner(Role):
 
         if self.config.use_example:
             self.examples = self.get_examples()
-        if len(self.available_plugins) == 0:
-            self.logger.warning("No plugin is loaded for Planner.")
-            self.plugin_description = "No plugin functions loaded."
-        else:
-            self.plugin_description = "    " + "\n    ".join(
-                [f"{plugin.spec.plugin_description()}" for plugin in self.available_plugins],
-            )
+
         self.instruction_template = self.prompt_data["instruction_template"]
-        self.code_interpreter_introduction = self.prompt_data["code_interpreter_introduction"].format(
-            plugin_description=self.plugin_description,
-        )
+
         self.response_schema = self.prompt_data["planner_response_schema"]
 
-        self.instruction = self.instruction_template.format(
-            planner_response_schema=self.response_schema,
-            CI_introduction=self.code_interpreter_introduction,
-        )
+        self.instruction = self.compose_sys_prompt()
+
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
@@ -123,14 +98,26 @@ class Planner(Role):
 
         if self.config.use_experience:
             self.experience_generator = experience_generator
-            self.experience_generator.refresh(target_role="All")
-            self.experience_generator.load_experience(target_role="All")
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully, "
                 "there are {} experiences".format(len(self.experience_generator.experience_list)),
             )
 
         self.logger.info("Planner initialized successfully")
+
+    def compose_sys_prompt(self):
+        worker_description = ""
+        for alias, role in self.workers.items():
+            worker_description += f"{alias}:\n{role.get_intro()}\n\n"
+
+        instruction = self.instruction_template.format(
+            planner_response_schema=self.response_schema,
+            worker_intro=worker_description,
+        )
+
+        return instruction
 
     def compose_conversation_for_prompt(
         self,
@@ -151,8 +138,8 @@ class Planner(Role):
                     conv_init_message += "\n" + summary_message
 
             for post in chat_round.post_list:
-                if post.send_from == "Planner":
-                    if post.send_to == "User" or post.send_to == "CodeInterpreter":
+                if post.send_from == self.alias:
+                    if post.send_to == "User" or post.send_to in self.recipient_alias_set:
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
                         )
@@ -163,7 +150,7 @@ class Planner(Role):
                             ),
                         )
                     elif (
-                        post.send_to == "Planner"
+                        post.send_to == self.alias
                     ):  # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
@@ -244,7 +231,7 @@ class Planner(Role):
         memory: Memory,
         prompt_log_path: Optional[str] = None,
     ) -> Post:
-        rounds = memory.get_role_rounds(role="Planner")
+        rounds = memory.get_role_rounds(role=self.alias)
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
@@ -256,14 +243,14 @@ class Planner(Role):
         else:
             selected_experiences = None
 
-        post_proxy = self.event_emitter.create_post_proxy("Planner")
+        post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
         post_proxy.update_status("composing prompt")
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
         def check_post_validity(post: Post):
             assert post.send_to is not None, "LLM failed to generate send_to field"
-            assert post.send_to != "Planner", "LLM failed to generate correct send_to field: Planner"
+            assert post.send_to != self.alias, f"LLM failed to generate correct send_to field: {self.alias}"
             assert post.message is not None, "LLM failed to generate message field"
             assert len(post.attachment_list) == 3, "LLM failed to generate complete attachments"
             assert (
@@ -277,17 +264,11 @@ class Planner(Role):
             ), "LLM failed to generate correct attachment type: current_plan_step"
 
         post_proxy.update_status("calling LLM endpoint")
-        if self.config.skip_planning and rounds[-1].post_list[-1].send_from == "User":
-            self.config.dummy_plan["response"][0]["content"] += rounds[-1].post_list[-1].message
-            llm_stream = [
-                format_chat_message("assistant", json.dumps(self.config.dummy_plan)),
-            ]
-        else:
-            llm_stream = self.llm_api.chat_completion_stream(
-                chat_history,
-                use_smoother=True,
-                llm_alias=self.config.llm_alias,
-            )
+
+        llm_stream = self.llm_api.chat_completion_stream(
+            chat_history,
+            use_smoother=True,
+        )
 
         llm_output: List[str] = []
         try:
@@ -345,7 +326,7 @@ class Planner(Role):
                 post_proxy.end(f"Planner failed to generate response because {str(e)}")
                 raise Exception(f"Planner failed to generate response because {str(e)}")
             else:
-                post_proxy.update_send_to("Planner")
+                post_proxy.update_send_to(self.alias)
                 self.ask_self_cnt += 1
         if prompt_log_path is not None:
             self.logger.dump_log_file(chat_history, prompt_log_path)
@@ -359,5 +340,8 @@ class Planner(Role):
         return reply_post
 
     def get_examples(self) -> List[Conversation]:
-        example_conv_list = load_examples(self.config.example_base_path)
+        example_conv_list = load_examples(
+            self.config.example_base_path,
+            role_set=set(self.recipient_alias_set) | {self.alias, "User"},
+        )
         return example_conv_list
