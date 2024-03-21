@@ -1,0 +1,5 @@
+scrape_configs:
+  - job_name: optl-collector
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["optl-collector:9464"]

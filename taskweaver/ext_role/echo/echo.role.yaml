@@ -1,0 +1,4 @@
+alias: Echo
+module: taskweaver.ext_role.echo.echo.Echo
+intro : |-
+  - Echo is responsible for echoing the user input.

@@ -1,0 +1,37 @@
+enabled: True
+rounds:
+  - user_query: echo 'Hello World'
+    state: created
+    post_list:
+      - message: echo 'Hello World'
+        send_from: User
+        send_to: Planner
+        attachment_list:
+      - message: Hello World
+        send_from: Planner
+        send_to: Echo
+        attachment_list:
+        - type: init_plan
+          content: |-
+            1. Ask Echo to echo the user's input, 'Hello World'
+        - type: plan
+          content: |-
+            1. Ask Echo to echo the user's input, 'Hello World'
+        - type: current_plan_step
+          content: 1. Ask Echo to echo the user's input, 'Hello World'
+      - message: Hello World
+        send_from: Echo
+        send_to: Planner
+        attachment_list:
+      - message: Hello World
+        send_from: Planner
+        send_to: User
+        attachment_list:
+          - type: init_plan
+            content: |-
+              1. Ask Echo to echo the user's input, 'Hello World'
+          - type: plan
+            content: |-
+              1. Ask Echo to echo the user's input, 'Hello World'
+          - type: current_plan_step
+            content: 1. Ask Echo to echo the user's input, 'Hello World'
