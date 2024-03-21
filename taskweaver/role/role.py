@@ -46,15 +46,10 @@ class RoleConfig(ModuleConfig):
         self._configure()
 
     def _set_role_name(self):
-        frame = inspect.currentframe()
-        caller_frame = frame.f_back
-        caller_file = caller_frame.f_code.co_filename
-        file_name = os.path.splitext(os.path.basename(caller_file))[0]
-        parent_dir_name = os.path.basename(os.path.dirname(caller_file))
-        assert (
-            file_name == parent_dir_name
-        ), f"file name {file_name} and parent dir name {parent_dir_name} should be the same"
-        self._set_name(file_name)
+        child_class = self.__class__
+        file_name = inspect.getfile(child_class)
+        role_name = os.path.basename(file_name).split(".")[0]
+        self._set_name(role_name)
 
 
 class Role:
@@ -75,6 +70,21 @@ class Role:
         self.role_entry = role_entry
 
         self.name = self.config.name
+
+        if role_entry is not None:
+            parent_dir_name = os.path.basename(os.path.dirname(inspect.getfile(self.__class__)))
+            assert (
+                self.name == parent_dir_name
+            ), f"role name {self.name} and parent dir name {parent_dir_name} should be the same"
+            # align py file name with parent dir name
+            assert (
+                role_entry.name == parent_dir_name
+            ), f"role name {self.name} and role entry name {role_entry.name} should be the same"
+            # align YAML file name with parent dir name
+            assert (
+                self.name == role_entry.name
+            ), f"role name {self.name} and role entry name {role_entry.name} should be the same"
+            # align py file name with YAML file name
 
         self.alias = self.role_entry.alias if self.role_entry else None
         self.intro = self.role_entry.intro if self.role_entry else None
