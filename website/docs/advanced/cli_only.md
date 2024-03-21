@@ -14,10 +14,8 @@ This mode allows users to operate your system by simply chatting with the comman
 Just add the following configuration to the project configuration file `taskweaver_config.json`:
 ```json
 {
-  "session.code_interpreter_only": true,
-  "session.code_gen_mode": "cli_only"
+  "session.roles": ["code_interpreter_cli_only"]
 }
 ```
 Please refer to the [session](../configurations/configurations_in_detail) documentation for more details.
 
-Note: It is better to enable `session.code_interpreter_only` when CLI only mode is enabled.

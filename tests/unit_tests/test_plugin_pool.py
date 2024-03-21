@@ -2,7 +2,7 @@ import os
 
 from injector import Injector
 
-from taskweaver.code_interpreter.code_generator.plugin_selection import SelectedPluginPool
+from taskweaver.code_interpreter.plugin_selection import SelectedPluginPool
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
 from taskweaver.memory.plugin import PluginModule, PluginRegistry

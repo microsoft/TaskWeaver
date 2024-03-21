@@ -36,8 +36,8 @@ def test_experience_retrieval():
 
     user_query = "show top 10 data in ./data.csv"
 
-    experience_manager.refresh(target_role="Planner")
-    experience_manager.load_experience(target_role="Planner")
+    experience_manager.refresh()
+    experience_manager.load_experience()
 
     assert len(experience_manager.experience_list) == 1
     exp = experience_manager.experience_list[0]

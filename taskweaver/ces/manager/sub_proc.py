@@ -67,6 +67,7 @@ class SubProcessManager(Manager):
         self.kernel_mode = kernel_mode
         if self.kernel_mode == "local":
             env_mode = EnvMode.Local
+
         elif self.kernel_mode == "container":
             env_mode = EnvMode.OutsideContainer
         else:

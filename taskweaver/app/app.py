@@ -3,15 +3,15 @@ from typing import Any, Dict, Optional, Tuple
 
 from injector import Injector
 
+from taskweaver.app.session_manager import SessionManager, SessionManagerModule
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.module.execution_service import ExecutionServiceModule
+from taskweaver.role.role import RoleModule
 
 # if TYPE_CHECKING:
 from taskweaver.session.session import Session
-
-from .session_manager import SessionManager, SessionManagerModule
 
 
 class TaskWeaverApp(object):
@@ -29,14 +29,15 @@ class TaskWeaverApp(object):
             **(kwargs or {}),
         }
         if use_local_uri is not None:
-            config["code_interpreter.use_local_uri"] = use_local_uri
+            config["use_local_uri"] = use_local_uri
+
         config_src = AppConfigSource(
             config_file_path=app_config_file,
             config=config,
             app_base_path=app_dir,
         )
         self.app_injector = Injector(
-            [SessionManagerModule, PluginModule, LoggingModule, ExecutionServiceModule],
+            [SessionManagerModule, PluginModule, LoggingModule, ExecutionServiceModule, RoleModule],
         )
         self.app_injector.binder.bind(AppConfigSource, to=config_src)
         self.session_manager: SessionManager = self.app_injector.get(SessionManager)
@@ -49,10 +50,7 @@ class TaskWeaverApp(object):
     ) -> Session:
         return self.session_manager.get_session(session_id, prev_round_id)
 
-    def stop_session(self, session_id: str) -> None:
-        self.session_manager.stop_session(session_id)
-
-    def stop_all_sessions(self) -> None:
+    def stop(self) -> None:
         self.session_manager.stop_all_sessions()
 
     @staticmethod

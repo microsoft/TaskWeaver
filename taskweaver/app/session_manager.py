@@ -55,7 +55,8 @@ class SessionManager:
             self.session_store.remove_session(session_id)
 
     def stop_all_sessions(self) -> None:
-        for session_id in self.session_store.get_all_session_ids():
+        session_ids = self.session_store.list_all_session_ids()
+        for session_id in session_ids:
             self.stop_session(session_id)
 
     @overload

@@ -9,6 +9,7 @@ from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.plugin.context import ArtifactType
+from taskweaver.session import SessionMetadata
 
 TRUNCATE_CHAR_LENGTH = 1500
 
@@ -42,22 +43,20 @@ class CodeExecutor:
     @inject
     def __init__(
         self,
-        session_id: str,
-        workspace: str,
-        execution_cwd: str,
+        session_metadata: SessionMetadata,
         config: AppConfigSource,
         exec_mgr: Manager,
         plugin_registry: PluginRegistry,
         tracing: Tracing,
     ) -> None:
-        self.session_id = session_id
-        self.workspace = workspace
-        self.execution_cwd = execution_cwd
+        self.session_id = session_metadata.session_id
+        self.workspace = session_metadata.workspace
+        self.execution_cwd = session_metadata.execution_cwd
         self.exec_mgr = exec_mgr
-        self.exec_client = exec_mgr.get_session_client(
-            session_id,
-            session_dir=workspace,
-            cwd=execution_cwd,
+        self.exec_client = self.exec_mgr.get_session_client(
+            self.session_id,
+            session_dir=self.workspace,
+            cwd=self.execution_cwd,
         )
         self.exec_kernel_mode = self.exec_mgr.get_kernel_mode()
         self.client_started: bool = False
@@ -68,19 +67,18 @@ class CodeExecutor:
 
     @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        self.tracing.set_span_attribute("code", code)
-
         if not self.client_started:
-            with get_tracer().start_as_current_span("CodeExecutor.start"):
+            with get_tracer().start_as_current_span("start"):
                 self.start()
                 self.client_started = True
 
         if not self.plugin_loaded:
-            with get_tracer().start_as_current_span("CodeExecutor.load_plugin"):
+            with get_tracer().start_as_current_span("load_plugin"):
                 self.load_plugin()
                 self.plugin_loaded = True
 
-        with get_tracer().start_as_current_span("CodeExecutor.execute_code"):
+        with get_tracer().start_as_current_span("run_code"):
+            self.tracing.set_span_attribute("code", code)
             result = self.exec_client.execute_code(exec_id, code)
 
         if result.is_success:
