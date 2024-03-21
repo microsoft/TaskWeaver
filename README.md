@@ -24,12 +24,12 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 ## 🆕 News
 - 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗
-- 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳
-- 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟
+- 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/advanced/code_execution) mode, which provides a more secure environment for code execution.🐳
+- 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/advanced/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟
 - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚
 - 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 
-- 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/experience) 🎉
-- 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐
+- 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/customization/experience) 🎉
+<!-- - 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐 -->
 <!-- - 📅2024-01-15: TaskWeaver now supports Streaming♒ in both UI and command line.✌️ -->
 <!-- - 📅2024-01-01: Welcome join TaskWeaver [Discord](https://discord.gg/Z56MXmZgMb). -->
 <!-- - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.) -->
@@ -113,7 +113,7 @@ More documentations can be found on [TaskWeaver Website](https://microsoft.githu
 
 
 ### ❓Get help 
-* ❔GitHub Issues (prefered)
+* ❔GitHub Issues (**Preferred**)
 * [💬 Discord](https://discord.gg/Z56MXmZgMb) for discussion
 * For other communications, please contact taskweaver@microsoft.com
 

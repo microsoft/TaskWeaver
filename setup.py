@@ -76,8 +76,7 @@ try:
             "Operating System :: OS Independent",
         ],
         package_data={
-            "taskweaver.planner": ["*"],  # prompt
-            "taskweaver.code_interpreter.code_generator": ["*"],  # prompt
+            "taskweaver": ["**/*.yaml"],
         },
         entry_points={
             "console_scripts": ["taskweaver=taskweaver.__main__:main"],

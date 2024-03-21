@@ -90,11 +90,6 @@ class PostTranslator:
                     value_buf = ""
                 elif type_str == "send_to":
                     if is_end:
-                        assert value_buf in [
-                            "User",
-                            "Planner",
-                            "CodeInterpreter",
-                        ], f"Invalid send_to value: {value}"
                         post_proxy.update_send_to(value_buf)  # type: ignore
                         value_buf = ""
                     else:

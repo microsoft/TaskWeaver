@@ -2,7 +2,6 @@ import os
 
 from injector import Injector
 
-from taskweaver.code_interpreter.code_generator.code_generator_plugin_only import _compose_prompt
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
 from taskweaver.memory.attachment import AttachmentType
@@ -26,10 +25,11 @@ def test_compose_prompt():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.create_object(CodeGenerator)
+    code_generator.set_alias("CodeInterpreter")
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
@@ -224,10 +224,11 @@ def test_compose_prompt_with_plugin():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.create_object(CodeGenerator)
+    code_generator.set_alias("CodeInterpreter")
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
@@ -307,10 +308,11 @@ def test_compose_prompt_with_plugin_only():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGeneratorPluginOnly
+    from taskweaver.code_interpreter.code_interpreter_plugin_only import CodeGeneratorPluginOnly
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.get(CodeGeneratorPluginOnly)
+    code_generator.set_alias("CodeInterpreter")
 
     code1 = "r0 = klarna_search('iphone')\n" "r0"
     post1 = Post.create(
@@ -353,7 +355,7 @@ def test_compose_prompt_with_plugin_only():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages, functions = _compose_prompt(
+    messages, functions = code_generator._compose_prompt(
         system_instructions=code_generator.instruction_template.format(
             ROLE_NAME=code_generator.role_name,
         ),
@@ -394,10 +396,11 @@ def test_compose_prompt_with_not_plugin_only():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.get(CodeGenerator)
+    code_generator.set_alias("CodeInterpreter")
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
@@ -472,7 +475,7 @@ def test_code_correction_prompt():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreter.code_generator import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     prompt_path = os.path.join(
@@ -480,6 +483,7 @@ def test_code_correction_prompt():
         "data/prompts/generator_prompt.yaml",
     )
     code_generator = app_injector.create_object(CodeGenerator)
+    code_generator.set_alias("CodeInterpreter")
 
     code1 = (
         "df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', 'VALUE'])\n"
