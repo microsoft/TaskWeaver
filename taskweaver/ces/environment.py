@@ -24,7 +24,6 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-
 ExecType = Literal["user", "control"]
 ResultMimeType = Union[
     Literal["text/plain", "text/html", "text/markdown", "text/latex"],
@@ -123,8 +122,9 @@ class TaskWeaverMultiKernelManager(MultiKernelManager):
 
 class EnvMode(enum.Enum):
     Local = "local"
+    # for container-based kernel
     InsideContainer = "inside_container"
-    OutsideContainer = "outside_container"
+    ContainerHost = "container_host"
 
 
 class Environment:
@@ -139,18 +139,20 @@ class Environment:
         self.id = get_id(prefix="env") if env_id is None else env_id
         self.env_dir = env_dir if env_dir is not None else os.getcwd()
         self.mode = env_mode
+
         if self.mode == EnvMode.Local or self.mode == EnvMode.InsideContainer:
             self.multi_kernel_manager = TaskWeaverMultiKernelManager(
                 default_kernel_name="taskweaver",
                 kernel_spec_manager=KernelSpecProvider(),
             )
             if self.mode == EnvMode.InsideContainer:
+                # set up logging
                 file_handler = logging.FileHandler("env.log")
                 file_handler.setLevel(logging.DEBUG)
                 file_handler.setFormatter(formatter)
                 logger.addHandler(file_handler)
 
-        elif self.mode == EnvMode.OutsideContainer:
+        elif self.mode == EnvMode.ContainerHost:
             try:
                 import docker
                 import docker.errors
@@ -179,6 +181,7 @@ class Environment:
             self.port_start_inside_container = port_start_inside_container
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
+
         logger.info(f"Environment {self.id} is created.")
 
     def _get_connection_file(self, session_id: str, kernel_id: str) -> str:
@@ -242,7 +245,7 @@ class Environment:
             self._cmd_session_init(session)
             session.kernel_status = "ready"
 
-        elif self.mode == EnvMode.OutsideContainer:
+        elif self.mode == EnvMode.ContainerHost:
             session = self._get_session(session_id, session_dir=session_dir)
             ces_session_dir = os.path.join(session.session_dir, "ces")
             new_kernel_id = get_id(prefix="knl")
@@ -461,7 +464,7 @@ class Environment:
                     if is_alive:
                         kernel.shutdown_kernel(now=True)
                     kernel.cleanup_resources()
-                elif self.mode == EnvMode.OutsideContainer:
+                elif self.mode == EnvMode.ContainerHost:
                     container_id = self.session_container_dict[session_id]
                     logger.info(f"Stopping container {container_id} for session {session_id}")
                     container = self.docker_client.containers.get(container_id)
@@ -538,12 +541,11 @@ class Environment:
     ) -> BlockingKernelClient:
         session = self._get_session(session_id)
         connection_file = self._get_connection_file(session_id, session.kernel_id)
-        logger.info(f"Get client for {connection_file}")
         client = BlockingKernelClient(connection_file=connection_file)
         client.load_connection_file()
         # overwrite the ip and ports if outside container
-        if self.mode == EnvMode.OutsideContainer:
-            client.ip = "127.0.0.1"
+        if self.mode == EnvMode.ContainerHost:
+            client.ip = "127.0.0.1"  # TODO: get the host ip
             ports = self._get_session_ports(session_id)
             client.shell_port = ports["shell_port"]
             client.stdin_port = ports["stdin_port"]

@@ -124,7 +124,7 @@ def test_environment_start_outside_container():
     cwd = os.path.dirname(os.path.abspath(__file__))
     sessions = os.path.join(cwd, "sessions")
     try:
-        env = Environment("local", env_mode=EnvMode.OutsideContainer)
+        env = Environment("local", env_mode=EnvMode.ContainerHost)
         env.start_session(
             session_id="session_id",
         )
