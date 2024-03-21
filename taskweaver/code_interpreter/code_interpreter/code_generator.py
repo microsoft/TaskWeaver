@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreters.plugin_selection import PluginSelector, SelectedPluginPool
+from taskweaver.code_interpreter.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger

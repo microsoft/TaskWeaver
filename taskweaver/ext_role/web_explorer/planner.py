@@ -4,7 +4,7 @@ from io import BytesIO
 
 import requests
 
-from taskweaver.ext_roles.web_explorer.driver import SeleniumDriver
+from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy
 

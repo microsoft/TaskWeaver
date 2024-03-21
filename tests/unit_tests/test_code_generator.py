@@ -25,7 +25,7 @@ def test_compose_prompt():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreters.code_interpreter import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.create_object(CodeGenerator)
@@ -224,7 +224,7 @@ def test_compose_prompt_with_plugin():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreters.code_interpreter import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.create_object(CodeGenerator)
@@ -308,7 +308,7 @@ def test_compose_prompt_with_plugin_only():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreters.code_interpreter_plugin_only import CodeGeneratorPluginOnly
+    from taskweaver.code_interpreter.code_interpreter_plugin_only import CodeGeneratorPluginOnly
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.get(CodeGeneratorPluginOnly)
@@ -396,7 +396,7 @@ def test_compose_prompt_with_not_plugin_only():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreters.code_interpreter import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     code_generator = app_injector.get(CodeGenerator)
@@ -475,7 +475,7 @@ def test_code_correction_prompt():
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
 
-    from taskweaver.code_interpreters.code_interpreter import CodeGenerator
+    from taskweaver.code_interpreter.code_interpreter import CodeGenerator
     from taskweaver.memory import Attachment, Memory, Post, Round
 
     prompt_path = os.path.join(

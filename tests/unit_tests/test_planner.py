@@ -2,8 +2,8 @@ import os
 
 from injector import Injector
 
-from taskweaver.code_interpreters import CodeInterpreter
-from taskweaver.code_interpreters.code_executor import CodeExecutor
+from taskweaver.code_interpreter import CodeInterpreter
+from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
 from taskweaver.memory.attachment import AttachmentType

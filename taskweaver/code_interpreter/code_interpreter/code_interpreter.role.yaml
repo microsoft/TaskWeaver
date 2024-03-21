@@ -1,5 +1,5 @@
 alias: CodeInterpreter
-module: taskweaver.code_interpreters.CodeInterpreter
+module: taskweaver.code_interpreter.CodeInterpreter
 intro : |-
   - CodeInterpreter takes instruction in natural language from the Planner and generates Python code to complete the tasks.
   - CodeInterpreter has the following functions and the required parameters need to be provided before execution:

@@ -105,14 +105,14 @@ class RoleModuleConfig(ModuleConfig):
             "base_path",
             os.path.join(
                 module_base_path,
-                "ext_roles",
+                "ext_role",
             ),
         )
         self.code_interpreter_base_path = self._get_path(
             "code_interpreter_base_path",
             os.path.join(
                 module_base_path,
-                "code_interpreters",
+                "code_interpreter",
             ),
         )
 

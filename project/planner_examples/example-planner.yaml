@@ -1,4 +1,4 @@
-enabled: False
+enabled: True
 rounds:
   - user_query: count the rows of /home/data.csv
     state: created

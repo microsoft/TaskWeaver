@@ -2,8 +2,8 @@ import os
 
 from injector import inject
 
-from taskweaver.ext_roles.web_explorer.driver import SeleniumDriver
-from taskweaver.ext_roles.web_explorer.planner import VisionPlanner
+from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
+from taskweaver.ext_role.web_explorer.planner import VisionPlanner
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.module.event_emitter import SessionEventEmitter

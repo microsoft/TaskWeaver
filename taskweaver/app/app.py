@@ -3,16 +3,15 @@ from typing import Any, Dict, Optional, Tuple
 
 from injector import Injector
 
+from taskweaver.app.session_manager import SessionManager, SessionManagerModule
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.module.execution_service import ExecutionServiceModule
+from taskweaver.role.role import RoleModule
 
 # if TYPE_CHECKING:
 from taskweaver.session.session import Session
-
-from ..role.role import RoleModule
-from .session_manager import SessionManager, SessionManagerModule
 
 
 class TaskWeaverApp(object):

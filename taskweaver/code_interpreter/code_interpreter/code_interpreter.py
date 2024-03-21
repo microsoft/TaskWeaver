@@ -3,13 +3,13 @@ from typing import Literal, Optional
 
 from injector import inject
 
-from taskweaver.code_interpreters.code_executor import CodeExecutor
-from taskweaver.code_interpreters.code_interpreter import (
+from taskweaver.code_interpreter.code_executor import CodeExecutor
+from taskweaver.code_interpreter.code_interpreter import (
     CodeGenerator,
     format_code_revision_message,
     format_output_revision_message,
 )
-from taskweaver.code_interpreters.code_verification import code_snippet_verification, format_code_correction_message
+from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType

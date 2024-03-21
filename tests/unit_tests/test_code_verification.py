@@ -1,6 +1,6 @@
 from injector import Injector
 
-from taskweaver.code_interpreters.code_verification import code_snippet_verification
+from taskweaver.code_interpreter.code_verification import code_snippet_verification
 from taskweaver.logging import LoggingModule
 
 app_injector = Injector(

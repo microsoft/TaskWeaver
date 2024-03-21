@@ -2,8 +2,8 @@ from typing import Optional
 
 from injector import inject
 
-from taskweaver.code_interpreters.code_executor import CodeExecutor
-from taskweaver.code_interpreters.code_interpreter_cli_only import CodeGeneratorCLIOnly
+from taskweaver.code_interpreter.code_executor import CodeExecutor
+from taskweaver.code_interpreter.code_interpreter_cli_only import CodeGeneratorCLIOnly
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
