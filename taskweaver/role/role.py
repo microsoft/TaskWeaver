@@ -73,18 +73,10 @@ class Role:
 
         if role_entry is not None:
             parent_dir_name = os.path.basename(os.path.dirname(inspect.getfile(self.__class__)))
-            assert (
-                self.name == parent_dir_name
-            ), f"role name {self.name} and parent dir name {parent_dir_name} should be the same"
-            # align py file name with parent dir name
-            assert (
-                role_entry.name == parent_dir_name
-            ), f"role name {self.name} and role entry name {role_entry.name} should be the same"
-            # align YAML file name with parent dir name
-            assert (
-                self.name == role_entry.name
-            ), f"role name {self.name} and role entry name {role_entry.name} should be the same"
-            # align py file name with YAML file name
+            assert self.name == parent_dir_name == role_entry.name, (
+                f"Role name {self.name}, role entry name {role_entry.name}, "
+                f"and parent dir name {parent_dir_name} should be the same"
+            )
 
         self.alias = self.role_entry.alias if self.role_entry else None
         self.intro = self.role_entry.intro if self.role_entry else None
