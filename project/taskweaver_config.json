@@ -1,6 +1,6 @@
 {
   "llm.api_base": "http://127.0.0.1:11434",
-  "llm.api_key": "",
-  "llm.type": "ollama",
-  "llm.model": "llama2"
+  "llm.api_key": "ARBITRARY_STRING",
+  "llm.api_type": "ollama",
+  "llm.model": "llama2:7b"
 }
