@@ -1,7 +1,6 @@
-}
-"llm.api_base": "http://127.0.0.1:11434",
-"llm.api_key": "",
-"llm.type": "ollama",
->>>>>>> b7328482a77026fe3808abf36f9bb18ee357ef08
-"llm.model": "llama2"
+{
+  "llm.api_base": "http://127.0.0.1:11434",
+  "llm.api_key": "",
+  "llm.type": "ollama",
+  "llm.model": "llama2"
 }
