@@ -47,7 +47,7 @@ user_message_head: |-
     # Feedback of the code in the last round (None if no feedback):
     {FEEDBACK}
     
-    # Request from the User in this round:
+    # Additional information from the User in this round:
     {MESSAGE}
     
     

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional, Union
 
 from taskweaver.memory.type_vars import RoundState
@@ -23,6 +23,7 @@ class Round:
     user_query: str
     state: RoundState
     post_list: List[Post]
+    board: Dict[str, str] = field(default_factory=dict)
 
     @staticmethod
     def create(
@@ -30,6 +31,7 @@ class Round:
         id: Optional[Union[str, None]] = None,
         state: RoundState = "created",
         post_list: Optional[List[Post]] = None,
+        board: Optional[Dict[str, str]] = None,
     ) -> Round:
         """Create a round with the given user query, id, and state."""
         return Round(
@@ -37,6 +39,7 @@ class Round:
             user_query=user_query,
             state=state,
             post_list=post_list if post_list is not None else [],
+            board=board if board is not None else dict(),
         )
 
     def __repr__(self):
@@ -82,3 +85,13 @@ class Round:
     def change_round_state(self, new_state: Literal["finished", "failed", "created"]):
         """Change the state of the round."""
         self.state = new_state
+
+    def write_board(self, role_alias: str, bulletin: str) -> None:
+        """Add a bulletin to the round."""
+        self.board[role_alias] = bulletin
+
+    def read_board(self, role_alias: Optional[str] = None) -> Union[Dict[str, str], str]:
+        """Read the bulletin of the round."""
+        if role_alias is None:
+            return self.board
+        return self.board.get(role_alias, None)

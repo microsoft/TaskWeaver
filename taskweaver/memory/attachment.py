@@ -46,6 +46,9 @@ class AttachmentType(Enum):
     # Misc
     invalid_response = "invalid_response"
 
+    # board infor
+    board = "board"
+
 
 @dataclass
 class Attachment:
