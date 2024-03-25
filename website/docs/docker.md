@@ -1,6 +1,7 @@
 # Run TaskWeaver in Docker Container
 
-In this document, we will show you how to use Docker container to run TaskWeaver.
+In this document, we will show you how to run TaskWeaver using the All-in-One Docker Image.
+Please note that the All-in-One Docker Image is for development and testing purposes only.
 
 ## Prerequisites
 You need to have Docker installed on your machine. 
