@@ -22,10 +22,9 @@ COPY --chown=taskweaver:taskweaver taskweaver/ces /app/taskweaver/ces
 COPY --chown=taskweaver:taskweaver taskweaver/plugin /app/taskweaver/plugin
 COPY --chown=taskweaver:taskweaver taskweaver/module /app/taskweaver/module
 COPY --chown=taskweaver:taskweaver taskweaver/__init__.py /app/taskweaver/__init__.py
-COPY --chown=taskweaver:taskweaver ces_container/docker_entry.py /app/docker_entry.py
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
-CMD ["python", "docker_entry.py"]
+CMD ["python", "-m", "taskweaver.ces.kernel.docker_launcher"]
 
 

@@ -9,7 +9,7 @@ c = get_config()
 # InteractiveShellApp configuration
 c.InteractiveShellApp.extensions = ["taskweaver.ces.kernel.ctx_magic"]
 c.InteractiveShell.ast_node_interactivity = "last_expr_or_assign"
-c.InteractiveShell.banner1 = "Welcome to Task Weaver!"
+c.InteractiveShell.banner1 = "Welcome to TaskWeaver!"
 c.InteractiveShell.color_info = False
 c.InteractiveShell.colors = "NoColor"
 

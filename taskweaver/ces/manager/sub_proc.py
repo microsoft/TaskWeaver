@@ -68,7 +68,7 @@ class SubProcessManager(Manager):
         if self.kernel_mode == "local":
             env_mode = EnvMode.Local
         elif self.kernel_mode == "container":
-            env_mode = EnvMode.ContainerHost
+            env_mode = EnvMode.Container
         else:
             raise ValueError(f"Invalid kernel mode: {self.kernel_mode}, expected 'local' or 'container'.")
         self.env = Environment(

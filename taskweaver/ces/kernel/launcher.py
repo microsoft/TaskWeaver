@@ -2,7 +2,7 @@ import os
 import sys
 
 from .ext import TaskWeaverZMQShellDisplayHook
-from .logging import logger
+from .kernel_logging import logger
 
 
 def start_app():
