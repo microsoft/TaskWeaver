@@ -58,17 +58,17 @@ A video demo using this plugin for web browsing:
 
 ## web_search
 
-This plugin by default is **not** enabled. If you want to use this plugin, you need to enable it in the `web_search.yaml` file.
-In this plugin, we will call the Bing Search or Google Search API to search for web pages.
+In this plugin, we will call the Bing Search, Google Search, or DuckDuckGo API to search for web pages.
 The input to the plugin is a natural language query, and the output is a list of web pages including the URL, title, and a short snippet.
 To use this plugin, you need to configure the API key in the plugin configuration file `web_search.yaml`.
 
-We support two search engines: Bing Search and Google Search.
+We support two search engines: Bing Search, Google Search, and DuckDuckGo.
 
 - To use Bing Search, you need to register a search resource on Azure Portal: https://aka.ms/bingapisignup.
 Then, you can get the API key from the registered resource. Refer to this [link](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api) for more details.
 - To use Google Search, you need to register a custom search engine on Google: https://cse.google.com/all.
 Then, you can get the API key from the registered search engine from the [Credentials page](https://console.cloud.google.com/apis/credentials).
+- To use DuckDuckGo, you can use the free API without registration.
 
 A video demo using web search to find out information and then complete the task based on the retrieved information:
 

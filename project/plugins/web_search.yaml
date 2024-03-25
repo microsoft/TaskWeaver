@@ -1,5 +1,5 @@
 name: web_search
-enabled: false
+enabled: true
 required: false
 plugin_only: true
 description: >-
@@ -33,8 +33,8 @@ returns:
     description: list of search results in JSON format
 
 configurations:
-  # support one of "bing" or "google", need to configure API key below
-  provider: bing # bing or google
+  # support one of "bing", "google", "duckduckgo", need to configure API key below if using Bing or Google
+  api_provider: duckduckgo
   result_count: 3 # number of result, should be a small number less then 10
 
   # Bing Web Search API

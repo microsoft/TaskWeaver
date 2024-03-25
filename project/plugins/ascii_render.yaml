@@ -1,6 +1,6 @@
 name: ascii_render
-enabled: true
-required: true
+enabled: false
+required: false
 plugin_only: true
 description: This plugin renders the input text into ASCII art form.
 examples: |-
