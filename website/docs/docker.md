@@ -25,6 +25,7 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
+  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
   -p 8000:8000 \
   taskweavercontainers/taskweaver-all-in-one:latest
 ```
@@ -36,23 +37,24 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
+  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
   -p 8000:8000 \
   taskweavercontainers/taskweaver-all-in-one:latest /bin/bash -c "cd TaskWeaver/playground/UI/ && chainlit run --host 0.0.0.0 --port 8000 app.py"
 ```
-Then you can access the TaskWeaver Web UI by visiting [http://localhost:8000](http://localhost:8000) in your web browser. 
+Then you can access the TaskWeaver Web UI by visiting [http://localhost:8000](http://localhost:8000) in your web browser.
 
-## How to configure configurations for TaskWeaver in Docker container
-- Method 1: You can use environment variables to configure TaskWeaver. For example, you can use the following command to set the LLM configuration:
-
-```bash
-docker run -it -e LLM_API_BASE=<API_BASE> -e LLM_API_KEY=<API_KEY> -e LLM_API_TYPE=<API_TYPE> -e LLM_MODEL=<MODEL> -p 8000:8000 taskweaver
-``` 
-More details about how to set configurations via environment variables can be found in the [configurations](./configurations.md) document.
-
-- Method 2: You can also mount your local `project` directory to the container. For example, you can use the following command:
+## How to run TaskWeaver on your own project directory
+You can mount your local `project` directory to the container. For example, you can use the following command:
 
 ```bash
- docker run -it -p 8000:8000 --mount  type=bind,source=<your_local_project_dir>,target=/app/TaskWeaver/project/  taskweaver
+docker run -it -e LLM_API_BASE=<API_BASE> \
+  -e LLM_API_KEY=<API_KEY> \
+  -e LLM_API_TYPE=<API_TYPE> \
+  -e LLM_MODEL=<MODEL> \
+  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
+  -p 8000:8000 \
+  --mount type=bind,source=<your_local_project_dir>,target=/app/TaskWeaver/project/ \
+  taskweavercontainers/taskweaver-all-in-one:latest
 ```
 Then you can edit the `taskweaver_config.json` file in your local `project` directory to configure TaskWeaver.
 In addition, you also can customize the plugins and examples in your local `project` directory.
