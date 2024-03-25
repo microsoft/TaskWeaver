@@ -231,6 +231,10 @@ class Environment:
                 "TASKWEAVER_CONNECTION_FILE": f"/app/ces/conn-{session_id}-{new_kernel_id}.json",
                 "TASKWEAVER_CWD": "/app/cwd",
                 "TASKWEAVER_PORT_START": str(new_port_start),
+                "TASKWEAVER_LOGGING_FILE_PATH": os.path.join(
+                    ces_session_dir,
+                    "kernel_logging.log",
+                ),
             }
             # ports will be assigned automatically at the host
             container = self.docker_client.containers.run(
