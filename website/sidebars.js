@@ -108,21 +108,10 @@ const sidebars = {
       // },
       collapsible: true,
       collapsed: false,
-      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry'],
+      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry', 'advanced/docker'],
     },
     // 'example',
-    'compression',
-    'configurations',
-    'planner',
-    'session',
-    'run_pytest',
-    'experience',
-    'code_verification',
-    'docker',
-    'code_execution',
-    'FAQ',
-    'cli_only',
-    'tracing',
+    'FAQ'
   ],
   
 };
