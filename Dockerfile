@@ -1,4 +1,4 @@
-FROM python:3.11-rc-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
@@ -16,4 +16,4 @@ RUN pip install chainlit
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "cd TaskWeaver/playground/UI/ && chainlit run --host 0.0.0.0 --port 8000 app.py"]
+CMD ["sh", "-c", "cd TaskWeaver && python -m taskweaver -p ./project"]

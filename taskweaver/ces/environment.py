@@ -1,4 +1,3 @@
-import atexit
 import enum
 import json
 import logging
@@ -169,16 +168,7 @@ class Environment:
             self.port_start_inside_container = port_start_inside_container
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
-        atexit.register(self.clean_up)
         logger.info(f"Environment {self.id} is created.")
-
-    def clean_up(self) -> None:
-        logger.info(f"Environment {self.id} is cleaning up.")
-        for session in self.session_dict.values():
-            try:
-                self.stop_session(session.session_id)
-            except Exception as e:
-                logger.error(e)
 
     def _get_connection_file(self, session_id: str, kernel_id: str) -> str:
         return os.path.join(
@@ -454,6 +444,7 @@ class Environment:
                     kernel.cleanup_resources()
                 elif self.mode == EnvMode.OutsideContainer:
                     container_id = self.session_container_dict[session_id]
+                    logger.info(f"Stopping container {container_id} for session {session_id}")
                     container = self.docker_client.containers.get(container_id)
                     container.stop()
                     container.remove()

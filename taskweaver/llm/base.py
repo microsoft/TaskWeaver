@@ -85,7 +85,6 @@ class CompletionService(abc.ABC):
     def chat_completion(
         self,
         messages: List[ChatMessageType],
-        use_backup_engine: bool = False,
         stream: bool = True,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -98,7 +97,6 @@ class CompletionService(abc.ABC):
 
         :param messages: list of messages
 
-        :param use_backup_engine: whether to use back up engine
         :param stream: whether to stream the response
 
         :param temperature: temperature

@@ -8,7 +8,7 @@ from taskweaver.llm import LLMApi
 from taskweaver.llm.util import format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Round
-from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
+from taskweaver.module.tracing import Tracing, tracing_decorator
 
 
 class RoundCompressorConfig(ModuleConfig):
@@ -46,7 +46,6 @@ class RoundCompressor:
         self,
         rounds: List[Round],
         rounds_formatter: Callable,
-        use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> Tuple[str, List[Round]]:
         remaining_rounds = len(rounds)
@@ -63,7 +62,6 @@ class RoundCompressor:
         chat_summary = self._summarize(
             rounds[-remaining_rounds : -self.rounds_to_retain],
             rounds_formatter,
-            use_back_up_engine=use_back_up_engine,
             prompt_template=prompt_template,
         )
 
@@ -80,7 +78,6 @@ class RoundCompressor:
         self,
         rounds: List[Round],
         rounds_formatter: Callable,
-        use_back_up_engine: bool = False,
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> str:
         assert "{PREVIOUS_SUMMARY}" in prompt_template, "Prompt template must contain {PREVIOUS_SUMMARY}"
@@ -93,10 +90,28 @@ class RoundCompressor:
                 format_chat_message("system", system_instruction),
                 format_chat_message("user", chat_history_str),
             ]
-            with get_tracer().start_as_current_span("RoundCompressor.reply.chat_completion") as span:
-                span.set_attribute("prompt", json.dumps(prompt, indent=2))
-                new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
-                span.set_attribute("summary", new_summary)
+
+            prompt_size = self.tracing.count_tokens(json.dumps(prompt))
+            self.tracing.add_prompt_size(
+                size=prompt_size,
+                labels={
+                    "direction": "input",
+                },
+            )
+            self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+            self.tracing.set_span_attribute("prompt_size", prompt_size)
+
+            new_summary = self.llm_api.chat_completion(prompt, llm_alias=self.config.llm_alias)["content"]
+
+            self.tracing.set_span_attribute("summary", new_summary)
+            output_size = self.tracing.count_tokens(new_summary)
+            self.tracing.set_span_attribute("output_size", output_size)
+            self.tracing.add_prompt_size(
+                size=output_size,
+                labels={
+                    "direction": "output",
+                },
+            )
 
             self.processed_rounds.update([_round.id for _round in rounds])
             return new_summary

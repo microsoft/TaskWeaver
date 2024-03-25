@@ -2,29 +2,44 @@
 
 In this document, we will show you how to use Docker container to run TaskWeaver.
 
-## How to run TaskWeaver in Docker Container
+## Prerequisites
+You need to have Docker installed on your machine. 
 
-1. Before you start, make sure you have Docker installed on your machine. If not, you can download it from [Docker's official website](https://www.docker.com/products/docker-desktop).
-2. Open a terminal and run the following command to build the TaskWeaver Docker image:
+For Windows and macOS users, you can use Docker Desktop. You can download it from [Docker's official website](https://www.docker.com/products/docker-desktop).
+
+For Linux users, you can install following the instructions in the [Docker's official website](https://docs.docker.com/engine/install/). 
+Please find the installation guide for your specific Linux distribution.
+
+## Run TaskWeaver using the All-in-One Docker Image
+
+Open a terminal and run the following command to obtain the TaskWeaver image:
 
 ```bash
-cd TaskWeaver
-docker build -t taskweaver .
+docker pull taskweavercontainers/taskweaver-all-in-one:latest
 ```
 
-3. Once the image is pulled, you can run the TaskWeaver container using the following command:
+Once the image is pulled, you can run the TaskWeaver container using the following command:
 
 ```bash
-docker run -it -p 8000:8000 taskweaver
+docker run -it -e LLM_API_BASE=<API_BASE> \
+  -e LLM_API_KEY=<API_KEY> \
+  -e LLM_API_TYPE=<API_TYPE> \
+  -e LLM_MODEL=<MODEL> \
+  -p 8000:8000 \
+  taskweavercontainers/taskweaver-all-in-one:latest
+```
+
+If you want to run TaskWeaver in UI mode, you can use the following command:
+
+```bash
+docker run -it -e LLM_API_BASE=<API_BASE> \
+  -e LLM_API_KEY=<API_KEY> \
+  -e LLM_API_TYPE=<API_TYPE> \
+  -e LLM_MODEL=<MODEL> \
+  -p 8000:8000 \
+  taskweavercontainers/taskweaver-all-in-one:latest /bin/bash -c "cd TaskWeaver/playground/UI/ && chainlit run --host 0.0.0.0 --port 8000 app.py"
 ```
 Then you can access the TaskWeaver Web UI by visiting [http://localhost:8000](http://localhost:8000) in your web browser. 
-
-
-4. If you want to run TaskWeaver in console mode, you can use the following command:
-
-```bash
-docker run -it taskweaver /bin/bash -c "cd TaskWeaver && python -m taskweaver -p ./project"
-```
 
 ## How to configure configurations for TaskWeaver in Docker container
 - Method 1: You can use environment variables to configure TaskWeaver. For example, you can use the following command to set the LLM configuration:

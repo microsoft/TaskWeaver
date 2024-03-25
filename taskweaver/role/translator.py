@@ -12,6 +12,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Attachment, Post
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
+from taskweaver.module.tracing import Tracing
 from taskweaver.utils import json_parser
 
 
@@ -25,9 +26,11 @@ class PostTranslator:
     def __init__(
         self,
         logger: TelemetryLogger,
+        tracing: Tracing,
         event_emitter: SessionEventEmitter,
     ):
         self.logger = logger
+        self.tracing = tracing
         self.event_emitter = event_emitter
 
     def raw_text_to_post(
@@ -60,6 +63,14 @@ class PostTranslator:
                         s.close()
                     except GeneratorExit:
                         pass
+                output_size = self.tracing.count_tokens(full_llm_content)
+                self.tracing.set_span_attribute("output_size", output_size)
+                self.tracing.add_prompt_size(
+                    size=output_size,
+                    labels={
+                        "direction": "output",
+                    },
+                )
                 self.logger.info(f"LLM output: {full_llm_content}")
 
         value_buf: str = ""
@@ -79,11 +90,6 @@ class PostTranslator:
                     value_buf = ""
                 elif type_str == "send_to":
                     if is_end:
-                        assert value_buf in [
-                            "User",
-                            "Planner",
-                            "CodeInterpreter",
-                        ], f"Invalid send_to value: {value}"
                         post_proxy.update_send_to(value_buf)  # type: ignore
                         value_buf = ""
                     else:

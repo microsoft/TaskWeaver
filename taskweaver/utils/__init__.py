@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
+import glob
+import importlib
+import inspect
 import json
 import os
 import secrets
+import sys
 from datetime import datetime
 from hashlib import md5
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 
 def create_id(length: int = 4) -> str:
@@ -73,3 +77,14 @@ def json_dump(obj: Any, fp: Any):
 
 def generate_md5_hash(content: str) -> str:
     return md5(content.encode()).hexdigest()
+
+
+def glob_files(path: Union[str, List[str]]) -> list[str]:
+    if isinstance(path, str):
+        return glob.glob(path)
+    else:
+        return [item for sublist in [glob.glob(p) for p in path] for item in sublist]
+
+
+def import_module(module_name: str):
+    return importlib.import_module(module_name)
