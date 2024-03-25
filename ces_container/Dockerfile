@@ -1,5 +1,5 @@
 # Use the official Python 3.10 image as the base image  
-FROM python:3.10
+FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1
 
 RUN useradd -m taskweaver
