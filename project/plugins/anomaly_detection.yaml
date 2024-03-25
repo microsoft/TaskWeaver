@@ -1,5 +1,5 @@
 name: anomaly_detection
-enabled: false
+enabled: true
 required: false
 description: >-
   anomaly_detection function identifies anomalies from an input DataFrame of
