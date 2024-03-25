@@ -20,6 +20,8 @@ def browse_page(
         from langchain.text_splitter import RecursiveCharacterTextSplitter
         from langchain_community.document_loaders import AsyncHtmlLoader
         from langchain_community.document_transformers import Html2TextTransformer
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_community.vectorstores import FAISS
     except ImportError:
         raise ImportError("Please install langchain/langchain-community first.")
 
@@ -36,10 +38,6 @@ def browse_page(
 
     # Split
     splits = text_splitter.split_documents(docs_transformed)
-
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-    from langchain_community.vectorstores import FAISS
-
     vector_store = FAISS.from_documents(
         splits,
         HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"),
@@ -70,10 +68,15 @@ class WebSearch(Plugin):
             return self._search_google_custom_search(query, cnt=result_count)
         elif api_provider == "bing":
             return self._search_bing(query, cnt=result_count)
+        elif api_provider == "duckduckgo":
+            return self._search_duckduckgo(query, cnt=result_count)
         else:
             raise ValueError("Invalid API provider. Please check your config file.")
 
     def __call__(self, queries: List[str], browse: bool = True) -> str:
+        if isinstance(queries, str):
+            queries = [queries]
+
         query_results = []
         query_urls = set()
         for query in queries:
@@ -111,3 +114,24 @@ class WebSearch(Plugin):
         for item in response.json()["webPages"]["value"]:
             result_list.append((item["name"], item["url"], item["snippet"]))
         return result_list
+
+    @staticmethod
+    def _search_duckduckgo(query: str, cnt: int) -> List[ResponseEntry]:
+        try:
+            from duckduckgo_search import DDGS
+        except ImportError:
+            raise ImportError("Please install duckduckgo-search first.")
+
+        results = DDGS().text(keywords=query, max_results=cnt)
+        result_list: List[ResponseEntry] = []
+        for result in results:
+            result_list.append((result["title"], result["href"], result["body"]))
+        return result_list
+
+
+if __name__ == "__main__":
+    from taskweaver.plugin.context import temp_context
+
+    with temp_context() as temp_ctx:
+        plugin = WebSearch(name="web_search", ctx=temp_ctx, config={"api_provider": "duckduckgo"})
+        print(plugin(["taskweaver"], 3))
