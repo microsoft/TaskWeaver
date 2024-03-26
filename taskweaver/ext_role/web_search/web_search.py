@@ -62,7 +62,17 @@ def browse_page(
         from langchain_community.embeddings import HuggingFaceEmbeddings
         from langchain_community.vectorstores import FAISS
     except ImportError:
-        raise ImportError("Please install langchain/langchain-community first.")
+        raise ImportError(
+            """Please install the following packages first:
+               pip install duckduckgo_search>=5.1.0
+               pip install langchain>=0.1.4
+               pip install langchain-community>=0.0.16
+               pip install beautifulsoup4>=4.12.2
+               pip install html2text>=2020.1.16
+               pip install faiss-cpu>=1.8.0
+               pip install sentence-transformers>=2.6.0
+            """,
+        )
 
     post_proxy.update_attachment(
         message="WebSearch is loading the pages...",
