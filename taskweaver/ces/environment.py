@@ -228,8 +228,11 @@ class Environment:
             connection_file = self._get_connection_file(session_id, new_kernel_id)
             new_port_start = self.port_start_inside_container
             kernel_env = {
-                "TASKWEAVER_CONNECTION_FILE": f"/app/ces/conn-{session_id}-{new_kernel_id}.json",
-                "TASKWEAVER_CWD": "/app/cwd",
+                "TASKWEAVER_KERNEL_MODE": "container",
+                "TASKWEAVER_SESSION_ID": session_id,
+                "TASKWEAVER_KERNEL_ID": new_kernel_id,
+                "TASKWEAVER_CES_DIR": "/app/ces/",
+                "TASKWEAVER_CWD": "/app/cwd/",
                 "TASKWEAVER_PORT_START": str(new_port_start),
                 "TASKWEAVER_LOGGING_FILE_PATH": "/app/ces/kernel_logging.log",
             }
