@@ -16,7 +16,7 @@ More details about `prompt_compression` can be referred to [prompt_compression](
 - `planner.use_experience`: Whether to use experience summarized from the previous chat history in planner. The default value is `false`.
 
 
-## Session Configration
+## Session Configuration
 
 `session` is the entrance of TaskWeaver. 
 It is responsible for the communication between the user and TaskWeaver.
@@ -90,7 +90,7 @@ array([0.09918602, 0.68732778, 0.44413814, 0.4756623 , 0.48302334,
 ``````
 
 
-## Embedding Configration
+## Embedding Configuration
 
 In TaskWeaver, we support various embedding models to generate embeddings for auto plugin selection.
 
