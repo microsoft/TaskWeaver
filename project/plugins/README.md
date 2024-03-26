@@ -38,16 +38,6 @@ A video demo using web search to find out information and then complete the task
 
 [Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/d078a05b-a19b-498c-b712-6f8c4855cefa)
 
-To use the plugin, you need to install the following python packages:
-```bash
-pip install duckduckgo_search>=5.1.0
-pip install langchain>=0.1.4
-pip install langchain-community>=0.0.16
-pip install beautifulsoup4>=4.12.2
-pip install html2text>=2020.1.16
-pip install faiss-cpu>=1.8.0
-pip install sentence-transformers>=2.6.0
-```
 
 ## document_retriever
 
