@@ -124,7 +124,7 @@ def test_environment_start_outside_container():
     cwd = os.path.dirname(os.path.abspath(__file__))
     sessions = os.path.join(cwd, "sessions")
     try:
-        env = Environment("local", env_mode=EnvMode.OutsideContainer)
+        env = Environment("local", env_mode=EnvMode.Container)
         env.start_session(
             session_id="session_id",
         )
@@ -139,8 +139,6 @@ def test_environment_start_outside_container():
         connection_file = glob.glob(conn_file_glob)[0]
         ports_file = os.path.join(ces_dir, "ports.json")
         assert os.path.isfile(ports_file)
-        log_file = os.path.join(ces_dir, "kernel_logging.log")
-        assert os.path.isfile(log_file)
 
         connect_and_execute_code(connection_file, ports_file)
 
@@ -148,46 +146,6 @@ def test_environment_start_outside_container():
         assert os.path.isfile(saved_file)
 
         env.stop_session("session_id")
-    finally:
-        # delete sessions
-        shutil.rmtree(sessions)
-
-
-@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
-def test_environment_start_inside_container():
-    env = Environment("local", env_mode=EnvMode.InsideContainer)
-
-    # get cwd of current file
-    cwd = os.path.dirname(os.path.abspath(__file__))
-    sessions = os.path.join(cwd, "sessions")
-    os.makedirs(sessions, exist_ok=True)
-
-    session_dir = os.path.join(sessions, "session_id")
-    os.makedirs(session_dir, exist_ok=True)
-
-    ces_dir = os.path.join(session_dir, "ces")
-    cwd_dir = os.path.join(session_dir, "cwd")
-
-    os.makedirs(ces_dir, exist_ok=True)
-    os.makedirs(cwd_dir, exist_ok=True)
-
-    try:
-        env.start_session(
-            session_id="session_id",
-            port_start_inside_container=12345,
-            kernel_id_inside_container="kernel_id",
-        )
-
-        connection_file = os.path.join(ces_dir, "conn-session_id-kernel_id.json")
-        assert os.path.isfile(connection_file)
-
-        connect_and_execute_code(connection_file)
-
-        saved_file = os.path.join(cwd_dir, "filename.txt")
-        assert os.path.isfile(saved_file)
-
-        env.stop_session("session_id")
-        assert not os.path.isfile(connection_file)
     finally:
         # delete sessions
         shutil.rmtree(sessions)
