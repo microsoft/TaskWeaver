@@ -220,8 +220,7 @@ class Environment:
             session.kernel_status = "ready"
         elif self.mode == EnvMode.Container:
             if platform.system() != "Windows":
-                # change the permission of the session directory and its subdirectories
-                os.chmod(session.session_dir, 0o755)
+                # change the permission of the ces and cwd directories
                 os.chmod(ces_session_dir, 0o755)
                 os.chmod(cwd, 0o755)
 
