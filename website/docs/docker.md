@@ -25,7 +25,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
   -p 8000:8000 \
   taskweavercontainers/taskweaver-all-in-one:latest
 ```
@@ -37,7 +36,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
   -p 8000:8000 \
   taskweavercontainers/taskweaver-all-in-one:latest /bin/bash -c "cd TaskWeaver/playground/UI/ && chainlit run --host 0.0.0.0 --port 8000 app.py"
 ```
@@ -51,7 +49,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -e EXECUTION_SERVICE_KERNEL_MODE="local" \
   -p 8000:8000 \
   --mount type=bind,source=<your_local_project_dir>,target=/app/TaskWeaver/project/ \
   taskweavercontainers/taskweaver-all-in-one:latest

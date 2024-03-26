@@ -1,5 +1,7 @@
 FROM python:3.10-slim
 
+ENV EXECUTION_SERVICE_KERNEL_MODE="local"
+
 WORKDIR /app
 
 RUN python3 -m pip install --upgrade pip
