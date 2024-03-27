@@ -23,6 +23,8 @@ Open a terminal and run the following command to obtain the TaskWeaver image:
 
 ```bash
 docker pull taskweavercontainers/taskweaver-all-in-one:latest
+# if you want to use the version with the WebSearch role 
+# docker pull taskweavercontainers/taskweaver-all-in-one:latest-ws
 ```
 
 Once the image is pulled, you can run the TaskWeaver container using the following command:
@@ -32,7 +34,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -p 8000:8000 \
   taskweavercontainers/taskweaver-all-in-one:latest
 ```
 
@@ -44,7 +45,7 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
   -p 8000:8000 \
-  taskweavercontainers/taskweaver-all-in-one:latest /bin/bash -c "cd TaskWeaver/playground/UI/ && chainlit run --host 0.0.0.0 --port 8000 app.py"
+  taskweavercontainers/taskweaver-all-in-one:latest /bin/sh -c "cd playground/UI/ && python -m chainlit run --host 0.0.0.0 --port 8000 app.py"
 ```
 Then you can access the TaskWeaver Web UI by visiting [http://localhost:8000](http://localhost:8000) in your web browser.
 
@@ -56,7 +57,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -p 8000:8000 \
   --mount type=bind,source=<your_local_project_dir>,target=/app/TaskWeaver/project/ \
   taskweavercontainers/taskweaver-all-in-one:latest
 ```
@@ -72,7 +72,6 @@ docker run -it -e LLM_API_BASE=<API_BASE> \
   -e LLM_API_KEY=<API_KEY> \
   -e LLM_API_TYPE=<API_TYPE> \
   -e LLM_MODEL=<MODEL> \
-  -p 8000:8000 \
   --mount type=bind,source=<your_local_dir>,target=/app/TaskWeaver/local/ \
   taskweavercontainers/taskweaver-all-in-one:latest
 ```
