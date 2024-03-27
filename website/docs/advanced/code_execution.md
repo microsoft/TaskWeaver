@@ -35,23 +35,8 @@ there are a few prerequisites:
 - A Docker image is built and available on the host machine for code execution.
 - The `execution_service.kernel_mode` parameter is set to `container` in the `taskweaver_config.json` file.
 
-Once the code repository is cloned to your local machine, you can build the Docker image
-by running the following command in the root directory of the code repository:
-
-```bash
-cd scripts
-
-# based on your OS
-./build.ps1 # for Windows
-./build.sh # for Linux or macOS
-```
-
-After the Docker image is built, you can run `docker images` to check if a Docker image 
-named `executor_container` is available. 
-If the prerequisite is met, you can now run TaskWeaver in the `container` mode.
-
 After running TaskWeaver in the `container` mode, you can check if the container is running by running `docker ps`.
-You should see a container of image `taskweaver/executor` running after executing some code. 
+You should see a container of image `taskweavercontainers/taskweaver-executor` running after executing some code. 
 
 ## Limitations of the `container` Mode
 
