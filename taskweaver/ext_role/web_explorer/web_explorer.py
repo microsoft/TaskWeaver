@@ -14,7 +14,7 @@ from taskweaver.utils import read_yaml
 class WebExplorerConfig(RoleConfig):
     def _configure(self):
         self.config_file_path = self._get_str(
-            "prompt_file_path",
+            "config_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "web_explorer_config.yaml",

@@ -1,5 +1,10 @@
 # Code Execution
 
+>💡We have set the `container` mode as default for code execution, especially when the usage of the agent
+is open to untrusted users. Refer to [Docker Security](https://docs.docker.com/engine/security/) for better understanding
+of the security features of Docker. To opt for the `local` mode, you need to explicitly set the `execution_service.kernel_mode` 
+parameter in the `taskweaver_config.json` file to `local`.
+
 TaskWeaver is a code-first agent framework, which means that it always converts the user request into code 
 and executes the code to generate the response. In our current implementation, we use a Jupyter Kernel
 to execute the code. We choose Jupyter Kernel because it is a well-established tool for interactive computing,
@@ -8,22 +13,20 @@ and it supports many programming languages.
 ## Two Modes of Code Execution
 
 TaskWeaver supports two modes of code execution: `local` and `container`. 
-The `local` mode is the default mode. The key difference between the two modes is that the `container` mode
+The `container` mode is the default mode. The key difference between the two modes is that the `container` mode
 executes the code inside a Docker container, which provides a more secure environment for code execution, while
 the `local` mode executes the code as a subprocess of the TaskWeaver process.
 As a result, in the `local` mode, if the user has malicious intent, the user could potentially
 instruct TaskWeaver to execute harmful code on the host machine. In addition, the LLM could also generate
 harmful code, leading to potential security risks.
 
->💡We recommend using the `container` mode for code execution, especially when the usage of the agent
-is open to untrusted users. In the `container` mode, the code is executed in a Docker container, which is isolated
-from the host machine. 
+
 
 ## How to Configure the Code Execution Mode
 
 To configure the code execution mode, you need to set the `execution_service.kernel_mode` parameter in the
 `taskweaver_config.json` file. The value of the parameter could be `local` or `container`. The default value
-is `local`.
+is `container`.
 
 TaskWeaver supports the `local` mode without any additional setup. However, to use the `container` mode,
 there are a few prerequisites:
