@@ -1,0 +1,155 @@
+{
+    "components": {
+        "atoms": {
+            "buttons": {
+                "userButton": {
+                    "menu": {
+                        "settings": "Configura\u00e7\u00f5es",
+                        "settingsKey": "S",
+                        "APIKeys": "Chaves de API",
+                        "logout": "Sair"
+                    }
+                }
+            }
+        },
+        "molecules": {
+            "newChatButton": {
+                "newChat": "Nova Conversa"
+            },
+            "tasklist": {
+                "TaskList": {
+                    "title": "\ud83d\uddd2\ufe0f Lista de Tarefas",
+                    "loading": "Carregando...",
+                    "error": "Ocorreu um erro"
+                }
+            },
+            "attachments": {
+                "cancelUpload": "Cancelar envio",
+                "removeAttachment": "Remover anexo"
+            },
+            "newChatDialog": {
+                "createNewChat": "Criar novo chat?",
+                "clearChat": "Isso limpar\u00e1 as mensagens atuais e iniciar\u00e1 uma nova conversa.",
+                "cancel": "Cancelar",
+                "confirm": "Confirmar"
+            },
+            "settingsModal": {
+                "expandMessages": "Expandir Mensagens",
+                "hideChainOfThought": "Esconder Sequ\u00eancia de Pensamento",
+                "darkMode": "Modo Escuro"
+            }
+        },
+        "organisms": {
+            "chat": {
+                "history": {
+                    "index": {
+                        "lastInputs": "\u00daltimas Entradas",
+                        "noInputs": "Vazio...",
+                        "loading": "Carregando..."
+                    }
+                },
+                "inputBox": {
+                    "input": {
+                        "placeholder": "Digite sua mensagem aqui..."
+                    },
+                    "speechButton": {
+                        "start": "Iniciar grava\u00e7\u00e3o",
+                        "stop": "Parar grava\u00e7\u00e3o"
+                    },
+                    "SubmitButton": {
+                        "sendMessage": "Enviar mensagem",
+                        "stopTask": "Parar Tarefa"
+                    },
+                    "UploadButton": {
+                        "attachFiles": "Anexar arquivos"
+                    },
+                    "waterMark": {
+                        "text": "Constru\u00eddo com"
+                    }
+                },
+                "Messages": {
+                    "index": {
+                        "running": "Executando",
+                        "executedSuccessfully": "executado com sucesso",
+                        "failed": "falhou",
+                        "feedbackUpdated": "Feedback atualizado",
+                        "updating": "Atualizando"
+                    }
+                },
+                "dropScreen": {
+                    "dropYourFilesHere": "Solte seus arquivos aqui"
+                },
+                "index": {
+                    "failedToUpload": "Falha ao enviar",
+                    "cancelledUploadOf": "Envio cancelado de",
+                    "couldNotReachServer": "N\u00e3o foi poss\u00edvel conectar ao servidor",
+                    "continuingChat": "Continuando o chat anterior"
+                },
+                "settings": {
+                    "settingsPanel": "Painel de Configura\u00e7\u00f5es",
+                    "reset": "Redefinir",
+                    "cancel": "Cancelar",
+                    "confirm": "Confirmar"
+                }
+            },
+            "threadHistory": {
+                "sidebar": {
+                    "filters": {
+                        "FeedbackSelect": {
+                            "feedbackAll": "Feedback: Todos",
+                            "feedbackPositive": "Feedback: Positivo",
+                            "feedbackNegative": "Feedback: Negativo"
+                        },
+                        "SearchBar": {
+                            "search": "Buscar"
+                        }
+                    },
+                    "DeleteThreadButton": {
+                        "confirmMessage": "Isso deletar\u00e1 a conversa, assim como suas mensagens e elementos.",
+                        "cancel": "Cancelar",
+                        "confirm": "Confirmar",
+                        "deletingChat": "Deletando conversa",
+                        "chatDeleted": "Conversa deletada"
+                    },
+                    "index": {
+                        "pastChats": "Conversas Anteriores"
+                    },
+                    "ThreadList": {
+                        "empty": "Vazio..."
+                    },
+                    "TriggerButton": {
+                        "closeSidebar": "Fechar barra lateral",
+                        "openSidebar": "Abrir barra lateral"
+                    }
+                },
+                "Thread": {
+                    "backToChat": "Voltar para a conversa",
+                    "chatCreatedOn": "Esta conversa foi criada em"
+                }
+            },
+            "header": {
+                "chat": "Conversa",
+                "readme": "Leia-me"
+            }
+        },
+        "hooks": {
+            "useLLMProviders": {
+                "failedToFetchProviders": "Falha ao buscar provedores:"
+            }
+        },
+        "pages": {
+            "Design": {},
+            "Env": {
+                "savedSuccessfully": "Salvo com sucesso",
+                "requiredApiKeys": "Chaves de API necess\u00e1rias",
+                "requiredApiKeysInfo": "Para usar este aplicativo, as seguintes chaves de API s\u00e3o necess\u00e1rias. As chaves s\u00e3o armazenadas localmente em seu dispositivo."
+            },
+            "Page": {
+                "notPartOfProject": "Voc\u00ea n\u00e3o faz parte deste projeto."
+            },
+            "ResumeButton": {
+                "resumeChat": "Continuar Conversa"
+            }
+        }
+    }
+}
