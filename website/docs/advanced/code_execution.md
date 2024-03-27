@@ -42,8 +42,8 @@ by running the following command in the root directory of the code repository:
 cd scripts
 
 # based on your OS
-./build.ps1 # for Windows
-./build.sh # for Linux or macOS
+./build_executor.ps1 # for Windows
+./build_executor.sh # for Linux or macOS
 ```
 
 After the Docker image is built, you can run `docker images` to check if a Docker image 
