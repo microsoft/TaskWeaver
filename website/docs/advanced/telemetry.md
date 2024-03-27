@@ -73,7 +73,7 @@ to a [Prometheus](https://prometheus.io/) backend.
 
 You can run the following command to set up the infrastructure:
 ```bash
-cd /TaskWeaver/tracing_configure
+cd /TaskWeaver/tracing
 docker-compose up
 ```
 You shall see a bunch of logs from the containers.

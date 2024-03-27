@@ -14,7 +14,7 @@ from taskweaver.utils import read_yaml
 class WebExplorerConfig(RoleConfig):
     def _configure(self):
         self.config_file_path = self._get_str(
-            "prompt_file_path",
+            "config_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "web_explorer_config.yaml",
@@ -36,14 +36,14 @@ class WebExplorer(Role):
 
         self.logger = logger
         self.config = config
-        self.vision_planner: VisionPlanner = None
-        self.driver: SeleniumDriver = None
+        self.vision_planner = None
+        self.driver = None
 
     def initialize(self):
         try:
             from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
             from taskweaver.ext_role.web_explorer.planner import VisionPlanner
-            
+
             config = read_yaml(self.config.config_file_path)
             GPT4V_KEY = os.environ.get("GPT4V_KEY")
             GPT4V_ENDPOINT = os.environ.get("GPT4V_ENDPOINT")

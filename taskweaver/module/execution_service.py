@@ -17,7 +17,7 @@ class ExecutionServiceConfig(ModuleConfig):
         )
         self.kernel_mode = self._get_str(
             "kernel_mode",
-            "local",
+            "container",
         )
         if self.kernel_mode == "local":
             print(
