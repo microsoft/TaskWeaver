@@ -46,11 +46,7 @@ class LLMModuleConfig(ModuleConfig):
         )
 
         self.model: Optional[str] = self._get_str("model", None, required=False)
-        self.backup_model: Optional[str] = self._get_str(
-            "backup_model",
-            None,
-            required=False,
-        )
+
         self.embedding_model: Optional[str] = self._get_str(
             "embedding_model",
             None,

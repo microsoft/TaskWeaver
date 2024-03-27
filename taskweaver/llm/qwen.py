@@ -23,12 +23,6 @@ class QWenServiceConfig(LLMServiceConfig):
             shared_model if shared_model is not None else "qwen-max-1201",
         )
 
-        shared_backup_model = self.llm_module_config.backup_model
-        self.backup_model = self._get_str(
-            "backup_model",
-            shared_backup_model if shared_backup_model is not None else self.model,
-        )
-
         shared_embedding_model = self.llm_module_config.embedding_model
         self.embedding_model = self._get_str(
             "embedding_model",
