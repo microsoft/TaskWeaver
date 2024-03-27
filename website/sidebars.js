@@ -35,7 +35,9 @@ const sidebars = {
       items: [
         'usage/cmd',
         'usage/webui',
-        'usage/library'],
+        'usage/library',
+        'usage/docker',
+        ],
     },
     {
       type: 'category',
@@ -108,7 +110,7 @@ const sidebars = {
       // },
       collapsible: true,
       collapsed: false,
-      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry', 'advanced/docker'],
+      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry'],
     },
     // 'example',
     'FAQ'
