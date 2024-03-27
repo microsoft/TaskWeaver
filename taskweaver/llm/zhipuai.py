@@ -33,11 +33,6 @@ class ZhipuAIServiceConfig(LLMServiceConfig):
             shared_model if shared_model is not None else "glm-4",
         )
 
-        shared_backup_model = self.llm_module_config.backup_model
-        self.backup_model = self._get_str(
-            "backup_model",
-            shared_backup_model if shared_backup_model is not None else self.model,
-        )
         shared_embedding_model = self.llm_module_config.embedding_model
         self.embedding_model = self._get_str(
             "embedding_model",
@@ -86,7 +81,6 @@ class ZhipuAIService(CompletionService, EmbeddingService):
         **kwargs: Any,
     ) -> Generator[ChatMessageType, None, None]:
         engine = self.config.model
-        self.config.backup_model
 
         temperature = temperature if temperature is not None else self.config.temperature
         max_tokens = max_tokens if max_tokens is not None else self.config.max_tokens
