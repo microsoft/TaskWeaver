@@ -160,7 +160,7 @@ class Session:
 
             board_attachment = reply_post.get_attachment(AttachmentType.board)
             if len(board_attachment) > 0:
-                chat_round.write_board(recipient, reply_post.get_attachment(AttachmentType.board)[0])
+                chat_round.write_board(reply_post.send_from, reply_post.get_attachment(AttachmentType.board)[0])
 
             return reply_post
 
