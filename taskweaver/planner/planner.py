@@ -312,6 +312,16 @@ class Planner(Role):
                 validation_func=check_post_validity,
             )
 
+            plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
+            bulletin_message = (
+                f"I have drawn up a plan: \n{plan}\n\n"
+                f"Please proceed with this step of this plan: {post_proxy.post.message}"
+            )
+            post_proxy.update_attachment(
+                message=bulletin_message,
+                type=AttachmentType.board,
+            )
+
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             self.tracing.set_span_status("ERROR", str(e))
