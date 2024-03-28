@@ -51,7 +51,7 @@ named `executor_container` is available.
 If the prerequisite is met, you can now run TaskWeaver in the `container` mode.
 
 After running TaskWeaver in the `container` mode, you can check if the container is running by running `docker ps`.
-You should see a container of image `taskweaver/executor` running after executing some code. 
+You should see a container of image `taskweavercontainers/taskweaver-executor` running after executing some code. 
 
 ## How to customize the Docker image for code execution
 

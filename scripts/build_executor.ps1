@@ -25,3 +25,6 @@ docker build -t $imageFullName -f $dockerfilePath $contextPath
 docker tag $imageFullName "${imageName}:latest"
 ```
 
+# Tag the image
+docker tag $imageName taskweavercontainers/taskweaver-executor:latest
+

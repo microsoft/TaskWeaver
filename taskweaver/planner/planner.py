@@ -249,19 +249,26 @@ class Planner(Role):
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
         def check_post_validity(post: Post):
-            assert post.send_to is not None, "LLM failed to generate send_to field"
-            assert post.send_to != self.alias, f"LLM failed to generate correct send_to field: {self.alias}"
-            assert post.message is not None, "LLM failed to generate message field"
-            assert len(post.attachment_list) == 3, "LLM failed to generate complete attachments"
-            assert (
-                post.attachment_list[0].type == AttachmentType.init_plan
-            ), f"LLM failed to generate correct attachment type {post.attachment_list[0].type}: init_plan"
-            assert (
-                post.attachment_list[1].type == AttachmentType.plan
-            ), f"LLM failed to generate correct attachment type {post.attachment_list[1].type}: plan"
-            assert (
-                post.attachment_list[2].type == AttachmentType.current_plan_step
-            ), "LLM failed to generate correct attachment type: current_plan_step"
+            missing_elements = []
+            validation_errors = []
+            if post.send_to is None or post.send_to == "Unknown":
+                missing_elements.append("send_to")
+            if post.send_to == self.alias:
+                validation_errors.append("The `send_to` field must not be `Planner` itself")
+            if post.message is None or post.message.strip() == "":
+                missing_elements.append("message")
+
+            attachment_types = [attachment.type for attachment in post.attachment_list]
+            if AttachmentType.init_plan not in attachment_types:
+                missing_elements.append("init_plan")
+            if AttachmentType.plan not in attachment_types:
+                missing_elements.append("plan")
+            if AttachmentType.current_plan_step not in attachment_types:
+                missing_elements.append("current_plan_step")
+
+            if len(missing_elements) > 0:
+                validation_errors.append(f"Missing elements: {', '.join(missing_elements)} in the `response` element")
+            assert len(validation_errors) == 0, ";".join(validation_errors)
 
         post_proxy.update_status("calling LLM endpoint")
 
@@ -309,16 +316,16 @@ class Planner(Role):
             self.logger.error(f"Failed to parse LLM output due to {str(e)}")
             self.tracing.set_span_status("ERROR", str(e))
             self.tracing.set_span_exception(e)
-            post_proxy.error(f"failed to parse LLM output due to {str(e)}")
+            post_proxy.error(f"Failed to parse LLM output due to {str(e)}")
             post_proxy.update_attachment(
                 "".join(llm_output),
                 AttachmentType.invalid_response,
             )
             post_proxy.update_attachment(
-                f"Failed to parse Planner output due to {str(e)}."
-                f"The output format should follow the below format:"
-                f"{self.prompt_data['planner_response_schema']}"
-                "Please try to regenerate the output.",
+                f"Your JSON output has errors. {str(e)}."
+                # "The output format should follow the below format:"
+                # f"{self.prompt_data['planner_response_schema']}"
+                "You must add or missing elements at in one go and send the response again.",
                 AttachmentType.revise_message,
             )
             if self.ask_self_cnt > self.max_self_ask_num:  # if ask self too many times, return error message

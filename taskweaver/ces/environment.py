@@ -379,6 +379,9 @@ class Environment:
 
     def stop_session(self, session_id: str) -> None:
         session = self._get_session(session_id)
+        if session is None:
+            # session not exist
+            return
         if session.kernel_status == "stopped":
             return
         if session.kernel_status == "pending":
@@ -421,14 +424,15 @@ class Environment:
         session_id: str,
         session_dir: Optional[str] = None,
     ) -> EnvSession:
-        if session_id not in self.session_dict:
+        if session_id not in self.session_dict and session_dir is not None:
             new_session = EnvSession(session_id)
             new_session.session_dir = (
                 session_dir if session_dir is not None else self._get_default_session_dir(session_id)
             )
             os.makedirs(new_session.session_dir, exist_ok=True)
             self.session_dict[session_id] = new_session
-        return self.session_dict[session_id]
+
+        return self.session_dict.get(session_id, None)
 
     def _get_default_session_dir(self, session_id: str) -> str:
         os.makedirs(os.path.join(self.env_dir, "sessions"), exist_ok=True)
