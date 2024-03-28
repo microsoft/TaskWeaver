@@ -1,5 +1,7 @@
 version: 0.1
 app_dir: ../project/
+config_var:
+  execution_service.kernel_mode: "local"
 eval_query:
   - user_query: detect anomaly on time_series table from database
     scoring_points:

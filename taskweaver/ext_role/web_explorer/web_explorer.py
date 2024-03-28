@@ -81,9 +81,7 @@ class WebExplorer(Role):
                 post_proxy=post_proxy,
             )
         except Exception as e:
-            post_proxy.update_message(
-                f"Failed to achieve the objective due to {e}. " "Please check the log for more details.",
-            )
+            self.logger.error(f"Failed to reply due to: {e}")
 
         return post_proxy.end()
 
