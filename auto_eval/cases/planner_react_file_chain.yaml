@@ -1,4 +1,6 @@
 version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
 app_dir: ../project/
 eval_query:
   - user_query: read the ../../../../sample_data/file_A.txt and follow the instructions in it

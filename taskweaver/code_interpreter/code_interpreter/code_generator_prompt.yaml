@@ -30,6 +30,8 @@ content: |-
     - The "response" array can include multiple thought replies, but it can have only one of sample, python, or text, exclusively.
     - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
     
+
+    
 conversation_head: |-
     ==============================
     ## Conversation Start

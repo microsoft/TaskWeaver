@@ -1,10 +1,12 @@
 version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
 app_dir: ../project/
 eval_query:
   - user_query: calculate mean value of ../../../../sample_data/demo_data.csv
     scoring_points:
       - score_point: "The correct mean value is 78172.75"
         weight: 1
-      - score_point: "If the code execution failed, the python code should be rewritten to fix the bug and execute again"
+      - score_point: "If the code execution succeed, get the score; if failed, the python code should be rewritten to fix the bug and execute again"
         weight: 1
     post_index: null

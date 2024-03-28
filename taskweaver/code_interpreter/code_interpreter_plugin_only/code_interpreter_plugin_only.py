@@ -12,7 +12,7 @@ from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import Role
-from taskweaver.role.role import RoleConfig
+from taskweaver.role.role import RoleConfig, RoleEntry
 
 
 class CodeInterpreterConfig(RoleConfig):
@@ -37,8 +37,9 @@ class CodeInterpreterPluginOnly(Role):
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
         config: CodeInterpreterConfig,
+        role_entry: RoleEntry,
     ):
-        super().__init__(config, logger, tracing, event_emitter)
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
         self.generator = generator
         self.generator.set_alias(self.alias)
         self.executor = executor
