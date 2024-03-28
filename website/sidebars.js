@@ -35,7 +35,9 @@ const sidebars = {
       items: [
         'usage/cmd',
         'usage/webui',
-        'usage/library'],
+        'usage/library',
+        'usage/docker',
+        ],
     },
     {
       type: 'category',

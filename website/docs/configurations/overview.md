@@ -42,5 +42,8 @@ The following table lists the parameters in the configuration file:
 > models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format`
 > to `null`.
 
-> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression`
-> and `code_generator.prompt_compression`.
+> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
+
+> 💡 We support to set configurations via environment variables. You need to transform the configuration key to uppercase and replace the dot with underscore. 
+For example, `llm.model` should be set as `LLM_MODEL`, `llm.api_base` should be set as `LLM_API_BASE`, etc.
+

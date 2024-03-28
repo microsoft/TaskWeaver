@@ -1,5 +1,7 @@
 # Web UI
 
+Please note that this Web UI is for development and testing purposes only.
+
 1. Follow the instruction in [Quick Start](../quickstart.md) to clone the repo and make configurations
 
 ```bash

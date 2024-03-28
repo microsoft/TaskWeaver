@@ -35,8 +35,52 @@ there are a few prerequisites:
 - A Docker image is built and available on the host machine for code execution.
 - The `execution_service.kernel_mode` parameter is set to `container` in the `taskweaver_config.json` file.
 
+Once the code repository is cloned to your local machine, you can build the Docker image
+by running the following command in the root directory of the code repository:
+
+```bash
+cd scripts
+
+# based on your OS
+./build_executor.ps1 # for Windows
+./build_executor.sh # for Linux or macOS
+```
+
+After the Docker image is built, you can run `docker images` to check if a Docker image 
+named `executor_container` is available. 
+If the prerequisite is met, you can now run TaskWeaver in the `container` mode.
+
 After running TaskWeaver in the `container` mode, you can check if the container is running by running `docker ps`.
 You should see a container of image `taskweavercontainers/taskweaver-executor` running after executing some code. 
+
+## How to customize the Docker image for code execution
+
+You may want to customize the Docker image for code execution to include additional packages or libraries, especially
+for your developed plugins. The current Docker image for code execution is `taskweavercontainers/taskweaver-executor`, which 
+only includes the dependencies specified in the `TaskWeaver/requirements.txt` file. To customize the Docker image, you need to
+modify the `Dockerfile` at `TaskWeaver/docker/ces_container/Dockerfile` and rebuild the Docker image.
+
+When you open the `Dockerfile`, you will see the following content, and you can add additional packages or libraries
+by adding the corresponding `RUN` command. In this example, we add the `sentence-transformers` package to the Docker image.
+
+```Dockerfile
+FROM python:3.10-slim
+...
+# TODO: Install additional packages for plugins
+RUN pip install --no-cache-dir --no-warn-script-location --user sentence-transformers
+...
+```
+Then, you need to rebuild the Docker image by running the `build_executor.sh` script at `TaskWeaver/scripts/build_executor.sh` 
+or `TaskWeaver/scripts/build.ps1` depending on your operating system.
+
+```bash
+cd TaskWeaver/scripts
+./build_executor.sh
+# or ./build_executor.ps1 if you are using Windows
+```
+
+If you have successfully rebuilt the Docker image, you can check the new image by running `docker images`.
+After building the Docker image, you need to restart the TaskWeaver agent to use the new Docker image.
 
 ## Limitations of the `container` Mode
 
