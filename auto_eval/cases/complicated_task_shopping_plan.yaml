@@ -1,4 +1,6 @@
 version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
 app_dir: ../project/
 eval_query:
   - user_query: I have a $1000 budget and I want to spend as much of it as possible on an Xbox and an iPhone

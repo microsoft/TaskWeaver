@@ -57,4 +57,3 @@ We support to set configurations via environment variables. You need to transfor
 For example, `llm.model` should be set as `LLM_MODEL`, `llm.api_base` should be set as `LLM_API_BASE`, etc.
 :::
 
-

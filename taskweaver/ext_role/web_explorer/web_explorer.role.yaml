@@ -1,8 +1,10 @@
 alias: WebExplorer
 module: taskweaver.ext_role.web_explorer.web_explorer.WebExplorer
 intro : |-
-  WebExplorer can conduct a web browsing task such as find out any information on the web,
-  or perform simple actions on a web page such as click, type, etc.
+  WebExplorer can conduct a web browsing task.
+  WebExplorer can go to a web page and view the content of the web page.
+  WebExplorer can use its vision power to view the web page and extract information from it.
+  WebExplorer can also take various actions on the web page such as click, type, etc.
   This role is capable of handling simple web browsing tasks. So, if the task is too complicated, 
   it is better to first break it down into several simple tasks 
   and then complete the task with WebExplorer in a step-by-step manner.

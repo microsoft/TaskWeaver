@@ -36,14 +36,14 @@ class WebExplorer(Role):
 
         self.logger = logger
         self.config = config
-        self.vision_planner: VisionPlanner = None
-        self.driver: SeleniumDriver = None
+        self.vision_planner = None
+        self.driver = None
 
     def initialize(self):
         try:
             from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
             from taskweaver.ext_role.web_explorer.planner import VisionPlanner
-            
+
             config = read_yaml(self.config.config_file_path)
             GPT4V_KEY = os.environ.get("GPT4V_KEY")
             GPT4V_ENDPOINT = os.environ.get("GPT4V_ENDPOINT")
@@ -81,9 +81,7 @@ class WebExplorer(Role):
                 post_proxy=post_proxy,
             )
         except Exception as e:
-            post_proxy.update_message(
-                f"Failed to achieve the objective due to {e}. " "Please check the log for more details.",
-            )
+            self.logger.error(f"Failed to reply due to: {e}")
 
         return post_proxy.end()
 

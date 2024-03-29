@@ -2,9 +2,11 @@ $scriptDirectory = $PSScriptRoot
 Write-Host "The script directory is: $scriptDirectory"
 
 $version = "0.1"
-$imageName = "taskweavercontainers/taskweaver-executor:$version"
+$imageName = "taskweavercontainers/taskweaver-executor"
+$imageFullName = "${imageName}:${version}"
+
 $taskweaverPath = Join-Path -Path $scriptDirectory -ChildPath "..\taskweaver"
-$dockerfilePath = Join-Path -Path $scriptDirectory -ChildPath "..\ces_container\Dockerfile"
+$dockerfilePath = Join-Path -Path $scriptDirectory -ChildPath "..\docker\ces_container\Dockerfile"
 $contextPath = Join-Path -Path $scriptDirectory -ChildPath "..\"
 
 if (Test-Path $taskweaverPath) {
@@ -17,7 +19,11 @@ if (Test-Path $taskweaverPath) {
 }
 
 # Build the Docker image
-docker build -t $imageName -f $dockerfilePath $contextPath
+docker build -t $imageFullName -f $dockerfilePath $contextPath
+
+# Tag the image
+docker tag $imageFullName "${imageName}:latest"
+```
 
 # Tag the image
 docker tag $imageName taskweavercontainers/taskweaver-executor:latest

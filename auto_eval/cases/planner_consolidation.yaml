@@ -1,4 +1,6 @@
 version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
 app_dir: ../project/
 eval_query:
   - user_query: calculate the mean and std of 'Count' column in ../../../../sample_data/demo_data.csv then check is there any value are larger than 3 std from the mean

@@ -206,6 +206,7 @@ class CodeGenerator(Role):
         add_requirements: bool = False,
         summary: Optional[str] = None,
     ) -> List[ChatMessageType]:
+        cur_round = rounds[-1]
         chat_history: List[ChatMessageType] = []
         ignored_types = [
             AttachmentType.revise_message,
@@ -238,13 +239,14 @@ class CodeGenerator(Role):
                     # to avoid planner imitating the below handcrafted format,
                     # we merge plan and query message in the code generator here
                     user_query = conversation_round.user_query
-                    plan = next(iter(post.get_attachment(AttachmentType.plan)), None)
-                    enrichment = ""
-                    if plan is not None:
-                        enrichment = (
-                            f"To complete this request: {user_query}\n\n"
-                            f"I have drawn up a plan: \n{plan}\n\n"
-                            f"Please proceed with this step of this plan:"
+                    enrichment = f"The user request is: {user_query}\n\n"
+
+                    supplementary_info_dict = cur_round.read_board()
+                    supplementary_info = "\n".join([bulletin for bulletin in supplementary_info_dict.values()])
+                    if supplementary_info != "":
+                        enrichment += (
+                            f"To better understand the user request, here is some additional information:\n"
+                            f" {supplementary_info}\n\n"
                         )
 
                     user_feedback = "None"

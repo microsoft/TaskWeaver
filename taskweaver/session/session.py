@@ -8,6 +8,7 @@ from injector import Injector, inject
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
@@ -156,6 +157,10 @@ class Session:
                 )
             else:
                 raise Exception(f"Unknown recipient {recipient}")
+
+            board_attachment = reply_post.get_attachment(AttachmentType.board)
+            if len(board_attachment) > 0:
+                chat_round.write_board(reply_post.send_from, reply_post.get_attachment(AttachmentType.board)[0])
 
             return reply_post
 

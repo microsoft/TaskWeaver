@@ -75,6 +75,7 @@ def auto_evaluate_for_taskweaver(
                     f"because the normalized score is lower than the threshold {interrupt_threshold}.",
                 )
                 break
+    app.stop()
 
     return score_list
 
