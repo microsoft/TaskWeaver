@@ -14,8 +14,8 @@ user_query = "hello, what can you do?"
 response_round = session.send_message(user_query)
 print(response_round.to_dict())
 ```
-**Note:**
-- `response_round`: the response from TaskWeaver. which is an object of the `Round` class. 
+:::tip
+`response_round`: the response from TaskWeaver. which is an object of the `Round` class. 
   An example of the `Round` object is shown below:
 ```json
 {
@@ -56,3 +56,16 @@ print(response_round.to_dict())
     ]
 }
 ```
+:::
+:::tip
+If you need to see the intermediate states of the conversation, you need to implement a `SessionEventHandler` class and pass it 
+  at calling `session.send_message(user_query, event_handler=your_event_handler)`. 
+  A toy example of the `SessionEventHandler` class is shown below:
+```python
+from taskweaver.model.event_emitter import SessionEventHandler, TaskWeaverEvent
+class ToyEventHandler(SessionEventHandler):
+    
+    def handle(self, event: TaskWeaverEvent):
+        print(event.t, event.msg)
+```
+:::

@@ -2,11 +2,11 @@
 
 In some cases, you may want to use different LLMs for different components. 
 For example, you may want to use OpenAI GPT-4 for the Planner but use Google gemini-pro for the CodeInterpreter.
-In this section, we will show you how to use different LLMs for different components.
+In this part, we show you how to use different LLMs for different components.
 
-## Usage
-
-1. Configure the primary LLM and extra LLMs settings in the `taskweaver_config.json` file under `project` directory, just as follows:
+If you need only one LLM, you can have only the primary LLM settings in the `taskweaver_config.json` file.
+If you need multiple LLMs, you need to have `ext_llms.llm_configs` in the `taskweaver_config.json` file to specify the extra LLMs for different components.
+In the following, we show you how to configure the `taskweaver_config.json` file to use multiple LLMs.
 ```json
 "llm.api_type":"openai",
 "llm.api_base": "https://api.openai.com/v1",
@@ -30,19 +30,20 @@ In this section, we will show you how to use different LLMs for different compon
         },
 },
 ```
-Notes:
-- `ext_llms.llm_configs` is a dict of extra LLMs for different components. It is an optional field. If you do not specify it, only the primary LLM will be used.
-- For each LLM setting, please should follow the configuration method described in each LLM configuration page.
-- Besides the extra LLMs, you should also configure the primary LLM settings in the `taskweaver_config.json`, just as shown in the top 5 lines in the above code snippet.
 
-2. Specify the LLMs for different components in the `taskweaver_config.json`.
+- The primary LLM settings are specified in the `llm.` fields and it is mandatory.
+- `ext_llms.llm_configs` is optional and is a dict of extra LLMs for different components. If you do not specify it, only the primary LLM will be used.
+ 
+
+Specify the LLMs for different components in the `taskweaver_config.json`.
 For example, we want to use OpenAI GPT-4 for the Planner and use Google gemini-pro for the CodeInterpreter.
 ```json
 "planner.llm_alias": "llm_A",
 "code_generator.llm_alias": "llm_B"
 ```
-Notes:
-- If you do not specify the LLM for a component, the primary LLM will be used by default.
-In this case, `GPT-3.5-turbo-1106` will be used for both the Planner and the CodeInterpreter, if you do not specify the LLM for them.
+:::tip
+If you do not specify the LLM for a component, the primary LLM will be used by default.
+In the above example, `GPT-3.5-turbo-1106` will be used for both the Planner and the CodeInterpreter.
+:::
 
 

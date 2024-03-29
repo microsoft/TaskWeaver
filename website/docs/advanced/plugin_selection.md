@@ -9,13 +9,15 @@ It targets to solve the following two problems:
 ## Auto Plugin Selection Overview
 
 Below is the overview workflow of the auto plugin selection mechanism.
-![Auto Plugin Selection Overview](../../../static/img/APS.png)
+![Auto Plugin Selection Overview](../../static/img/APS.png)
 
-NOTE: the automatic plugin selection mechanism is only activated during the code generation process in the Code Interpreter and does not affect the planning process of the Planner.
+:::info
+Automatic plugin selection mechanism is only activated during the code generation process in the Code Interpreter and does not affect the planning process of the Planner.
+:::
 
 At the start of TaskWeaver initialization, the automatic plugin selector is activated to generate embedding vectors for all plugins, including their names and descriptions. 
 The embedding vectors are created using the specified embedding model configured in the `taskweaver_config.json` file. 
-For more information, please refer to the [embedding](../../configurations/configurations_in_detail.md) section in documentation.
+For more information, please refer to the [embedding](../configurations/configurations_in_detail.md) section in documentation.
 
 When the Planner sends a request to the Code Interpreter, the auto plugin selection mechanism will be triggered.
 It will first generate an embedding vector for the request using the same embedding model.

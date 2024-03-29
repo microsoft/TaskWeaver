@@ -1,32 +1,26 @@
 # Web UI
 
-1. Follow the instruction in [Quick Start](../quickstart.md) to clone the repo and make configurations
+Please note that this Web UI is for development and testing purposes only.
+
+Follow the instruction in [Quick Start](../quickstart.md) to clone the repository and fill in the necessary configurations.
+
+Install the `chainlit` package by `pip install -U chainlit` if you don't have it in your environment.
+
+Start the service by running the following command.
+
 
 ```bash
-git clone https://github.com/microsoft/TaskWeaver.git
-cd TaskWeaver
-# install the requirements
-pip install -r requirements.txt
-```
-
-```json
-{
-"llm.api_key": "the api key",
-"llm.model": "the model name, e.g., gpt-4"
-}
-```
-
-2. Install the `chainlit` package by `pip install chainlit==1.0.100` if you don't have it in your env.
-
-3. Start the service by running the following command.
-
-```bash
+# assume you are in the TaskWeaver folder
 cd playground/UI/
+# make sure you are in playground/UI/ folder
 chainlit run app.py
 ```
 
-4. Open the browser with http://localhost:8000 and you can start the trial. 
-
-5. Below are some screenshots:
+Open the browser with http://localhost:8000 if it doesn't open automatically. 
+:::info
+We now support uploading files using the Web UI. 
+:::
+Below are some screenshots of the Web UI:
 ![TaskWeaver UI Screenshot 1](../../static/img/ui_screenshot_1.png)
 ![TaskWeaver UI Screenshot 2](../../static/img/ui_screenshot_2.png)
+

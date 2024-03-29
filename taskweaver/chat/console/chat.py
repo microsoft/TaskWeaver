@@ -443,6 +443,10 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             if lower_command == "save":
                 self._save_memory()
                 return
+            if lower_command == "info":
+                self._system_message(f"Session Id:{self.session.session_id}")
+                self._system_message(f"Roles: {self.session.config.roles}")
+                return
             error_message(f"Unknown command '{msg}', please try again")
             return
 
@@ -454,12 +458,12 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
                 """
                 TaskWeaver Chat Console
                 -----------------------
-                /load <file>: load a file
+                /load <file>: load a file by its path
                 /reset: reset the session
                 /clear: clear the console
                 /exit: exit the chat console
                 /help: print this help message
-                /save: save the memory for experience reuse
+                /save: save the chat history of the current session for experience extraction
                 """,
             ),
         )
