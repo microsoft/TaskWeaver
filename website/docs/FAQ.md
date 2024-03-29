@@ -1,6 +1,36 @@
 # FAQ
 
-**Q: How do I know if TaskWeaver can see my plugin?**
+### Q: Why it takes so long to generate the output?
+
+A: In the default setting, TaskWeaver typically goes through the following steps to generate the output:
+1. The User sends a query to the Planner.
+2. The Planner generates a plan based on the query and sends the plan to the CodeInterpreter.
+3. The CodeInterpreter executes the plan and sends the execution result back to the Planner.
+4. The Planner summarizes the execution result and sends the summary to the User.
+5. The User receives the summary from the Planner.
+
+In some cases, the Planer and CodeInterpreter can go back and forth multiple times to generate the output.
+This process can take a long time, mostly due to the latency of calling the LLMs.
+To speed up the process, you can try the following:
+- Use a smaller LLM model, such as GPT-3.5 instead of GPT-4. However, you need to experiment with your use case to see if the smaller model can still generate the output correctly.
+- Use the CodeInterpreter only mode, which skips the Planner and generates the code directly from the User query. This mode is faster because it skips the planning step. 
+However, you should check if your use case needs the planning step.  
+
+### Q: Why TaskWeaver fails and the logs say "Failed to connect to docker.daemon"?
+
+A: This error typically happens when TaskWeaver is running in the `container` mode and cannot connect to the Docker daemon.
+We have switched to the `container` mode by default to provide a more secure environment for code execution.
+To opt out of the `container` mode, you can set the `execution_service.kernel_mode` parameter to `local` in the `taskweaver_config.json` file.
+However, you should be aware that TaskWeaver can interact with the host machine directly in the `local` mode, which may have security risks.
+
+### Q: Why I see errors saying the Planner failed to generate the `send_to`, `message` or other fields?
+
+A: This is typically due to that the LLM failed to generate its output follow our schema. In Planner's prompt,
+we asked the LLM to generate a JSON object that contains `send_to`, `message`, `init_plan`, `plan`, and `current_plan_step`.
+Missing any of these fields will cause the parsing error. 
+The most effective way to mitigate this issue is to use switch to more powerful LLM model, such as GPT-3.5 or GPT-4.
+
+### Q: How do I know if TaskWeaver can see my plugin?
 
 A: A simple way to check if TaskWeaver can see your plugin is to ask "What can you do?" to TaskWeaver.
 The typical response is to list all the available plugins like the following:
@@ -29,7 +59,7 @@ CodeInterpreter has the following plugin functions and their required parameters
 ```
 Check if your plugin is in the list. If it is, it means TaskWeaver can see your plugin.
 
-**Q: Why TaskWeaver cannot see my plugin?**
+### Q: Why TaskWeaver cannot see my plugin?
 
 First, make sure you have read our [Plugin Introduction](https://microsoft.github.io/TaskWeaver/docs/plugin/plugin_intro) and this tutorial carefully.
 You should have two files in the `plugins` folder, e.g., `ascii_render.py` and `ascii_render.yaml`.
@@ -47,7 +77,7 @@ If you have checked the syntax of the yaml file and TaskWeaver still cannot see 
 if the yaml file has included all the required fields such as the `parameters` and `returns` fields.
 
 
-**Q: Why TaskWeaver can see my plugin but cannot call it?**
+### Q: Why TaskWeaver can see my plugin but cannot call it?
 
 A: In this case, you may see the generated code has called the plugin function, 
 but the execution result is an error message saying that the plugin function is undefined.
@@ -67,7 +97,7 @@ Note that this sort of error is not caused by the implementation "inside" the pl
 Otherwise, the errors would be caught during the execution of the plugin function, 
 not during the loading of the plugin function.
 
-**Q: How to debug my plugin?**
+### Q: How to debug my plugin?
 
 A: We are working on a debugging tool to help you debug your plugin. For now, a simple way to debug your plugin is to 
 define a main function in the python file and run it in your local environment.
@@ -93,3 +123,10 @@ config = {
 }
 ```
 Then, pass the `config` to the plugin constructor. As yaml is type sensitive, you need to make sure that the type of the configuration is correct.
+
+
+### Q: Why I see the error message "RuntimeError: This event loop is already running"?
+
+A: We use a Jupyter Kernel to execute the code in TaskWeaver. The Jupyter Kernel uses an event loop to manage the execution of the code.
+If you see the error message "RuntimeError: This event loop is already running.", it typically means that the event loop is already running.
+This is typically caused by the enviroment where TaskWeaver is running. For example, if you are running TaskWeaver in a Jupyter Notebook.

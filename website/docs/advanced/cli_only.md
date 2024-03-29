@@ -7,8 +7,7 @@ This mode allows users to operate your system by simply chatting with the comman
 
 ## Demo
 
-[TaskWeaver-CLI](https://github.com/microsoft/TaskWeaver/assets/32928431/3724d321-0e0b-49e0-8f77-7b3855069a82)
-
+<iframe width="560" height="315" src="https://github.com/microsoft/TaskWeaver/assets/32928431/3724d321-0e0b-49e0-8f77-7b3855069a82" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe> 
 
 ## How to enable
 Just add the following configuration to the project configuration file `taskweaver_config.json`:

@@ -2,8 +2,10 @@
 
 An overview of all configurations available in the config file, which is located at `project/taskweaver_config.json`.
 You can edit this file to configure TaskWeaver.
+:::tip
 The configuration file is in JSON format. So for boolean values, use `true` or `false` instead of `True` or `False`.
 For null values, use `null` instead of `None` or `"null"`. All other values should be strings in double quotes.
+:::
 The following table lists the parameters in the configuration file:
 
 | Parameter                                     | Description                                                                            | Default Value                                                                                                                               |
@@ -36,14 +38,22 @@ The following table lists the parameters in the configuration file:
 | `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                                        | `3`                                                                                                                                         |
 | `execution_service.kernel_mode`               | The mode of the code executor, could be `local` or `container`.                        | `local`                                                                                                                                     |
 
-> 💡 $\{AppBaseDir\} is the project directory.
+:::tip
+$\{AppBaseDir\} is the project directory.
+:::
 
-> 💡 Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI
-> models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format`
-> to `null`.
+:::tip
+Up to 11/30/2023, the `json_object` and `text` options of `llm.response_format` is only supported by the OpenAI
+models later than 1106. If you are using an older version of OpenAI model, you need to set the `llm.response_format`
+to `null`.
+:::
 
-> 💡 Read [this](../advanced/compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
+:::tip
+Read [this](../advanced/compression.md) for more information for `planner.prompt_compression` and `code_generator.prompt_compression`.
+:::
 
-> 💡 We support to set configurations via environment variables. You need to transform the configuration key to uppercase and replace the dot with underscore. 
+:::tip
+We support to set configurations via environment variables. You need to transform the configuration key to uppercase and replace the dot with underscore. 
 For example, `llm.model` should be set as `LLM_MODEL`, `llm.api_base` should be set as `LLM_API_BASE`, etc.
+:::
 

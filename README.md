@@ -24,9 +24,9 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 ## 🆕 News
 - 📅2024-03-28: TaskWeaver now offers all-in-one Docker image, providing a convenient one-stop experience for users. Please check the [docker](https://microsoft.github.io/TaskWeaver/docs/usage/docker) for more details.🐳
-- 📅2024-03-27: TaskWeaver now switches to `container` mode by default for code execution. Please check the [code execution](https://microsoft.github.io/TaskWeaver/docs/advanced/code_execution) for more details.🐳
+- 📅2024-03-27: TaskWeaver now switches to `container` mode by default for code execution. Please check the [code execution](https://microsoft.github.io/TaskWeaver/docs/code_execution) for more details.🐳
 - 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗
-- 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/advanced/code_execution) mode, which provides a more secure environment for code execution.🐳
+- 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳
 - 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/advanced/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟
 - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚
 - 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 
