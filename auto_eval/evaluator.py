@@ -80,13 +80,15 @@ class VirtualUser:
             AIMessage(content=self.init_query),
         ]
         print(f"User: {self.init_query}")
+        user_query = self.init_query
         while True:
-            agent_response = self.get_reply_from_agent(self.init_query)
+            agent_response = self.get_reply_from_agent(user_query)
             print(f"Agent: {agent_response}")
             vuser_response = self.get_reply_from_vuser(agent_response, chat_history)
             print(f"User: {vuser_response}")
             if self.stop_keyword in vuser_response:
                 break
+            user_query = vuser_response
         return chat_history
 
     def get_reply_from_vuser(self, message: str, chat_history) -> str:

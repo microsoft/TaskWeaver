@@ -51,6 +51,8 @@ def auto_evaluate_for_taskweaver(
     score_points = [ScoringPoint(**score_point) for score_point in score_points]
     score, normalized_score = taskweaver_evaluator.evaluate(init_query, chat_history, score_points)
 
+    taskweaver_vuser.close()
+
     return score, normalized_score
 
 
