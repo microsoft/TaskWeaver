@@ -34,7 +34,7 @@ class GoogleGenAIServiceConfig(LLMServiceConfig):
             default=shared_response_format if shared_response_format is not None else "text",
         )
         self.temperature = self._get_float("temperature", 0.9)
-        self.max_output_tokens = self._get_int("max_output_tokens", 1000)
+        self.max_output_tokens = self._get_int("max_output_tokens", 2048)
         self.top_k = self._get_int("top_k", 1)
         self.top_p = self._get_float("top_p", 0)
 
