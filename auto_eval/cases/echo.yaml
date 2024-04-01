@@ -1,0 +1,17 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+user_query: echo the word "TASKWEAVER"
+scoring_points:
+#  - score_point: "There should be an init_plan and a plan in the attachment_list field"
+#    weight: 1
+#    eval_code: |-
+#      if agent_response["attachment_list"][0]['type'] != 'init_plan':  # agent_response is the JSON object of the agent's output
+#        return False
+#      if agent_response["attachment_list"][1]['type'] != 'plan':
+#        return False
+#      return True   # only support True or False return value
+  - score_point: The agent should repeat the word "TASKWEAVER" in the response
+    weight: 1
+    eval_code: null

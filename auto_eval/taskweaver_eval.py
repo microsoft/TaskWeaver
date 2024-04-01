@@ -1,97 +1,66 @@
-import json
 import os
 import sys
 import warnings
-from typing import Any, Optional
+from typing import Optional, Tuple
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
-
-from taskweaver.module.event_emitter import SessionEventHandler
 
 warnings.filterwarnings("ignore")
 
 import pandas as pd
 import yaml
-from evaluator import Evaluator, ScoringPoint
+from evaluator import Evaluator, ScoringPoint, VirtualUser
 
 from taskweaver.app.app import TaskWeaverApp
 
 
-def format_output(response_obj: Any) -> str:
-    assert hasattr(response_obj, "to_dict"), "to_dict method is not found"
-    formatted_output = json.dumps(response_obj.to_dict())
-    return formatted_output
+class TaskWeaverVirtualUser(VirtualUser):
+    def __init__(self, init_query: str, app_dir: str, config_var: Optional[dict] = None):
+        super().__init__(init_query)
+
+        self.app = TaskWeaverApp(app_dir=app_dir, config=config_var)
+        self.session = self.app.get_session()
+
+    def get_reply_from_agent(self, message: str) -> str:
+        response_round = self.session.send_message(
+            message,
+            event_handler=None,
+        )
+        return response_round.post_list[-1].message
+
+    def close(self):
+        self.app.stop()
 
 
 def auto_evaluate_for_taskweaver(
     eval_case_file_path: str,
-    interrupt_threshold: Optional[float] = None,
-    event_handler: Optional[SessionEventHandler] = None,
-) -> [float, float]:
+) -> Tuple[float, float]:
     with open(eval_case_file_path, "r") as f:
         eval_meta_data = yaml.safe_load(f)
 
     app_dir = eval_meta_data["app_dir"]
     config_var = eval_meta_data.get("config_var", None)
+    init_query = eval_meta_data["user_query"]
 
-    app = TaskWeaverApp(app_dir=app_dir, config=config_var)
-    session = app.get_session()
-
+    taskweaver_vuser = TaskWeaverVirtualUser(init_query, app_dir, config_var)
     taskweaver_evaluator = Evaluator()
 
-    score_list = []
-    for idx, eval_query in enumerate(eval_meta_data["eval_query"]):
-        user_query = eval_query["user_query"]
-        print(f"Round-{idx} user query:\n", user_query)
+    chat_history = taskweaver_vuser.talk_with_agent()
 
-        response_round = session.send_message(
-            user_query,
-            event_handler=event_handler,
-        )
+    score_points = eval_meta_data["scoring_points"]
+    score_points = [ScoringPoint(**score_point) for score_point in score_points]
+    score, normalized_score = taskweaver_evaluator.evaluate(init_query, chat_history, score_points)
 
-        post_index = eval_query.get("post_index", None)
-        scoring_point_data = eval_query.get("scoring_points", None)
-        if scoring_point_data is None:
-            print("No scoring points are provided. Skip evaluation for this round.")
-            continue
-        scoring_points = []
-        for scoring_point in scoring_point_data:
-            scoring_point = ScoringPoint(**scoring_point)
-            scoring_points.append(scoring_point)
-
-        if isinstance(post_index, int):
-            response = format_output(response_round.post_list[post_index])
-        elif post_index is None:
-            response = format_output(response_round)
-        else:
-            raise ValueError("Invalid post_index")
-        print("Taskweaver response:\n", response)
-        score, normalized_score = taskweaver_evaluator.evaluate(user_query, response, scoring_points)
-        score_list.append((idx, score, normalized_score))
-        if interrupt_threshold is not None and interrupt_threshold > 0:
-            if normalized_score < interrupt_threshold:
-                print(
-                    f"Interrupted conversation testing "
-                    f"because the normalized score is lower than the threshold {interrupt_threshold}.",
-                )
-                break
-    app.stop()
-
-    return score_list
-
-
-class SessionEventBaseHandler:
-    pass
+    return score, normalized_score
 
 
 def batch_auto_evaluate_for_taskweaver(
     result_file_path: str,
     eval_case_dir: str,
     flush_result_file: bool = False,
-    interrupt_threshold: Optional[float] = None,
 ):
     if not os.path.exists(result_file_path):
-        df = pd.DataFrame(columns=["case_file", "round", "score", "normalized_score"])
+        df = pd.DataFrame(columns=["case_file", "score", "normalized_score"])
         df.to_csv(result_file_path, index=False)
 
     results = pd.read_csv(result_file_path)
@@ -109,23 +78,15 @@ def batch_auto_evaluate_for_taskweaver(
         print("------------Start evaluating------------", eval_config_file)
         eval_case_file_path = os.path.join(eval_case_dir, eval_config_file)
 
-        score_list = auto_evaluate_for_taskweaver(
-            eval_case_file_path,
-            interrupt_threshold=interrupt_threshold,
-            event_handler=None,
+        score, normalized_score = auto_evaluate_for_taskweaver(eval_case_file_path)
+        new_res_row = pd.DataFrame(
+            {
+                "case_file": [eval_config_file],
+                "score": [score],
+                "normalized_score": [normalized_score],
+            },
         )
-        for idx, score, normalized_score in score_list:
-            print(f"Round-{idx} score: {score}, normalized score: {normalized_score}")
-            new_res_row = pd.DataFrame(
-                {
-                    "case_file": eval_config_file,
-                    "round": idx,
-                    "score": score,
-                    "normalized_score": normalized_score,
-                },
-                index=[0],
-            )
-            results = pd.concat([results, new_res_row], ignore_index=True)
+        results = pd.concat([results, new_res_row], ignore_index=True)
 
         print("------------Finished evaluating------------", eval_config_file)
 
@@ -174,13 +135,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == "single":
-        score_list = auto_evaluate_for_taskweaver(args.file, interrupt_threshold=None)
-        for idx, score, normalized_score in score_list:
-            print(f"Round-{idx} score: {score}, normalized score: {normalized_score}")
+        score, normalized_score = auto_evaluate_for_taskweaver(args.file)
+        print(f"Score: {score}, Normalized score: {normalized_score}")
     elif args.mode == "batch":
         batch_auto_evaluate_for_taskweaver(
             args.result,
             args.file,
             flush_result_file=args.flush,
-            interrupt_threshold=None,
         )

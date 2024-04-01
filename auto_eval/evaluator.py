@@ -4,11 +4,13 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Union
 
 import yaml
-from langchain.schema.messages import HumanMessage, SystemMessage
+from langchain.load.dump import dumps
+from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
 from langchain_openai import AzureChatOpenAI
 
-PROMPT_FILE_PATH = os.path.join(os.path.dirname(__file__), "evaluator_prompt.yaml")
+EVALUATOR_PROMPT_FILE_PATH = os.path.join(os.path.dirname(__file__), "evaluator_prompt.yaml")
+VIRTUAL_USER_PROMPT_FILE_PATH = os.path.join(os.path.dirname(__file__), "virtual_user_prompt.yaml")
 
 
 @dataclass
@@ -57,9 +59,49 @@ def config_llm(config: Dict[str, str]) -> Union[ChatOpenAI, AzureChatOpenAI]:
     return model
 
 
+class VirtualUser:
+    def __init__(self, init_query: str):
+        with open(VIRTUAL_USER_PROMPT_FILE_PATH, "r") as file:
+            self.prompt_data = yaml.safe_load(file)
+        self.stop_keyword = self.prompt_data["stop_keyword"]
+        self.prompt = self.prompt_data["instruction"].format(
+            stop_keyword=self.stop_keyword,
+        )
+
+        self.config = load_config()
+        self.llm_model = config_llm(self.config)
+
+        self.init_query = init_query
+
+    def talk_with_agent(self):
+        chat_history = [
+            SystemMessage(content=self.prompt),
+            HumanMessage(content="Let's get started with the conversation. Please send your request."),
+            AIMessage(content=self.init_query),
+        ]
+        print(f"User: {self.init_query}")
+        while True:
+            agent_response = self.get_reply_from_agent(self.init_query)
+            print(f"Agent: {agent_response}")
+            vuser_response = self.get_reply_from_vuser(agent_response, chat_history)
+            print(f"User: {vuser_response}")
+            if self.stop_keyword in vuser_response:
+                break
+        return chat_history
+
+    def get_reply_from_vuser(self, message: str, chat_history) -> str:
+        chat_history.append(HumanMessage(content=message))
+        response = self.llm_model.invoke(chat_history).content
+        chat_history.append(AIMessage(content=response))
+        return response
+
+    def get_reply_from_agent(self, message: str) -> str:
+        raise NotImplementedError
+
+
 class Evaluator(object):
     def __init__(self):
-        with open(PROMPT_FILE_PATH, "r") as file:
+        with open(EVALUATOR_PROMPT_FILE_PATH, "r") as file:
             self.prompt_data = yaml.safe_load(file)
         self.prompt = self.prompt_data["instruction_template"].format(
             response_schema=self.prompt_data["response_schema"],
@@ -68,8 +110,13 @@ class Evaluator(object):
         self.llm_model = config_llm(self.config)
 
     @staticmethod
-    def format_input(user_query: str, agent_responses: str, scoring_point: ScoringPoint) -> str:
-        return "The agent's output is: " + agent_responses + "\n" + "The statement is: " + scoring_point.score_point
+    def format_input(user_query: str, chat_history: List, scoring_point: ScoringPoint) -> str:
+        chat_history_text = dumps(chat_history)
+        return (
+            f"The user query is: {user_query}\n"
+            f"The chat history between user and agent is: {chat_history_text}\n"
+            f"The statement is: {scoring_point.score_point}"
+        )
 
     @staticmethod
     def parse_output(response: str) -> bool:
@@ -85,10 +132,10 @@ class Evaluator(object):
             else:
                 raise e
 
-    def score(self, user_query: str, agent_response: str, scoring_point: ScoringPoint) -> float:
+    def score(self, user_query: str, chat_history: List[str], scoring_point: ScoringPoint) -> float:
         if scoring_point.eval_code is not None:
             code = scoring_point.eval_code
-            agent_response = json.loads(agent_response)
+            # chat_history = json.loads(chat_history)
             indented_code = "\n".join([f"    {line}" for line in code.strip().split("\n")])
             func_code = (
                 f"def check_agent_response(agent_response):\n"
@@ -101,7 +148,7 @@ class Evaluator(object):
         else:
             messages = [
                 SystemMessage(content=self.prompt),
-                HumanMessage(content=self.format_input(user_query, agent_response, scoring_point)),
+                HumanMessage(content=self.format_input(user_query, chat_history, scoring_point)),
             ]
 
             response = self.llm_model.invoke(messages).content
