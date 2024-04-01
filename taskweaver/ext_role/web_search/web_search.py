@@ -16,7 +16,6 @@ from taskweaver.module.prompt_util import PromptUtil
 from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 from taskweaver.role.role import RoleConfig, RoleEntry
-from taskweaver.utils import read_yaml
 
 # response entry format: (title, url, snippet)
 ResponseEntry = Tuple[str, str, str]
@@ -129,13 +128,11 @@ def browse_page(
 
 class WebSearchConfig(RoleConfig):
     def _configure(self):
-        self.config_file_path = self._get_str(
-            "config_file_path",
-            os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "web_search_config.yaml",
-            ),
-        )
+        self.api_provider = self._get_str("api_provider", "duckduckgo")
+        self.result_count = self._get_int("result_count", 3)
+        self.google_api_key = self._get_str("google_api_key", "")
+        self.google_search_engine_id = self._get_str("google_search_engine_id", "")
+        self.bing_api_key = self._get_str("bing_api_key", "")
 
 
 class WebSearch(Role):
@@ -150,18 +147,17 @@ class WebSearch(Role):
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
 
-        configurations = read_yaml(self.config.config_file_path)["configurations"]
-        self.api_provider = configurations.get("api_provider", "google_custom_search")
-        self.result_count = configurations.get("result_count", 3)
-        self.google_api_key = configurations.get("google_api_key", None)
-        self.google_search_engine_id = configurations.get("google_search_engine_id", None)
-        self.bing_api_key = configurations.get("bing_api_key", None)
+        self.api_provider = config.api_provider
+        self.result_count = config.result_count
+        self.google_api_key = config.google_api_key
+        self.google_search_engine_id = config.google_search_engine_id
+        self.bing_api_key = config.bing_api_key
 
     def close(self) -> None:
         super().close()
 
     def search_query(self, query: str) -> List[ResponseEntry]:
-        if self.api_provider == "google_custom_search":
+        if self.api_provider == "google":
             return self._search_google_custom_search(query, cnt=self.result_count)
         elif self.api_provider == "bing":
             return self._search_bing(query, cnt=self.result_count)

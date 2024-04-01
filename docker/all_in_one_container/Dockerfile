@@ -41,4 +41,10 @@ COPY --chown=taskweaver:taskweaver playground playground
 
 ENV EXECUTION_SERVICE_KERNEL_MODE="local"
 
+# Install dependencies for different LLM models
+RUN pip install --no-cache-dir --no-warn-script-location --user google-generativeai
+RUN pip install --no-cache-dir --no-warn-script-location --user zhipuai
+RUN pip install --no-cache-dir --no-warn-script-location --user dashscope
+
+
 CMD ["sh", "-c", "python -m taskweaver -p ./project"]
