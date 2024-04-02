@@ -72,12 +72,15 @@ class VirtualUser:
         self.task_description = task_description
         self.kick_off_message = self.prompt_data["kick_off_message"]
 
+        self.max_rounds = self.config.get("max_rounds", 15)
+
     def talk_with_agent(self):
         sys_message = self.prompt_template.format(
             task_description=self.task_description,
             stop_keyword=self.stop_keyword,
             kick_off_message=self.kick_off_message,
         )
+        round_num = 0
         chat_history = [SystemMessage(content=sys_message)]
         print(f"Task: {self.task_description}")
         user_query = self.get_reply_from_vuser(self.kick_off_message, chat_history)
@@ -90,6 +93,10 @@ class VirtualUser:
             if self.stop_keyword in vuser_response:
                 break
             user_query = vuser_response
+            round_num += 1
+            if round_num >= self.max_rounds:
+                print("Max rounds reached. Stopping conversation.")
+                break
         return chat_history
 
     def get_reply_from_vuser(
