@@ -60,27 +60,28 @@ def config_llm(config: Dict[str, str]) -> Union[ChatOpenAI, AzureChatOpenAI]:
 
 
 class VirtualUser:
-    def __init__(self, init_query: str):
+    def __init__(self, task_description: str):
         with open(VIRTUAL_USER_PROMPT_FILE_PATH, "r") as file:
             self.prompt_data = yaml.safe_load(file)
         self.stop_keyword = self.prompt_data["stop_keyword"]
-        self.prompt = self.prompt_data["instruction"].format(
-            stop_keyword=self.stop_keyword,
-        )
+        self.prompt_template = self.prompt_data["instruction_template"]
 
         self.config = load_config()
         self.llm_model = config_llm(self.config)
 
-        self.init_query = init_query
+        self.task_description = task_description
+        self.kick_off_message = self.prompt_data["kick_off_message"]
 
     def talk_with_agent(self):
-        chat_history = [
-            SystemMessage(content=self.prompt),
-            HumanMessage(content="Let's get started with the conversation. Please send your request."),
-            AIMessage(content=self.init_query),
-        ]
-        print(f"User: {self.init_query}")
-        user_query = self.init_query
+        sys_message = self.prompt_template.format(
+            task_description=self.task_description,
+            stop_keyword=self.stop_keyword,
+            kick_off_message=self.kick_off_message,
+        )
+        chat_history = [SystemMessage(content=sys_message)]
+        print(f"Task: {self.task_description}")
+        user_query = self.get_reply_from_vuser(self.kick_off_message, chat_history)
+        print(f"User: {user_query}")
         while True:
             agent_response = self.get_reply_from_agent(user_query)
             print(f"Agent: {agent_response}")

@@ -15,8 +15,8 @@ from taskweaver.app.app import TaskWeaverApp
 
 
 class TaskWeaverVirtualUser(VirtualUser):
-    def __init__(self, init_query: str, app_dir: str, config_var: Optional[dict] = None):
-        super().__init__(init_query)
+    def __init__(self, task_description: str, app_dir: str, config_var: Optional[dict] = None):
+        super().__init__(task_description)
 
         self.app = TaskWeaverApp(app_dir=app_dir, config=config_var)
         self.session = self.app.get_session()
@@ -40,16 +40,16 @@ def auto_evaluate_for_taskweaver(
 
     app_dir = eval_meta_data["app_dir"]
     config_var = eval_meta_data.get("config_var", None)
-    init_query = eval_meta_data["user_query"]
+    task_description = eval_meta_data["task_description"]
 
-    taskweaver_vuser = TaskWeaverVirtualUser(init_query, app_dir, config_var)
+    taskweaver_vuser = TaskWeaverVirtualUser(task_description, app_dir, config_var)
     taskweaver_evaluator = Evaluator()
 
     chat_history = taskweaver_vuser.talk_with_agent()
 
     score_points = eval_meta_data["scoring_points"]
     score_points = [ScoringPoint(**score_point) for score_point in score_points]
-    score, normalized_score = taskweaver_evaluator.evaluate(init_query, chat_history, score_points)
+    score, normalized_score = taskweaver_evaluator.evaluate(task_description, chat_history, score_points)
 
     taskweaver_vuser.close()
 
