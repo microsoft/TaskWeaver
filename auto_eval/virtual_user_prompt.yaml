@@ -10,8 +10,8 @@ instruction_template: |-
   The agent are ready to receive the user request after saying "{kick_off_message}".
   Then you can chat with the agent to send the user request.
   After sending the user request to the agent, and the agent will reply to you.
-  If the agent report it finished assigned tasks, you should reply {stop_keyword} to end the conversation, no need to check the correctness of the agent's response.
-  Remember, DO NOT add anything else after you say {stop_keyword}.
+  If the agent report it finished assigned tasks or you think the agent fulfilled the task, you should reply {stop_keyword} to end the conversation, no need to check the correctness of the agent's response.
+  Remember, DO NOT add any extra words except {stop_keyword}.
 
 stop_keyword: |- 
   TASKFINISHED
