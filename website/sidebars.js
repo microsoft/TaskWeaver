@@ -25,6 +25,28 @@ const sidebars = {
     'FAQ',
     {
       type: 'category',
+      label: 'Concepts',
+      link: {
+        type: 'generated-index',
+        title: 'Usage Options',
+        description: 'The important concepts of TaskWeaver',
+        slug: '/concepts',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: [
+        'concepts/overview',
+        'concepts/app',
+        'concepts/session',
+        'concepts/conversation',
+        'concepts/round',
+        'concepts/post',
+        'concepts/attachment',
+        'concepts/role',
+        ],
+    },
+    {
+      type: 'category',
       label: 'Usage Options',
       link: {
         type: 'generated-index',

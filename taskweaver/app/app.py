@@ -22,6 +22,14 @@ class TaskWeaverApp(object):
         config: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
+        """
+        Initialize the TaskWeaver app.
+        :param app_dir: The project directory.
+        :param use_local_uri: Whether to use local URI for artifacts.
+        :param config: The configuration.
+        :param kwargs: The additional arguments.
+        """
+
         app_dir, is_valid, _ = TaskWeaverApp.discover_app_dir(app_dir)
         app_config_file = path.join(app_dir, "taskweaver_config.json") if is_valid else None
         config = {
@@ -48,9 +56,18 @@ class TaskWeaverApp(object):
         session_id: Optional[str] = None,
         prev_round_id: Optional[str] = None,
     ) -> Session:
+        """
+        Get the session. Return a new session if the session ID is not provided.
+        :param session_id: The session ID.
+        :param prev_round_id: The previous round ID.
+        :return: The session.
+        """
         return self.session_manager.get_session(session_id, prev_round_id)
 
     def stop(self) -> None:
+        """
+        Stop the TaskWeaver app. This function must be called before the app exits.
+        """
         self.session_manager.stop_all_sessions()
 
     @staticmethod
