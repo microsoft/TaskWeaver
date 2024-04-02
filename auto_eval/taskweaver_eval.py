@@ -26,6 +26,7 @@ class TaskWeaverVirtualUser(VirtualUser):
             message,
             event_handler=None,
         )
+        assert response_round.state != "failed", "Failed to get response from agent."
         return response_round.post_list[-1].message
 
     def close(self):

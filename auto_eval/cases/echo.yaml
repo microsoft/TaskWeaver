@@ -4,7 +4,7 @@ config_var:
 app_dir: ../project/
 task_description: echo the word "TASKWEAVER"
 scoring_points:
-#  - score_point: "There should be an init_plan and a plan in the attachment_list field"
+#  - score_point: The agent should repeat the word "TASKWEAVER" in the response
 #    weight: 1
 #    eval_code: |-
 #      if agent_response["attachment_list"][0]['type'] != 'init_plan':  # agent_response is the JSON object of the agent's output

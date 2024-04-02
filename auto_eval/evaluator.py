@@ -92,7 +92,11 @@ class VirtualUser:
             user_query = vuser_response
         return chat_history
 
-    def get_reply_from_vuser(self, message: str, chat_history) -> str:
+    def get_reply_from_vuser(
+        self,
+        message: str,
+        chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
+    ) -> str:
         chat_history.append(HumanMessage(content=message))
         response = self.llm_model.invoke(chat_history).content
         chat_history.append(AIMessage(content=response))
@@ -113,10 +117,14 @@ class Evaluator(object):
         self.llm_model = config_llm(self.config)
 
     @staticmethod
-    def format_input(user_query: str, chat_history: List, scoring_point: ScoringPoint) -> str:
+    def format_input(
+        task_description: str,
+        chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
+        scoring_point: ScoringPoint,
+    ) -> str:
         chat_history_text = dumps(chat_history)
         return (
-            f"The user query is: {user_query}\n"
+            f"The task description is: {task_description}\n"
             f"The chat history between user and agent is: {chat_history_text}\n"
             f"The statement is: {scoring_point.score_point}"
         )
@@ -135,15 +143,19 @@ class Evaluator(object):
             else:
                 raise e
 
-    def score(self, user_query: str, chat_history: List[str], scoring_point: ScoringPoint) -> float:
+    def score(
+        self,
+        task_description: str,
+        chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
+        scoring_point: ScoringPoint,
+    ) -> float:
         if scoring_point.eval_code is not None:
             code = scoring_point.eval_code
-            # chat_history = json.loads(chat_history)
             indented_code = "\n".join([f"    {line}" for line in code.strip().split("\n")])
             func_code = (
-                f"def check_agent_response(agent_response):\n"
+                f"def check_agent_response(chat_history):\n"
                 f"{indented_code}\n"
-                f"result = check_agent_response(agent_response)"
+                f"result = check_agent_response(chat_history)"
             )
             local_vars = locals()
             exec(func_code, None, local_vars)
@@ -151,7 +163,7 @@ class Evaluator(object):
         else:
             messages = [
                 SystemMessage(content=self.prompt),
-                HumanMessage(content=self.format_input(user_query, chat_history, scoring_point)),
+                HumanMessage(content=self.format_input(task_description, chat_history, scoring_point)),
             ]
 
             response = self.llm_model.invoke(messages).content
@@ -159,12 +171,17 @@ class Evaluator(object):
             is_hit = self.parse_output(response)
             return is_hit
 
-    def evaluate(self, user_query, agent_response, scoring_points: List[ScoringPoint]) -> [float, float]:
+    def evaluate(
+        self,
+        task_description: str,
+        chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
+        scoring_points: List[ScoringPoint],
+    ) -> [float, float]:
         max_score = sum([scoring_point.weight for scoring_point in scoring_points])
         score = 0
 
         for idx, scoring_point in enumerate(scoring_points):
-            single_score = int(self.score(user_query, agent_response, scoring_point)) * scoring_point.weight
+            single_score = int(self.score(task_description, chat_history, scoring_point)) * scoring_point.weight
             print(f"single_score: {single_score} for {idx+1}-scoring_point: {scoring_point.score_point}")
             score += single_score
         normalized_score = score / max_score
