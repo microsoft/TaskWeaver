@@ -6,6 +6,7 @@ instruction_template: |-
   
   The task brief is shown below:
   {task_description}
+  You need to stick to the task description and do not add any extra information.
   
   The agent are ready to receive the user request after saying "{kick_off_message}".
   Then you can chat with the agent to send the user request.

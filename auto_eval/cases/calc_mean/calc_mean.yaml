@@ -1,0 +1,11 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+dependencies: ["numpy"]
+data_files:
+  - demo_data.csv
+task_description: calculate mean value of ./demo_data.csv
+scoring_points:
+  - score_point: "The correct mean value is 78172.75"
+    weight: 1

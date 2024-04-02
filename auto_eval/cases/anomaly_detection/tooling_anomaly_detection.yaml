@@ -2,7 +2,10 @@ version: 0.1
 app_dir: ../project/
 config_var:
   execution_service.kernel_mode: "local"
-task_description: detect anomaly on time_series table from database
+dependencies: []
+data_files:
+  - anomaly_detection.db
+task_description: detect anomaly on time_series table from anomaly_detection.db database
 scoring_points:
   - score_point: "The data should be pulled from the sql database"
     weight: 1

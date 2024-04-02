@@ -2,6 +2,7 @@ version: 0.1
 config_var:
   execution_service.kernel_mode: "local"
 app_dir: ../project/
+dependencies: []
 task_description: echo the word "TASKWEAVER"
 scoring_points:
   - score_point: \"TASKWEAVER\" should appear in the last agent response

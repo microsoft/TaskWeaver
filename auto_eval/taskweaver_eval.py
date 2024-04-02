@@ -1,4 +1,6 @@
+import glob
 import os
+import shutil
 import sys
 import warnings
 from typing import Optional, Tuple
@@ -10,6 +12,7 @@ warnings.filterwarnings("ignore")
 import pandas as pd
 import yaml
 from evaluator import Evaluator, ScoringPoint, VirtualUser
+from utils import check_package_version
 
 from taskweaver.app.app import TaskWeaverApp
 
@@ -20,6 +23,7 @@ class TaskWeaverVirtualUser(VirtualUser):
 
         self.app = TaskWeaverApp(app_dir=app_dir, config=config_var)
         self.session = self.app.get_session()
+        self.session_id = self.session.session_id
 
     def get_reply_from_agent(self, message: str) -> str:
         response_round = self.session.send_message(
@@ -34,17 +38,35 @@ class TaskWeaverVirtualUser(VirtualUser):
 
 
 def auto_evaluate_for_taskweaver(
-    eval_case_file_path: str,
+    eval_case_dir: str,
 ) -> Tuple[float, float]:
-    with open(eval_case_file_path, "r") as f:
+    assert os.path.isdir(eval_case_dir), f"Invalid eval case dir: {eval_case_dir}"
+    eval_case_file = glob.glob(os.path.join(eval_case_dir, "*.yaml"))
+    if len(eval_case_file) != 1:
+        raise ValueError(f"Invalid eval case dir: {eval_case_dir} because only one eval case YAML file is expected.")
+    eval_case_file = eval_case_file[0]
+    with open(eval_case_file, "r") as f:
         eval_meta_data = yaml.safe_load(f)
 
     app_dir = eval_meta_data["app_dir"]
     config_var = eval_meta_data.get("config_var", None)
     task_description = eval_meta_data["task_description"]
+    dependencies = eval_meta_data.get("dependencies", [])
+    data_files = eval_meta_data.get("data_files", [])
+
+    for dependency in dependencies:
+        check_package_version(dependency)
 
     taskweaver_vuser = TaskWeaverVirtualUser(task_description, app_dir, config_var)
     taskweaver_evaluator = Evaluator()
+
+    for data_file in data_files:
+        if not os.path.exists(os.path.join(eval_case_dir, data_file)):
+            raise FileNotFoundError(f"Data file {data_file} is not found.")
+        else:
+            file_path = os.path.join(eval_case_dir, data_file)
+            working_directory = os.path.join(app_dir, "workspace", "sessions", taskweaver_vuser.session_id, "cwd")
+            shutil.copy(file_path, working_directory)
 
     chat_history = taskweaver_vuser.talk_with_agent()
 
@@ -59,7 +81,7 @@ def auto_evaluate_for_taskweaver(
 
 def batch_auto_evaluate_for_taskweaver(
     result_file_path: str,
-    eval_case_dir: str,
+    eval_case_root: str,
     flush_result_file: bool = False,
 ):
     if not os.path.exists(result_file_path):
@@ -71,27 +93,27 @@ def batch_auto_evaluate_for_taskweaver(
     if flush_result_file:
         evaluated_case_files = []
     print(f"Evaluated case files: {evaluated_case_files}")
-    eval_config_files = os.listdir(eval_case_dir)
-    print(f"Eval config files in case dir: {eval_config_files}")
+    eval_config_dirs = os.listdir(eval_case_root)
+    print(f"Eval config files in case dir: {eval_config_dirs}")
 
-    for eval_config_file in eval_config_files:
-        if eval_config_file in evaluated_case_files:
-            print(f"Skip {eval_config_file} because it has been evaluated.")
+    for eval_case_dir in eval_config_dirs:
+        if eval_case_dir in evaluated_case_files:
+            print(f"Skip {eval_case_dir} because it has been evaluated.")
             continue
-        print("------------Start evaluating------------", eval_config_file)
-        eval_case_file_path = os.path.join(eval_case_dir, eval_config_file)
+        print("------------Start evaluating------------", eval_case_dir)
+        eval_case_dir_path = os.path.join(eval_case_root, eval_case_dir)
 
-        score, normalized_score = auto_evaluate_for_taskweaver(eval_case_file_path)
+        score, normalized_score = auto_evaluate_for_taskweaver(eval_case_dir_path)
         new_res_row = pd.DataFrame(
             {
-                "case_file": [eval_config_file],
+                "case_file": [eval_case_dir],
                 "score": [score],
                 "normalized_score": [normalized_score],
             },
         )
         results = pd.concat([results, new_res_row], ignore_index=True)
 
-        print("------------Finished evaluating------------", eval_config_file)
+        print("------------Finished evaluating------------", eval_case_dir)
 
         results.to_csv(result_file_path, index=False)
 
