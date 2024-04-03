@@ -62,6 +62,9 @@ class Role:
         event_emitter: SessionEventEmitter,
         role_entry: Optional[RoleEntry] = None,
     ):
+        """
+        The base class for all roles.
+        """
         self.config = config
         self.logger = logger
         self.tracing = tracing

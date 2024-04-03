@@ -47,7 +47,7 @@ cd scripts
 ```
 
 After the Docker image is built, you can run `docker images` to check if a Docker image 
-named `executor_container` is available. 
+named `taskweavercontainers/taskweaver-executor` is available. 
 If the prerequisite is met, you can now run TaskWeaver in the `container` mode.
 
 After running TaskWeaver in the `container` mode, you can check if the container is running by running `docker ps`.
@@ -56,8 +56,7 @@ You should see a container of image `taskweavercontainers/taskweaver-executor` r
 ## How to customize the Docker image for code execution
 
 You may want to customize the Docker image for code execution to include additional packages or libraries, especially
-for your developed plugins. The current Docker image for code execution is `taskweavercontainers/taskweaver-executor`, which 
-only includes the dependencies specified in the `TaskWeaver/requirements.txt` file. To customize the Docker image, you need to
+for your developed plugins. The current Docker image for code execution only includes the dependencies specified in the `TaskWeaver/requirements.txt` file. To customize the Docker image, you need to
 modify the `Dockerfile` at `TaskWeaver/docker/ces_container/Dockerfile` and rebuild the Docker image.
 
 When you open the `Dockerfile`, you will see the following content, and you can add additional packages or libraries

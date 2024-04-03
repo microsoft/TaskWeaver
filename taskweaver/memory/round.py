@@ -17,6 +17,9 @@ class Round:
     Args:
         id: the unique id of the round.
         post_list: a list of posts in the round.
+        user_query: the query of the user.
+        state: the state of the round.
+        board: a dict to store the bulletin of the round.
     """
 
     id: str

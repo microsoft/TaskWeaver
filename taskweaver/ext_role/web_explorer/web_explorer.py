@@ -20,6 +20,10 @@ class WebExplorerConfig(RoleConfig):
                 "web_explorer_config.yaml",
             ),
         )
+        self.gpt4v_key = self._get_str("gpt4v_key", "")
+        self.gpt4v_endpoint = self._get_str("gpt4v_endpoint", "")
+        self.chrome_driver_path = self._get_str("chrome_driver_path", "")
+        self.chrome_executable_path = self._get_str("chrome_executable_path", "")
 
 
 class WebExplorer(Role):
@@ -45,11 +49,11 @@ class WebExplorer(Role):
             from taskweaver.ext_role.web_explorer.planner import VisionPlanner
 
             config = read_yaml(self.config.config_file_path)
-            GPT4V_KEY = os.environ.get("GPT4V_KEY")
-            GPT4V_ENDPOINT = os.environ.get("GPT4V_ENDPOINT")
+            GPT4V_KEY = self.config.gpt4v_key
+            GPT4V_ENDPOINT = self.config.gpt4v_endpoint
             self.driver = SeleniumDriver(
-                chrome_driver_path=os.environ.get("CHROME_DRIVER_PATH"),
-                chrome_executable_path=os.environ.get("CHROME_EXECUTABLE_PATH"),
+                chrome_driver_path=self.config.chrome_driver_path,
+                chrome_executable_path=self.config.chrome_executable_path,
                 mobile_emulation=False,
                 js_script=config["js_script"],
             )
