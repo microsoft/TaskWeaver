@@ -1,12 +1,29 @@
+import glob
+import os
 import re
 import sys
 
+import yaml
 from packaging import version
 
 if sys.version_info >= (3, 8):
     from importlib import metadata as importlib_metadata
 else:
     import importlib_metadata
+
+
+def load_task_case(eval_case_dir: str):
+    assert os.path.isdir(eval_case_dir), f"Invalid eval case dir: {eval_case_dir}"
+    eval_case_file = glob.glob(os.path.join(eval_case_dir, "*.yaml"))
+    if len(eval_case_file) != 1:
+        raise ValueError(
+            f"Invalid eval case dir: {eval_case_dir} because only one eval case YAML file is expected.",
+        )
+    eval_case_file = eval_case_file[0]
+    with open(eval_case_file, "r") as f:
+        eval_meta_data = yaml.safe_load(f)
+
+    return eval_meta_data
 
 
 def check_package_version(package_specification):

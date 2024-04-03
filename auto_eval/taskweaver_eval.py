@@ -1,4 +1,3 @@
-import glob
 import os
 import shutil
 import sys
@@ -10,9 +9,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 warnings.filterwarnings("ignore")
 
 import pandas as pd
-import yaml
 from evaluator import Evaluator, ScoringPoint, VirtualUser
-from utils import check_package_version
+from utils import check_package_version, load_task_case
 
 from taskweaver.app.app import TaskWeaverApp
 
@@ -40,13 +38,7 @@ class TaskWeaverVirtualUser(VirtualUser):
 def auto_evaluate_for_taskweaver(
     eval_case_dir: str,
 ) -> Tuple[float, float]:
-    assert os.path.isdir(eval_case_dir), f"Invalid eval case dir: {eval_case_dir}"
-    eval_case_file = glob.glob(os.path.join(eval_case_dir, "*.yaml"))
-    if len(eval_case_file) != 1:
-        raise ValueError(f"Invalid eval case dir: {eval_case_dir} because only one eval case YAML file is expected.")
-    eval_case_file = eval_case_file[0]
-    with open(eval_case_file, "r") as f:
-        eval_meta_data = yaml.safe_load(f)
+    eval_meta_data = load_task_case(eval_case_dir)
 
     app_dir = eval_meta_data["app_dir"]
     config_var = eval_meta_data.get("config_var", None)
