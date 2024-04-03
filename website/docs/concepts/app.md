@@ -21,7 +21,7 @@ class TaskWeaverApp(object):
         """
 ```
 
-The `app_dir` parameter is the path to the project directory. 
+The `app_dir` parameter is the path to the [project](project.md) directory. 
 The `use_local_uri` parameter is a boolean that specifies whether to use local URIs for artifacts. 
 If the artifacts are stored locally, the `use_local_uri` parameter should be set to `True`.
 This is useful if TaskWeaver is being used as a remote service and the artifacts are then remote URIs.

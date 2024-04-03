@@ -93,6 +93,7 @@ def test_environment_start_subprocess():
         env = Environment("local", env_mode=EnvMode.Local)
         env.start_session(
             session_id="session_id",
+            session_dir=os.path.join(sessions, "session_id"),
         )
 
         assert os.path.isdir(sessions)
@@ -127,6 +128,7 @@ def test_environment_start_outside_container():
         env = Environment("local", env_mode=EnvMode.Container)
         env.start_session(
             session_id="session_id",
+            session_dir=os.path.join(sessions, "session_id"),
         )
 
         assert os.path.isdir(sessions)
