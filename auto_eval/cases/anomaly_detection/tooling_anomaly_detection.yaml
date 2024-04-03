@@ -5,7 +5,10 @@ config_var:
 dependencies: []
 data_files:
   - anomaly_detection.db
-task_description: detect anomaly on time_series table from anomaly_detection.db database
+task_description: |-
+  The task is to detect anomaly on time_series table from anomaly_detection.db database
+  You should not include the column names in your initial request.
+  But if you are asked to provide the columns to detect the anomaly, please provide the following columns: 'ts' and 'val'.
 scoring_points:
   - score_point: "The data should be pulled from the sql database"
     weight: 1

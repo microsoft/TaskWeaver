@@ -122,8 +122,8 @@ if __name__ == "__main__":
         help="Evaluation mode, single for evaluating a single case, " "batch for evaluating a batch of cases",
     )
     parser.add_argument(
-        "-f",
-        "--file",
+        "-p",
+        "--path",
         type=str,
         required=True,
         help="Path to the evaluation case file or directory containing evaluation case files",
@@ -143,8 +143,8 @@ if __name__ == "__main__":
         help="Interrupt threshold for multi-round chat",
     )
     parser.add_argument(
-        "-flush",
-        "--flush",
+        "-f",
+        "--fresh",
         action="store_true",
         help="Flush the result file",
     )
@@ -152,11 +152,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.mode == "single":
-        score, normalized_score = auto_evaluate_for_taskweaver(args.file)
+        score, normalized_score = auto_evaluate_for_taskweaver(args.path)
         print(f"Score: {score}, Normalized score: {normalized_score}")
     elif args.mode == "batch":
         batch_auto_evaluate_for_taskweaver(
             args.result,
-            args.file,
-            flush_result_file=args.flush,
+            args.path,
+            flush_result_file=args.fresh,
         )

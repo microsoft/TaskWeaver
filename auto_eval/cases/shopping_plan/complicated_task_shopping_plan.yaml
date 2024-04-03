@@ -2,8 +2,8 @@ version: 0.1
 config_var:
   execution_service.kernel_mode: "local"
 app_dir: ../project/
-
-task_description: I have a $1000 budget and I want to spend as much of it as possible on an Xbox and an iPhone
+task_description: |-
+  The task is described as "I have a $1000 budget and I want to spend as much of it as possible on an Xbox and an iPhone"
 scoring_points:
   - score_point: "At least one Xbox and one iPhone should be recommended"
     weight: 1

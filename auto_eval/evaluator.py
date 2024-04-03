@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import yaml
 from langchain.load.dump import dumps
@@ -82,7 +82,9 @@ class VirtualUser:
         )
         round_num = 0
         chat_history = [SystemMessage(content=sys_message)]
+        print("-" * 100)
         print(f"Task: {self.task_description}")
+        print("-" * 100)
         user_query = self.get_reply_from_vuser(self.kick_off_message, chat_history)
         print(f"User: {user_query}")
         while True:
@@ -137,16 +139,17 @@ class Evaluator(object):
         )
 
     @staticmethod
-    def parse_output(response: str) -> bool:
+    def parse_output(response: str) -> Tuple[bool, str]:
         try:
             structured_response = json.loads(response)
             is_hit = structured_response["is_hit"].lower()
-            return True if is_hit == "yes" else False
+            reason = structured_response.get("reason", "")
+            return True if is_hit == "yes" else False, reason
         except Exception as e:
             if "yes" in response.lower():
-                return True
+                return True, ""
             elif "no" in response.lower():
-                return False
+                return False, ""
             else:
                 raise e
 
@@ -155,7 +158,7 @@ class Evaluator(object):
         task_description: str,
         chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
         scoring_point: ScoringPoint,
-    ) -> float:
+    ) -> Tuple[bool, str]:
         if scoring_point.eval_code is not None:
             code = scoring_point.eval_code
             indented_code = "\n".join([f"    {line}" for line in code.strip().split("\n")])
@@ -175,8 +178,7 @@ class Evaluator(object):
 
             response = self.llm_model.invoke(messages).content
 
-            is_hit = self.parse_output(response)
-            return is_hit
+            return self.parse_output(response)
 
     def evaluate(
         self,
@@ -188,8 +190,12 @@ class Evaluator(object):
         score = 0
 
         for idx, scoring_point in enumerate(scoring_points):
-            single_score = int(self.score(task_description, chat_history, scoring_point)) * scoring_point.weight
-            print(f"single_score: {single_score} for {idx+1}-scoring_point: {scoring_point.score_point}")
+            is_hit, reason = self.score(task_description, chat_history, scoring_point)
+            single_score = int(is_hit) * scoring_point.weight
+            print(
+                f"single_score: {single_score} for {idx+1}-scoring_point: {scoring_point.score_point}, "
+                f"reason: {reason}",
+            )
             score += single_score
         normalized_score = score / max_score
 

@@ -2,51 +2,50 @@
 
 ## Quick start
 
-We prepared some example tasks to run auto evaluation.
-You can run them by following the steps below.
+We have prepared some example tasks to run auto evaluation.
+You can run them by following the steps below:
 
-1. complete the `evaluator_config.json` (referring to the schema in `evaluator_config_template.json`) under the `auto_eval` folder and the  `taskweaver_config.json` under the `taskweaver` folder.
-2. cd to the `auto_eval` folder.
-3. run the below command to start the auto evaluation for single case.
+1. Complete the `evaluator_config.json` (referring to the schema in `evaluator_config_template.json`) under the `auto_eval` folder and the  `taskweaver_config.json` under the `taskweaver` folder.
+2. Go to the `auto_eval` folder.
+3. Run the command below to start the auto evaluation for single case.
 ```bash
-python taskweaver_eval.py -m single -f cases/echo
+python taskweaver_eval.py -m single -p cases/echo
 ```
-4. run the below command to start the auto evaluation for multiple cases.
+Or run the command below to start the auto evaluation for multiple cases.
 ```bash
-python taskweaver_eval.py -m batch -f ./cases
+python taskweaver_eval.py -m batch -p ./cases
 ```
 
 ## Parameters
 
-- -m/--mode: specifies the evaluation mode, which can be either single or batch. 
-- -f/--file: specifies the path to the test case file or directory containing test case files. 
+- -m/--mode: specifies the evaluation mode, which can be `single` or `batch`. 
+- -p/--path: specifies the path to the test case file or directory containing test case files. 
 - -r/--result: specifies the path to the result file for batch evaluation mode. This parameter is only valid in batch mode. The default value is `sample_case_results.csv`.
-- -flush/--flush: specifies whether to flush the result file. This parameter is only valid in batch mode. The default value is `False`, which means that the evaluated cases will not be loaded again. If you want to re-evaluate the cases, you can set this parameter to `True`.
+- -f/--fresh: specifies whether to flush the result file. This parameter is only valid in batch mode. The default value is `False`, which means that the evaluated cases will not be loaded again. If you want to re-evaluate the cases, you can set this parameter to `True`.
 
 
 ## How to create a sample task
 
 A sample task can be configured in the yaml file that contains the following fields:
 
-- config_var(optional): set the config values for TaskWeaver if needed.
+- config_var (optional): set the configuration values for TaskWeaver if needed.
 - app_dir: the path to the project directory for TaskWeaver.
 - dependencies: the list of Python package dependencies that are required to run the task.
-If current environment is not compatible with the dependencies, it will cause an error.
+If current environment is not compatible with the dependencies, it will report an error.
 - data_files: the list of data files that are required to run the task.
-task_description: the description of the task.
+- task_description: the description of the task.
 - scoring_points:
   - score_point: describes the criteria of the agent's response
   - weight: the value that determines how important that criterion is
-  - eval_code(optional): evaluation code that will be run to determine if the criterion is met. In this case, this scoring point will not be evaluated using LLM.
+  - eval_code (optional): evaluation code that will be run to determine if the criterion is met. In this case, this scoring point will not be evaluated using LLM.
 
-
-
-Note: for the `eval_code` field, you can use the variable `chat_history` in your evaluation code snippet.
+> 💡 for the `eval_code` field, you can use the variable `chat_history` in your evaluation code snippet.
 It is a list of [Messages objects of Langchain](https://python.langchain.com/docs/modules/model_io/concepts#messages) that contain the chat history between the virtual user and the agent.
 
 
-## How to evaluate other Agent
+## How to evaluate other Agents
 
+Our evaluation framework is designed to be generic and can be used to evaluate other agents besides TaskWeaver.
 If you want to evaluate other agents, you should follow the steps below.
 
 1. Create a new python file under `auto_eval`, create a new class and inherit the `VirtualUser` in `evaluator.py`.
@@ -68,13 +67,14 @@ class YourVirtualUser(VirtualUser):
 
 2. You can get the config values from the `config_var` parameter in the `__init__` method to set the config values for your agent if needed.
 3. Implement the `get_reply_from_agent` method to get the reply from your agent.
-4. Build up the evaluation logic.
+4. Develop the evaluation logic.
 5. Use the `Evaluator` class to evaluate the agent's response.
    1. load the task case
    2. check the package version
    3. create the VirtualUser and Evaluator
    4. assign the task to the agent via the virtual user
    5. evaluate the agent's response
+
 ```python
 from evaluator import Evaluator, ScoringPoint, VirtualUser
 from utils import check_package_version, load_task_case
