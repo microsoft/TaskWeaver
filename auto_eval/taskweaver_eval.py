@@ -52,19 +52,25 @@ def auto_evaluate_for_taskweaver(
     taskweaver_vuser = TaskWeaverVirtualUser(task_description, app_dir, config_var)
     taskweaver_evaluator = Evaluator()
 
+    working_directory = os.path.join(app_dir, "workspace", "sessions", taskweaver_vuser.session_id, "cwd")
+
     for data_file in data_files:
         if not os.path.exists(os.path.join(eval_case_dir, data_file)):
             raise FileNotFoundError(f"Data file {data_file} is not found.")
         else:
             file_path = os.path.join(eval_case_dir, data_file)
-            working_directory = os.path.join(app_dir, "workspace", "sessions", taskweaver_vuser.session_id, "cwd")
             shutil.copy(file_path, working_directory)
 
     chat_history = taskweaver_vuser.talk_with_agent()
 
     score_points = eval_meta_data["scoring_points"]
     score_points = [ScoringPoint(**score_point) for score_point in score_points]
-    score, normalized_score = taskweaver_evaluator.evaluate(task_description, chat_history, score_points)
+    score, normalized_score = taskweaver_evaluator.evaluate(
+        task_description,
+        chat_history,
+        score_points,
+        working_directory,
+    )
 
     taskweaver_vuser.close()
 
