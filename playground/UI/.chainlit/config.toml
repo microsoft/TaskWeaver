@@ -25,7 +25,7 @@ unsafe_allow_html = true
 latex = false
 
 # Authorize users to upload files with messages
-multi_modal = true
+multi_modal.enabled = true
 
 # Allows user to use speech to text
 [features.speech_to_text]

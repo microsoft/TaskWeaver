@@ -10,7 +10,7 @@ from taskweaver.role.role import RoleConfig, RoleEntry
 
 class EchoConfig(RoleConfig):
     def _configure(self):
-        pass
+        self.decorator = self._get_str("decorator", "")
 
 
 class Echo(Role):
@@ -37,6 +37,8 @@ class Echo(Role):
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
         post_proxy.update_send_to(last_post.send_from)
-        post_proxy.update_message(last_post.message)
+        post_proxy.update_message(
+            self.config.decorator + last_post.message + self.config.decorator,
+        )
 
         return post_proxy.end()

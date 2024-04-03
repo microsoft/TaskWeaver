@@ -54,6 +54,16 @@ class Session:
         config: AppSessionConfig,  # TODO: change to SessionConfig
         role_registry: RoleRegistry,
     ) -> None:
+        """
+        Initialize the session.
+        :param session_id: The session ID.
+        :param workspace: The workspace.
+        :param app_injector: The app injector.
+        :param logger: The logger.
+        :param tracing: The tracing.
+        :param config: The configuration.
+        :param role_registry: The role registry.
+        """
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
         self.tracing = tracing
@@ -72,7 +82,7 @@ class Session:
         )
         self.session_injector.binder.bind(SessionMetadata, self.metadata)
 
-        self.init()
+        self._init()
 
         self.round_index = 0
         self.memory = Memory(session_id=self.session_id)
@@ -104,7 +114,10 @@ class Session:
             file_path=os.path.join(self.workspace, f"{self.session_id}.json"),
         )
 
-    def init(self):
+    def _init(self):
+        """
+        Initialize the session by creating the workspace and execution cwd.
+        """
         if not os.path.exists(self.workspace):
             os.makedirs(self.workspace)
 
@@ -117,11 +130,21 @@ class Session:
         self.logger.info(f"Session {self.session_id} is initialized")
 
     @tracing_decorator
-    def update_session_var(self, variables: Dict[str, str]):
+    def update_session_var(
+        self,
+        variables: Dict[str, str],
+    ):
+        """
+        Update the session variables.
+        :param variables: The variables to update.
+        """
         self.session_var.update(variables)
 
     @tracing_decorator
-    def _send_text_message(self, message: str) -> Round:
+    def _send_text_message(
+        self,
+        message: str,
+    ) -> Round:
         chat_round = self.memory.create_round(user_query=message)
 
         self.tracing.set_span_attribute("round_id", chat_round.id)
@@ -241,6 +264,13 @@ class Session:
         event_handler: Optional[SessionEventHandler] = None,
         files: Optional[List[Dict[Literal["name", "path", "content"], Any]]] = None,
     ) -> Round:
+        """
+        Send a message.
+        :param message: The message.
+        :param event_handler: The event handler.
+        :param files: The files.
+        :return: The chat round.
+        """
         # init span with session_id
         self.tracing.set_span_attribute("session_id", self.session_id)
         self.tracing.set_span_attribute("message", message)
@@ -271,7 +301,7 @@ class Session:
     @tracing_decorator
     def _upload_file(self, name: str, path: Optional[str] = None, content: Optional[bytes] = None) -> str:
         target_name = name.split("/")[-1]
-        target_path = self.get_full_path(self.execution_cwd, target_name)
+        target_path = self._get_full_path(self.execution_cwd, target_name)
         self.tracing.set_span_attribute("target_path", target_path)
         if path is not None:
             shutil.copyfile(path, target_path)
@@ -284,7 +314,11 @@ class Session:
         self.tracing.set_span_status("ERROR", "path or file_content must be provided")
         raise ValueError("path or file_content")
 
-    def get_full_path(self, *file_path: str, in_execution_cwd: bool = False) -> str:
+    def _get_full_path(
+        self,
+        *file_path: str,
+        in_execution_cwd: bool = False,
+    ) -> str:
         return str(
             os.path.realpath(
                 os.path.join(
@@ -296,6 +330,10 @@ class Session:
 
     @tracing_decorator
     def stop(self) -> None:
+        """
+        Stop the session.
+        This function must be called before the session exits.
+        """
         self.logger.info(f"Session {self.session_id} is stopped")
         for worker in self.worker_instances.values():
             worker.close()

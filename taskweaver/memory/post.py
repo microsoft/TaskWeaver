@@ -21,7 +21,7 @@ class Post:
         id: the unique id of the post.
         send_from: the role who sends the post.
         send_to: the role who receives the post.
-        text_message: the text message in the post.
+        message: the text message in the post.
         attachment_list: a list of attachments in the post.
 
     """

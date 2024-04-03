@@ -6,7 +6,7 @@ slug: /plugin/plugin_intro
 
 # Plugin Introduction
 
-Plugins are the units that could be orchestrated by TaskWeaver. One could view the plugins as tools that the LLM can
+Plugins are the units that could be orchestrated by TaskWeaver's CodeInterpreter. One could view the plugins as tools that the LLM can
 utilize to accomplish certain tasks.
 
 In TaskWeaver, each plugin is represented as a Python function that can be called within the generated code snippet. 
