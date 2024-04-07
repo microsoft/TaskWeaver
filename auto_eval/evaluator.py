@@ -158,6 +158,7 @@ class Evaluator(object):
         task_description: str,
         chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
         scoring_point: ScoringPoint,
+        cwd: Optional[str] = None,
     ) -> Tuple[bool, str]:
         if scoring_point.eval_code is not None:
             code = scoring_point.eval_code
@@ -167,9 +168,12 @@ class Evaluator(object):
                 f"{indented_code}\n"
                 f"result = check_agent_response(chat_history)"
             )
+
+            if cwd is not None:
+                os.chdir(cwd)
             local_vars = locals()
             exec(func_code, None, local_vars)
-            return local_vars["result"]
+            return local_vars["result"], ""
         else:
             messages = [
                 SystemMessage(content=self.prompt),
@@ -185,12 +189,13 @@ class Evaluator(object):
         task_description: str,
         chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
         scoring_points: List[ScoringPoint],
+        cwd: Optional[str] = None,
     ) -> [float, float]:
         max_score = sum([scoring_point.weight for scoring_point in scoring_points])
         score = 0
 
         for idx, scoring_point in enumerate(scoring_points):
-            is_hit, reason = self.score(task_description, chat_history, scoring_point)
+            is_hit, reason = self.score(task_description, chat_history, scoring_point, cwd)
             single_score = int(is_hit) * scoring_point.weight
             print(
                 f"single_score: {single_score} for {idx+1}-scoring_point: {scoring_point.score_point}, "
