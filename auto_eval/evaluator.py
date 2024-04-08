@@ -72,7 +72,7 @@ class VirtualUser:
         self.task_description = task_description
         self.kick_off_message = self.prompt_data["kick_off_message"]
 
-        self.max_rounds = self.config.get("max_rounds", 15)
+        self.max_rounds = self.config.get("virtual_user.max_rounds", 15)
 
     def talk_with_agent(self):
         sys_message = self.prompt_template.format(
@@ -88,16 +88,24 @@ class VirtualUser:
         user_query = self.get_reply_from_vuser(self.kick_off_message, chat_history)
         print(f"User: {user_query}")
         while True:
-            agent_response = self.get_reply_from_agent(user_query)
-            print(f"Agent: {agent_response}")
-            vuser_response = self.get_reply_from_vuser(agent_response, chat_history)
-            print(f"User: {vuser_response}")
-            if self.stop_keyword in vuser_response:
-                break
-            user_query = vuser_response
-            round_num += 1
-            if round_num >= self.max_rounds:
-                print("Max rounds reached. Stopping conversation.")
+            try:
+                agent_response = self.get_reply_from_agent(user_query)
+                print(f"Agent: {agent_response}")
+                vuser_response = self.get_reply_from_vuser(agent_response, chat_history)
+                print(f"User: {vuser_response}")
+                if self.stop_keyword in vuser_response:
+                    break
+                user_query = vuser_response
+                round_num += 1
+                if round_num >= self.max_rounds:
+                    print("Max rounds reached. Stopping conversation.")
+                    break
+            except Exception as e:
+                error_message = f"I cannot finish the task because of an error occurred as below: {str(e)}"
+                chat_history.append(HumanMessage(content=error_message))
+                print(f"Agent: {error_message}")
+                chat_history.append(AIMessage(content=self.stop_keyword))
+                print(f"User: {self.stop_keyword}")
                 break
         return chat_history
 
@@ -166,14 +174,19 @@ class Evaluator(object):
             func_code = (
                 f"def check_agent_response(chat_history):\n"
                 f"{indented_code}\n"
-                f"result = check_agent_response(chat_history)"
+                f"try:\n"
+                f"  result = check_agent_response(chat_history)\n"
+                f"except Exception as e:\n"
+                f"  exception_message = str(e)\n"
+                f"  result = False\n"
             )
 
             if cwd is not None:
                 os.chdir(cwd)
             local_vars = locals()
             exec(func_code, None, local_vars)
-            return local_vars["result"], ""
+            reason = local_vars["exception_message"] if "exception_message" in local_vars else ""
+            return local_vars["result"], reason
         else:
             messages = [
                 SystemMessage(content=self.prompt),
