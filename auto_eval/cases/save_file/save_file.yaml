@@ -1,0 +1,16 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  session.roles: ["planner", "code_interpreter"]
+app_dir: ../project/
+dependencies: []
+task_description: |-
+  The task has two steps and you should ask the agent one by one:
+  1. ask the agent to save the content 'hello world' to a file named 'hello.txt' and provide the absolute file path.
+  2. ask the agent to read the file based on the provided file path and present the content to you.
+
+scoring_points:
+  - score_point: The provided file path should be a valid absolute path.
+    weight: 1
+  - score_point: The file read is successful and the content is 'hello world'.
+    weight: 4

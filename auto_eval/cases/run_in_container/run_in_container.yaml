@@ -1,0 +1,17 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "container"
+  session.roles: ["planner", "code_interpreter"]
+app_dir: ../project/
+dependencies:
+  - docker
+task_description: |-
+  The task has the following steps and you should ask the agent one by one:
+  1. ask the agent to generate 10 random numbers between 1 and 100.
+  2. ask the agent to write code to check if the code execution is inside a container.
+  
+  If the agent only provides the code snippet, you can ask the agent to run the code snippet.
+  If the agent still doesn't know, you can view it as a failure.
+scoring_points:
+  - score_point: You should be able to imply that the agent runs its code inside a container.
+    weight: 1

@@ -1,0 +1,14 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+task_description: |-
+  The task is to list all the files in the current directory and provide the list to the user.
+  If the agent say no it can't do it, you can view it as a failure.
+data_files:
+  - file_A.txt
+  - file_B.txt
+  - file_C.txt
+scoring_points:
+  - score_point: The agent should list all the files in the current directory which are file_A.txt, file_B.txt and file_C.txt without any other files.
+    weight: 1

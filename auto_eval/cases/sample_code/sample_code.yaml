@@ -1,0 +1,19 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  session.roles: ["planner", "code_interpreter"]
+app_dir: ../project/
+task_description: |-
+  The task is to ask the agent write a sample python code (without executing it) that generates 10 random numbers, 
+  and then calculate the sum, average, max, and min of these numbers.
+  Ensure that the response is strictly formatted in the following format:
+  ```python
+  # the generated code here
+  ...
+  ```
+  When you see the provided code, you should ask the agent if this code has been run or not.
+scoring_points:
+  - score_point: The generated code should be in the correct format wrapped in a code block ```python```.
+    weight: 1
+  - score_point: The code should not be executed.
+    weight: 1

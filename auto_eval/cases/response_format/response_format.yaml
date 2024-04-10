@@ -1,0 +1,18 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  session.roles: ["planner", "code_interpreter"]
+app_dir: ../project/
+task_description: |-
+  The task is to ask the agent generate 10 random numbers, and then calculate the sum, average, max, and min of these numbers.
+  Ask the agent to strictly format the response in the following format:
+  {
+    "sum": 123,
+    "average": 12.3,
+    "max": 23,
+    "min": 1
+  }
+  without any extra information.
+scoring_points:
+  - score_point: The response should be in the correct format without any extra information such as ```json``` or ```dict```.
+    weight: 1

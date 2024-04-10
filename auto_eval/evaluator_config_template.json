@@ -3,5 +3,6 @@
   "llm.api_base": "place your base url here",
   "llm.api_key": "place your key here",
   "llm.api_version": "place your version here",
-  "llm.model": "place your deployment name here"
+  "llm.model": "place your deployment name here",
+  "virtual_user.max_rounds": 15
 }

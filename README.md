@@ -84,6 +84,10 @@ Before running TaskWeaver, you need to provide your LLM configurations. Taking O
 
 ### 🚩 Step 3: Start TaskWeaver
 
+💡 TaskWeaver has switched to `container` mode by default for code execution, which means the code is run in a container.
+You may need to install Docker and take care of the dependencies in the container.
+Please check the [code execution](https://microsoft.github.io/TaskWeaver/docs/code_execution) for more details.
+
 #### ⌨️ Command Line (CLI)
 ```bash
 # assume you are in the cloned TaskWeaver folder

@@ -1,0 +1,19 @@
+version: 0.1
+app_dir: ../project/
+config_var:
+  execution_service.kernel_mode: "local"
+dependencies: []
+data_files:
+  - anomaly_detection.db
+task_description: |-
+  The task is described as follows:
+  You can find a time_series table in the ./anomaly_detection.db database.
+  Your task is to pull data from the table and calculate the mean of the 'val' column on a monthly basis ('ts' is the timestamp column).
+  You need to find out how many monthly mean values are larger than 60000, and the month with the largest mean value.
+scoring_points:
+  - score_point: The data should be pulled from the sql database
+    weight: 1
+  - score_point: There should be 2 monthly mean values larger than 70000
+    weight: 1
+  - score_point: The month with the largest mean value should be May 2023 or solely May
+    weight: 1
