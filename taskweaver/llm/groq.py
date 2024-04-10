@@ -1,7 +1,10 @@
+from typing import Any, Generator, List, Optional
+
 from injector import inject
+
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType, format_chat_message
-from typing import List, Optional, Any, Generator
+
 
 class GroqServiceConfig(LLMServiceConfig):
     def _configure(self) -> None:
@@ -19,12 +22,6 @@ class GroqServiceConfig(LLMServiceConfig):
             shared_model if shared_model is not None else "groq",
         )
 
-        shared_backup_model = self.llm_module_config.backup_model
-        self.backup_model = self._get_str(
-            "backup_model",
-            shared_backup_model if shared_backup_model is not None else self.model,
-        )
-
         shared_embedding_model = self.llm_module_config.embedding_model
         self.embedding_model = self._get_str(
             "embedding_model",
@@ -34,6 +31,7 @@ class GroqServiceConfig(LLMServiceConfig):
 
 class GroqService(CompletionService, EmbeddingService):
     client = None
+
     @inject
     def __init__(self, config: GroqServiceConfig):
         self.config = config
@@ -43,8 +41,8 @@ class GroqService(CompletionService, EmbeddingService):
                 from groq import Groq
 
                 GroqService.client = Groq(
-                    api_key=self.config.api_key
-                )    
+                    api_key=self.config.api_key,
+                )
             except Exception:
                 raise Exception(
                     "Package groq is required for using Groq API. ",
@@ -67,6 +65,6 @@ class GroqService(CompletionService, EmbeddingService):
         )
 
         yield format_chat_message("assistant", response.choices[0].message.content)
-        
+
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
         pass
