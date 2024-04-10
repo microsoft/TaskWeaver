@@ -26,8 +26,8 @@ class Conversation:
     id: str = ""
     rounds: List[Round] = field(default_factory=list)
     plugins: List[PluginEntry] = field(default_factory=list)
+    roles: List[str] = field(default_factory=list)
     enabled: bool = True
-    plugin_only: bool = False
 
     @staticmethod
     def init():
@@ -36,6 +36,7 @@ class Conversation:
             id="conv-" + create_id(),
             rounds=[],
             plugins=[],
+            roles=[],
             enabled=True,
         )
 
@@ -47,6 +48,7 @@ class Conversation:
         return {
             "id": self.id,
             "plugins": [plugin.to_dict() for plugin in self.plugins],
+            "roles": self.roles,
             "enabled": self.enabled,
             "rounds": [_round.to_dict() for _round in self.rounds],
         }
@@ -64,16 +66,19 @@ class Conversation:
                 plugins = [PluginEntry.from_yaml_content(plugin) for plugin in content["plugins"]]
             else:
                 plugins = []
+
             rounds = [Round.from_dict(r) for r in content["rounds"]]
-            if "plugin_only" in content.keys():
-                plugin_only = content["plugin_only"]
-            else:
-                plugin_only = False
+            roles = set()
+            for round in rounds:
+                for post in round.post_list:
+                    roles.add(post.send_from)
+                    roles.add(post.send_to)
+
             return Conversation(
                 id="conv-" + secrets.token_hex(6),
                 rounds=rounds,
                 plugins=plugins,
+                roles=list(roles),
                 enabled=enabled,
-                plugin_only=plugin_only,
             )
         raise ValueError("Yaml validation failed.")

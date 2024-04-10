@@ -1,3 +1,4 @@
+import atexit
 import functools
 import os
 import re
@@ -31,6 +32,7 @@ from taskweaver.session.session import Session
 
 project_path = os.path.join(repo_path, "project")
 app = TaskWeaverApp(app_dir=project_path, use_local_uri=True)
+atexit.register(app.stop)
 app_session_dict: Dict[str, Session] = {}
 
 
@@ -372,18 +374,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
 async def start():
     user_session_id = cl.user_session.get("id")
     app_session_dict[user_session_id] = app.get_session()
-    exec_kernel_mode = app_session_dict[user_session_id].code_executor.get_execution_mode()
-    print(f"Starting session in `{exec_kernel_mode}` mode")
-    if exec_kernel_mode == "local":
-        print(
-            "Code running in local mode "
-            "may incur security risks, such as file system access. "
-            "Please be cautious when executing code. "
-            "For higher security, consider using the `container` mode by setting "
-            "the `execution_service.kernel_mode` to `container`. "
-            "For more information, please refer to the documentation ("
-            "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
-        )
+    print("Starting new session")
 
 
 @cl.on_chat_end

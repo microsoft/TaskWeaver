@@ -1,0 +1,17 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+data_files:
+  - demo_data.csv
+task_description: |-
+  The task is to calculate the mean and std of 'Count' column in ./demo_data.csv, and count how many values larger than 3 std from the mean.
+  The initial request should give the task to the agent and ask for a concise multi-step plan without executing the plan.
+  Then, in the second phase, ask the agent can go ahead and execute the plan and return the result.
+scoring_points:
+  - score_point: "The correct mean value is near 78172 and the correct std value is near 16233"
+    weight: 1
+  - score_point: "There should be 5 data points that are larger than 3 std from the mean"
+    weight: 1
+  - score_point: "Data loading and mean/std calculating should be presented within a single step"
+    weight: 1

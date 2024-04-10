@@ -1,0 +1,22 @@
+version: 0.1
+app_dir: ../project/
+config_var:
+  execution_service.kernel_mode: "local"
+dependencies: []
+data_files:
+  - anomaly_detection.db
+task_description: |-
+  The task is to detect anomaly on time_series table from anomaly_detection.db database
+  You should not include the column names in your initial request.
+  But if you are asked to provide the columns to detect the anomaly, please provide the following columns: 'ts' and 'val'.
+scoring_points:
+  - score_point: "The data should be pulled from the sql database"
+    weight: 1
+  - score_point: "Agent should use the pre-defined sql_pull_data plugin to pull the data"
+    weight: 1
+  - score_point: "Agent should ask the user to confirm the columns to be detected anomalies"
+    weight: 1
+  - score_point: "There should be 11 anomaly points in the data"
+    weight: 2
+  - score_point: "Agent should use the pre-defined anomaly_detection plugin to detect the anomaly"
+    weight: 1

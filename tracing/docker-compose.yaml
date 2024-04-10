@@ -1,0 +1,41 @@
+version: '3'
+services:
+  optl-collector:
+    image: otel/opentelemetry-collector:0.96.0
+    command: ["--config=/etc/collector-config.yaml"]
+    volumes:
+      - ./collector-config.yaml:/etc/collector-config.yaml
+    ports:
+      - "4317:4317" # Expose the gRPC receiver port for the first collector
+    depends_on:
+      - jaeger
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    ports:
+      - "16686:16686" # Jaeger UI
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090" # Prometheus UI
+    volumes:
+      - ./prometheus-config.yml:/etc/prometheus/prometheus.yml
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    depends_on:
+      - optl-collector
+
+#  grafana:
+#    image: grafana/grafana-enterprise:latest
+#    ports:
+#      - "3000:3000" # Grafana UI
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=secret # You should change 'secret' to a password of your choosing
+#      - GF_USERS_ALLOW_SIGN_UP=false
+#    volumes:
+#      - grafana_data:/var/lib/grafana
+#    depends_on:
+#      - prometheus
+
+#volumes:
+#  grafana_data:

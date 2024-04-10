@@ -40,7 +40,12 @@ class Memory:
         for round in self.conversation.rounds:
             if round.state == "failed" and not include_failure_rounds:
                 continue
-            new_round = Round.create(user_query=round.user_query, id=round.id, state=round.state)
+            new_round = Round.create(
+                user_query=round.user_query,
+                id=round.id,
+                state=round.state,
+                board=copy.deepcopy(round.board),
+            )
             for post in round.post_list:
                 if post.send_from == role or post.send_to == role:
                     new_round.add_post(copy.deepcopy(post))

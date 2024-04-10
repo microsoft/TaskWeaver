@@ -17,8 +17,16 @@ class ExecutionServiceConfig(ModuleConfig):
         )
         self.kernel_mode = self._get_str(
             "kernel_mode",
-            "local",
+            "container",
         )
+        if self.kernel_mode == "local":
+            print(
+                "TaskWeaver is running in the `local` mode. This implies that "
+                "the code execution service will run on the same machine as the TaskWeaver server. "
+                "For better security, it is recommended to run the code execution service in the `container` mode. "
+                "More information can be found in the documentation "
+                "(https://microsoft.github.io/TaskWeaver/docs/advanced/code_execution).",
+            )
 
 
 class ExecutionServiceModule(Module):

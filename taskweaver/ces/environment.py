@@ -1,8 +1,8 @@
-import atexit
 import enum
 import json
 import logging
 import os
+import platform
 import sys
 import time
 from ast import literal_eval
@@ -23,7 +23,6 @@ handler.setLevel(logging.WARNING)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-
 
 ExecType = Literal["user", "control"]
 ResultMimeType = Union[
@@ -103,28 +102,12 @@ class TaskWeaverMultiKernelManager(MultiKernelManager):
         if env is not None:
             if "CONNECTION_FILE" in env:
                 km.connection_file = env["CONNECTION_FILE"]
-            if "JUPYTER_MANUAL_PORTS" in env:
-                # otherwise, the ports will be assigned automatically
-                km.cache_ports = False
-            if "JUPYTER_SHELL_PORT" in env:
-                km.shell_port = int(env["JUPYTER_SHELL_PORT"])
-            if "JUPYTER_STDIN_PORT" in env:
-                km.stdin_port = int(env["JUPYTER_STDIN_PORT"])
-            if "JUPYTER_CONTROL_PORT" in env:
-                km.control_port = int(env["JUPYTER_CONTROL_PORT"])
-            if "JUPYTER_HB_PORT" in env:
-                km.hb_port = int(env["JUPYTER_HB_PORT"])
-            if "JUPYTER_IOPUB_PORT" in env:
-                km.iopub_port = int(env["JUPYTER_IOPUB_PORT"])
-            if "JUPYTER_KERNEL_IP" in env:
-                km.ip = env["JUPYTER_KERNEL_IP"]
         return km, kernel_name, kernel_id
 
 
 class EnvMode(enum.Enum):
     Local = "local"
-    InsideContainer = "inside_container"
-    OutsideContainer = "outside_container"
+    Container = "container"
 
 
 class Environment:
@@ -139,18 +122,14 @@ class Environment:
         self.id = get_id(prefix="env") if env_id is None else env_id
         self.env_dir = env_dir if env_dir is not None else os.getcwd()
         self.mode = env_mode
-        if self.mode == EnvMode.Local or self.mode == EnvMode.InsideContainer:
+
+        if self.mode == EnvMode.Local:
             self.multi_kernel_manager = TaskWeaverMultiKernelManager(
                 default_kernel_name="taskweaver",
                 kernel_spec_manager=KernelSpecProvider(),
             )
-            if self.mode == EnvMode.InsideContainer:
-                file_handler = logging.FileHandler("env.log")
-                file_handler.setLevel(logging.DEBUG)
-                file_handler.setFormatter(formatter)
-                logger.addHandler(file_handler)
 
-        elif self.mode == EnvMode.OutsideContainer:
+        elif self.mode == EnvMode.Container:
             try:
                 import docker
                 import docker.errors
@@ -165,20 +144,22 @@ class Environment:
             except docker.errors.DockerException as e:
                 raise docker.errors.DockerException(f"Failed to connect to Docker daemon: {e}. ")
 
+            self.image_name = "taskweavercontainers/taskweaver-executor"
+            try:
+                self.docker_client.images.get(self.image_name)
+            except docker.errors.ImageNotFound:
+                logger.info("Pulling image from docker.io.")
+                try:
+                    self.docker_client.images.pull(self.image_name)
+                except docker.errors.DockerException as e:
+                    raise docker.errors.DockerException(f"Failed to pull image: {e}. ")
+
             self.session_container_dict: Dict[str, str] = {}
             self.port_start_inside_container = port_start_inside_container
         else:
             raise ValueError(f"Unsupported environment mode {env_mode}")
-        atexit.register(self.clean_up)
-        logger.info(f"Environment {self.id} is created.")
 
-    def clean_up(self) -> None:
-        logger.info(f"Environment {self.id} is cleaning up.")
-        for session in self.session_dict.values():
-            try:
-                self.stop_session(session.session_id)
-            except Exception as e:
-                logger.error(e)
+        logger.info(f"Environment {self.id} is created.")
 
     def _get_connection_file(self, session_id: str, kernel_id: str) -> str:
         return os.path.join(
@@ -192,18 +173,15 @@ class Environment:
         session_id: str,
         session_dir: Optional[str] = None,
         cwd: Optional[str] = None,
-        kernel_id_inside_container: Optional[str] = None,
-        port_start_inside_container: Optional[int] = None,
     ) -> None:
-        if self.mode == EnvMode.Local:
-            session = self._get_session(session_id, session_dir=session_dir)
-            ces_session_dir = os.path.join(session.session_dir, "ces")
-            new_kernel_id = get_id(prefix="knl")
-            os.makedirs(ces_session_dir, exist_ok=True)
-            connection_file = self._get_connection_file(session_id, new_kernel_id)
-            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
-            os.makedirs(cwd, exist_ok=True)
+        session = self._get_session(session_id, session_dir=session_dir)
+        ces_session_dir = os.path.join(session.session_dir, "ces")
+        new_kernel_id = get_id(prefix="knl")
+        os.makedirs(ces_session_dir, exist_ok=True)
+        cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
+        os.makedirs(cwd, exist_ok=True)
 
+        if self.mode == EnvMode.Local:
             # set python home from current python environment
             python_home = os.path.sep.join(sys.executable.split(os.path.sep)[:-2])
             python_path = os.pathsep.join(
@@ -226,7 +204,7 @@ class Environment:
                         ces_session_dir,
                         "kernel_logging.log",
                     ),
-                    "CONNECTION_FILE": connection_file,
+                    "CONNECTION_FILE": self._get_connection_file(session_id, new_kernel_id),
                     "PATH": os.environ["PATH"],
                     "PYTHONPATH": python_path,
                     "PYTHONHOME": python_home,
@@ -240,31 +218,31 @@ class Environment:
 
             self._cmd_session_init(session)
             session.kernel_status = "ready"
+        elif self.mode == EnvMode.Container:
+            if platform.system() != "Windows":
+                # change the permission of the ces and cwd directories
+                os.chmod(ces_session_dir, 0o755)
+                os.chmod(cwd, 0o755)
 
-        elif self.mode == EnvMode.OutsideContainer:
-            session = self._get_session(session_id, session_dir=session_dir)
-            ces_session_dir = os.path.join(session.session_dir, "ces")
-            new_kernel_id = get_id(prefix="knl")
-            session.kernel_id = new_kernel_id
-            os.makedirs(ces_session_dir, exist_ok=True)
-            cwd = cwd if cwd is not None else os.path.join(session.session_dir, "cwd")
-            os.makedirs(cwd, exist_ok=True)
             connection_file = self._get_connection_file(session_id, new_kernel_id)
             new_port_start = self.port_start_inside_container
             kernel_env = {
-                "TASKWEAVER_ENV_ID": self.id,
+                "TASKWEAVER_KERNEL_MODE": "container",
                 "TASKWEAVER_SESSION_ID": session_id,
                 "TASKWEAVER_KERNEL_ID": new_kernel_id,
-                "TASKWEAVER_ENV_DIR": "/app",
+                "TASKWEAVER_CES_DIR": "/app/ces/",
+                "TASKWEAVER_CWD": "/app/cwd/",
                 "TASKWEAVER_PORT_START": str(new_port_start),
+                "TASKWEAVER_LOGGING_FILE_PATH": "/app/ces/kernel_logging.log",
             }
             # ports will be assigned automatically at the host
             container = self.docker_client.containers.run(
-                image="taskweaver/executor",
+                image=self.image_name,
                 detach=True,
                 environment=kernel_env,
                 volumes={
-                    os.path.abspath(session.session_dir): {"bind": f"/app/sessions/{session_id}", "mode": "rw"},
+                    os.path.abspath(ces_session_dir): {"bind": "/app/ces/", "mode": "rw"},
+                    os.path.abspath(cwd): {"bind": "/app/cwd", "mode": "rw"},
                 },
                 ports={
                     f"{new_port_start}/tcp": None,
@@ -273,6 +251,7 @@ class Environment:
                     f"{new_port_start + 3}/tcp": None,
                     f"{new_port_start + 4}/tcp": None,
                 },
+                user="taskweaver",
             )
 
             tick = 0
@@ -310,47 +289,8 @@ class Environment:
             session.kernel_id = new_kernel_id
             self._cmd_session_init(session)
             session.kernel_status = "ready"
-        elif self.mode == EnvMode.InsideContainer:
-            assert port_start_inside_container is not None, "Port start must be provided when inside container."
-            assert kernel_id_inside_container is not None, "Kernel id must be provided when inside container."
-            session = self._get_session(session_id)
-            session.kernel_id = kernel_id_inside_container
-            # to ensure executor can find the session directory
-            os.environ["TASKWEAVER_SESSION_DIR"] = session.session_dir
-            ces_session_dir = os.path.join(session.session_dir, "ces")
-            connection_file = self._get_connection_file(session_id, kernel_id_inside_container)
-            cwd = os.path.join(session.session_dir, "cwd")
-
-            kernel_env = os.environ.copy()
-            kernel_env.update(
-                {
-                    "JUPYTER_SHELL_PORT": str(port_start_inside_container),
-                    "JUPYTER_IOPUB_PORT": str(port_start_inside_container + 1),
-                    "JUPYTER_STDIN_PORT": str(port_start_inside_container + 2),
-                    "JUPYTER_HB_PORT": str(port_start_inside_container + 3),
-                    "JUPYTER_CONTROL_PORT": str(port_start_inside_container + 4),
-                    "JUPYTER_KERNEL_IP": "0.0.0.0",
-                    "JUPYTER_MANUAL_PORTS": "True",
-                    "CONNECTION_FILE": connection_file,
-                    "TASKWEAVER_LOGGING_FILE_PATH": os.path.join(
-                        ces_session_dir,
-                        "kernel_logging.log",
-                    ),
-                    "PATH": os.environ["PATH"],
-                },
-            )
-
-            kernel_id_inside_container = self.multi_kernel_manager.start_kernel(
-                kernel_id=kernel_id_inside_container,
-                cwd=cwd,
-                env=kernel_env,
-            )
-            # change the permission of the connection file
-            os.chmod(connection_file, 0o644)
-
-            kernel = self.multi_kernel_manager.get_kernel(kernel_id_inside_container)
-            session.kernel_status = "ready"
-            logger.info(f"Kernel started inside container{kernel.get_connection_info()}")
+        else:
+            raise ValueError(f"Unsupported environment mode {self.mode}")
 
     def execute_code(
         self,
@@ -439,6 +379,9 @@ class Environment:
 
     def stop_session(self, session_id: str) -> None:
         session = self._get_session(session_id)
+        if session is None:
+            # session not exist
+            return
         if session.kernel_status == "stopped":
             return
         if session.kernel_status == "pending":
@@ -446,14 +389,15 @@ class Environment:
             return
         try:
             if session.kernel_id != "":
-                if self.mode == EnvMode.Local or self.mode == EnvMode.InsideContainer:
+                if self.mode == EnvMode.Local:
                     kernel = self.multi_kernel_manager.get_kernel(session.kernel_id)
                     is_alive = kernel.is_alive()
                     if is_alive:
                         kernel.shutdown_kernel(now=True)
                     kernel.cleanup_resources()
-                elif self.mode == EnvMode.OutsideContainer:
+                elif self.mode == EnvMode.Container:
                     container_id = self.session_container_dict[session_id]
+                    logger.info(f"Stopping container {container_id} for session {session_id}")
                     container = self.docker_client.containers.get(container_id)
                     container.stop()
                     container.remove()
@@ -480,14 +424,15 @@ class Environment:
         session_id: str,
         session_dir: Optional[str] = None,
     ) -> EnvSession:
-        if session_id not in self.session_dict:
+        if session_id not in self.session_dict and session_dir is not None:
             new_session = EnvSession(session_id)
             new_session.session_dir = (
                 session_dir if session_dir is not None else self._get_default_session_dir(session_id)
             )
             os.makedirs(new_session.session_dir, exist_ok=True)
             self.session_dict[session_id] = new_session
-        return self.session_dict[session_id]
+
+        return self.session_dict.get(session_id, None)
 
     def _get_default_session_dir(self, session_id: str) -> str:
         os.makedirs(os.path.join(self.env_dir, "sessions"), exist_ok=True)
@@ -528,12 +473,11 @@ class Environment:
     ) -> BlockingKernelClient:
         session = self._get_session(session_id)
         connection_file = self._get_connection_file(session_id, session.kernel_id)
-        logger.info(f"Get client for {connection_file}")
         client = BlockingKernelClient(connection_file=connection_file)
         client.load_connection_file()
         # overwrite the ip and ports if outside container
-        if self.mode == EnvMode.OutsideContainer:
-            client.ip = "127.0.0.1"
+        if self.mode == EnvMode.Container:
+            client.ip = "127.0.0.1"  # TODO: get the host ip
             ports = self._get_session_ports(session_id)
             client.shell_port = ports["shell_port"]
             client.stdin_port = ports["stdin_port"]

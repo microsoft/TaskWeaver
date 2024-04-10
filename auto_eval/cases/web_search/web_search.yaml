@@ -1,0 +1,15 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  session.roles: ["planner", "web_search"]
+app_dir: ../project/
+task_description: |-
+  The task is to find the authors of the paper "TaskWeaver: A Code-First Agent Framework" and their affiliations.
+  Then, the second step is to find the first author's home page.
+scoring_points:
+  - score_point: The author list should include at least Bo Qiao who is the first author
+    weight: 1
+  - score_point: The affiliation list should include Microsoft
+    weight: 1
+  - score_point: The home page of the first author should be found at Microsoft Research (https://www.microsoft.com/en-us/research/people/boqiao/) or Google Scholar (https://scholar.google.com/citations?user=_6ugrdYAAAAJ)
+    weight: 1

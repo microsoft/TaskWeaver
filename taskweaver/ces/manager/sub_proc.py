@@ -68,7 +68,7 @@ class SubProcessManager(Manager):
         if self.kernel_mode == "local":
             env_mode = EnvMode.Local
         elif self.kernel_mode == "container":
-            env_mode = EnvMode.OutsideContainer
+            env_mode = EnvMode.Container
         else:
             raise ValueError(f"Invalid kernel mode: {self.kernel_mode}, expected 'local' or 'container'.")
         self.env = Environment(
@@ -78,10 +78,12 @@ class SubProcessManager(Manager):
         )
 
     def initialize(self) -> None:
+        # no need to initialize the manager itself
         pass
 
     def clean_up(self) -> None:
-        self.env.clean_up()
+        # no need to clean up the manager itself
+        pass
 
     def get_session_client(
         self,

@@ -20,7 +20,32 @@ const sidebars = {
   
   documentSidebar: [
     'overview',
-    'quickstart',    
+    'quickstart',
+    'code_execution',
+    'FAQ',
+    {
+      type: 'category',
+      label: 'Concepts',
+      link: {
+        type: 'generated-index',
+        title: 'Concepts',
+        description: 'The important concepts in TaskWeaver',
+        slug: '/concepts',
+      },
+      collapsible: true,
+      collapsed: false,
+      items: [
+        'concepts/app',
+        'concepts/project',
+        'concepts/session',
+        'concepts/conversation',
+        'concepts/round',
+        'concepts/post',
+        'concepts/attachment',
+        'concepts/role',
+        'concepts/plugin',
+        ],
+    },
     {
       type: 'category',
       label: 'Usage Options',
@@ -35,7 +60,9 @@ const sidebars = {
       items: [
         'usage/cmd',
         'usage/webui',
-        'usage/library'],
+        'usage/library',
+        'usage/docker',
+        ],
     },
     {
       type: 'category',
@@ -79,7 +106,11 @@ const sidebars = {
         label: 'Plugin',
         collapsible: true,
         collapsed: true,
-        items: ['customization/plugin/plugin_intro', 'customization/plugin/plugin_selection', 'customization/plugin/develop_plugin', 'customization/plugin/multi_yaml_single_impl', 'customization/plugin/plugin_only'],
+        items: [
+        'customization/plugin/plugin_intro',
+        'customization/plugin/develop_plugin',
+        'customization/plugin/multi_yaml_single_impl'
+        ],
       },
       {
         type: 'category',
@@ -108,10 +139,17 @@ const sidebars = {
       // },
       collapsible: true,
       collapsed: false,
-      items: ['advanced/compression', 'advanced/code_verification', 'advanced/code_execution', 'advanced/cli_only', 'advanced/telemetry'],
-    },
+      items: [
+      'advanced/compression',
+      'advanced/plugin_selection',
+      'advanced/code_verification',
+      'advanced/cli_only',
+      'advanced/telemetry',
+      'advanced/plugin_only'
+      ],
+    }
     // 'example',
-    'FAQ'
+
   ],
   
 };

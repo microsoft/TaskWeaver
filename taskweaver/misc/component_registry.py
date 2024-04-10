@@ -1,7 +1,8 @@
-import glob
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
-from typing import Dict, Generic, List, Optional, Tuple, TypeVar
+from typing import Dict, Generic, List, Optional, Tuple, TypeVar, Union
+
+from taskweaver.utils import glob_files
 
 component_type = TypeVar("component_type")
 
@@ -11,11 +12,11 @@ class ComponentDisabledException(Exception):
 
 
 class ComponentRegistry(ABC, Generic[component_type]):
-    def __init__(self, file_glob: str, ttl: Optional[timedelta] = None) -> None:
+    def __init__(self, file_glob: Union[str, List[str]], ttl: Optional[timedelta] = None) -> None:
         super().__init__()
         self._registry: Optional[Dict[str, component_type]] = None
         self._registry_update: datetime = datetime.fromtimestamp(0)
-        self._file_glob: str = file_glob
+        self._file_glob: Union[str, List[str]] = file_glob
         self._ttl: Optional[timedelta] = ttl
 
     @abstractmethod
@@ -43,7 +44,7 @@ class ComponentRegistry(ABC, Generic[component_type]):
             return self._registry
 
         registry: Dict[str, component_type] = {}
-        for path in glob.glob(self._file_glob):
+        for path in glob_files(self._file_glob):
             try:
                 name, component = self._load_component(path)
             except ComponentDisabledException:

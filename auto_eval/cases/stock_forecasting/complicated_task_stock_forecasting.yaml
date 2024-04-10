@@ -1,0 +1,16 @@
+version: 0.1
+app_dir: ../project/
+config_var:
+  code_verification.code_verification_on: false
+  execution_service.kernel_mode: "local"
+task_description: use ARIMA model to forecast QQQ in next 7 days
+scoring_points:
+  - score_point: "There should be 7 predicted stock prices in the output"
+    weight: 1
+  - score_point: "The predicted stock price should be in range of 400 to 450"
+    weight: 1
+  - score_point: "Agent should use ARIMA model to predict the stock price"
+    weight: 1
+  - score_point: "Agent should download the stock price data by itself, not asking user to provide the data"
+    weight: 1
+

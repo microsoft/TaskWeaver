@@ -38,8 +38,16 @@ class AttachmentType(Enum):
     # function calling
     function = "function"
 
+    # WebExplorer
+    web_exploring_plan = "web_exploring_plan"
+    web_exploring_screenshot = "web_exploring_screenshot"
+    web_exploring_link = "web_exploring_link"
+
     # Misc
     invalid_response = "invalid_response"
+
+    # board infor
+    board = "board"
 
 
 @dataclass

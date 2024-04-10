@@ -1,3 +1,4 @@
+import atexit
 import shutil
 import threading
 import time
@@ -406,8 +407,8 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
     def __init__(self, app_dir: Optional[str] = None):
         self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
         self.session = self.app.get_session()
-        self.exec_kernel_mode = self.session.code_executor.get_execution_mode()
         self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
+        atexit.register(self.app.stop)
 
     def run(self):
         self._reset_session(first_session=True)
@@ -442,6 +443,10 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             if lower_command == "save":
                 self._save_memory()
                 return
+            if lower_command == "info":
+                self._system_message(f"Session Id:{self.session.session_id}")
+                self._system_message(f"Roles: {self.session.config.roles}")
+                return
             error_message(f"Unknown command '{msg}', please try again")
             return
 
@@ -453,12 +458,12 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
                 """
                 TaskWeaver Chat Console
                 -----------------------
-                /load <file>: load a file
+                /load <file>: load a file by its path
                 /reset: reset the session
                 /clear: clear the console
                 /exit: exit the chat console
                 /help: print this help message
-                /save: save the memory for experience reuse
+                /save: save the chat history of the current session for experience extraction
                 """,
             ),
         )
@@ -487,17 +492,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             self.session.stop()
             self.session = self.app.get_session()
 
-        self._system_message(f"--- new session starts in `{self.exec_kernel_mode}` mode ---")
-        if self.exec_kernel_mode == "local":
-            self._system_message(
-                "Code running in local mode "
-                "may incur security risks, such as file system access. "
-                "Please be cautious when executing code. "
-                "For higher security, consider using the `container` mode by setting "
-                "the `execution_service.kernel_mode` to `container`. "
-                "For more information, please refer to the documentation ("
-                "https://microsoft.github.io/TaskWeaver/docs/code_execution).",
-            )
+        self._system_message("--- new session starts ---")
         self._assistant_message(
             "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",
         )

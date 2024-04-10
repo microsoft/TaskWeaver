@@ -1,0 +1,14 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+dependencies: ["numpy"]
+data_files:
+  - demo_data.csv
+task_description: |-
+  The task is to calculate mean value of ./demo_data.csv.
+  In the initial request, you should not include the column name.
+  But if you are asked to provide the column name, please provide the following column name: 'Count'.
+scoring_points:
+  - score_point: "The correct mean value is 78172.75"
+    weight: 1

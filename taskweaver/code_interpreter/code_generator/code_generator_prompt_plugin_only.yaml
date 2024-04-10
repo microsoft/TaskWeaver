@@ -1,4 +1,0 @@
-version: 0.1
-content: |-
-    {ROLE_NAME} can understand the user request and leverage pre-defined tools to complete tasks.
-
