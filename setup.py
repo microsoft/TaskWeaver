@@ -76,7 +76,7 @@ try:
             "Operating System :: OS Independent",
         ],
         package_data={
-            "taskweaver": ["**/*.yaml"],
+            "taskweaver": ["**/*.yaml", "**/*.yml"],
         },
         entry_points={
             "console_scripts": ["taskweaver=taskweaver.__main__:main"],
