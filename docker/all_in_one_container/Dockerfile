@@ -35,6 +35,9 @@ COPY taskweaver taskweaver
 COPY project project
 COPY docker/all_in_one_container/taskweaver_config.json project/taskweaver_config.json
 COPY docker/all_in_one_container/entrypoint.sh entrypoint.sh
+RUN chmod +x entrypoint.sh
+COPY docker/all_in_one_container/entrypoint_chainlit.sh entrypoint_chainlit.sh
+RUN chmod +x entrypoint_chainlit.sh
 COPY playground playground
 
 ENV EXECUTION_SERVICE_KERNEL_MODE="local"
