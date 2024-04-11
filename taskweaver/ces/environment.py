@@ -259,15 +259,15 @@ class Environment:
             )
 
             tick = 0
-            while tick < 10:
+            while tick < 30:
                 container.reload()
                 if container.status == "running" and os.path.isfile(connection_file):
                     logger.info("Container is running and connection file is ready.")
                     break
                 time.sleep(1)  # wait for 1 second before checking again
                 tick += 1
-            if tick == 10:
-                raise Exception("Container is not ready after 10 seconds")
+            if tick == 30:
+                raise Exception("Container is not ready after 30 seconds")
 
             # save the ports to ces session dir
             port_bindings = container.attrs["NetworkSettings"]["Ports"]
