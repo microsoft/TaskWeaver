@@ -146,7 +146,7 @@ rounds:
 ```
 :::tip
 Read the prompt of the code generation to better understand the attachments in the example
-[code generator prompt](https://github.com/microsoft/TaskWeaver/blob/main/taskweaver/code_interpreter/code_generator/code_generator_prompt.yaml). 
+[code generator prompt](https://github.com/microsoft/TaskWeaver/blob/main/taskweaver/code_interpreter/code_interpreter/code_generator_prompt.yaml). 
 :::
 
 This conversation has two posts:
