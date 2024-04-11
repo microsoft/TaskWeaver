@@ -6,7 +6,7 @@ param(
 $scriptDirectory = $PSScriptRoot
 Write-Host "The script directory is: $scriptDirectory"
 
-$version = "0.1"
+$version = "0.2"
 $imageName = "taskweavercontainers/taskweaver-all-in-one"
 # generate the image name with the web search option
 

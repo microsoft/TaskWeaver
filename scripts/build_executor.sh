@@ -4,7 +4,7 @@
 scriptDirectory="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "The script directory is: $scriptDirectory"
 
-version="0.1"
+version="0.2"
 imageName="taskweavercontainers/taskweaver-executor"
 imageFullName="$imageName:$version"
 
