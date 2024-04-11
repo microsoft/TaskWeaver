@@ -144,9 +144,13 @@ class Environment:
             except docker.errors.DockerException as e:
                 raise docker.errors.DockerException(f"Failed to connect to Docker daemon: {e}. ")
 
-            self.image_name = "taskweavercontainers/taskweaver-executor"
+            self.image_name = "taskweavercontainers/taskweaver-executor:latest"
             try:
-                self.docker_client.images.get(self.image_name)
+                local_image = self.docker_client.images.get(self.image_name)
+                registry_image = self.docker_client.images.get_registry_data(self.image_name)
+                if local_image.id != registry_image.id:
+                    logger.info(f"Local image {local_image.id} does not match registry image {registry_image.id}.")
+                    raise docker.errors.ImageNotFound("Local image is outdated.")
             except docker.errors.ImageNotFound:
                 logger.info("Pulling image from docker.io.")
                 try:
@@ -221,8 +225,8 @@ class Environment:
         elif self.mode == EnvMode.Container:
             if platform.system() != "Windows":
                 # change the permission of the ces and cwd directories
-                os.chmod(ces_session_dir, 0o755)
-                os.chmod(cwd, 0o755)
+                os.chown(ces_session_dir, uid=10002, gid=10002)
+                os.chown(cwd, uid=10002, gid=10002)
 
             connection_file = self._get_connection_file(session_id, new_kernel_id)
             new_port_start = self.port_start_inside_container

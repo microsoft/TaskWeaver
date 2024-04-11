@@ -3,7 +3,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-RUN useradd -m taskweaver
+RUN groupadd --gid 10002 taskweaver
+RUN useradd --uid 10002 --gid taskweaver -m taskweaver
 
 # Set the working directory to /app
 RUN chown taskweaver:taskweaver /app
