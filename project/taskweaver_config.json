@@ -1,5 +1,6 @@
 {
-  "llm.api_base": "https://api.openai.com/v1",
-  "llm.api_key": "",
-  "llm.model": "gpt-4-1106-preview"
+  "llm.api_base": "http://127.0.0.1:11434",
+  "llm.api_key": "ARBITRARY_STRING",
+  "llm.api_type": "ollama",
+  "llm.model": "llama2:7b"
 }
