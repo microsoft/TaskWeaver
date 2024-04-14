@@ -1,0 +1,23 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  session.roles: ["planner", "code_interpreter"]
+  planner.prompt_compression: true
+  code_generator.prompt_compression: true
+app_dir: ../project/
+task_description: |-
+  The task has many rounds. The initial total sum is 0. 
+  Starting from round 1 to round 50, you should ask the agent to add the current round number to the total sum.
+  The agent should keep track of the sum and return the sum after the 50th round.
+  Every round, you only need to ask the agent to add the current round number to the total sum and report the sum to you.
+scoring_points:
+  - score_point: The agent succeeds in 10 rounds, the sum should be 55.
+    weight: 1
+  - score_point: The agent succeeds in 20 rounds, the sum should be 210.
+    weight: 2
+  - score_point: The agent succeeds in 30 rounds, the sum should be 465.
+    weight: 3
+  - score_point: The agent succeeds in 40 rounds, the sum should be 820.
+    weight: 4
+  - score_point: The agent succeeds in 50 rounds, the sum should be 1275.
+    weight: 5

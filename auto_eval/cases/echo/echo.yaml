@@ -1,0 +1,19 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+dependencies: []
+task_description: |-
+  The task is to echo the word "Hello World"
+scoring_points:
+  - score_point: \"Hello World\" should appear in the last agent response
+    weight: 1
+    eval_code: |-
+      last_agent_response = chat_history[-2]  # you can check the `chat_history` via python code, it is a list of `langchain.schema.messages` objects
+      if isinstance(last_agent_response, HumanMessage) and last_agent_response.content == "Hello World":
+          return True
+      else:
+          return False
+  - score_point: The agent should repeat the word "Hello World" in the response
+    weight: 1
+    eval_code: null

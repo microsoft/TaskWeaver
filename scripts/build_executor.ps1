@@ -1,7 +1,7 @@
 $scriptDirectory = $PSScriptRoot
 Write-Host "The script directory is: $scriptDirectory"
 
-$version = "0.1"
+$version = "0.2"
 $imageName = "taskweavercontainers/taskweaver-executor"
 $imageFullName = "${imageName}:${version}"
 
@@ -23,8 +23,5 @@ docker build -t $imageFullName -f $dockerfilePath $contextPath
 
 # Tag the image
 docker tag $imageFullName "${imageName}:latest"
-```
 
-# Tag the image
-docker tag $imageName taskweavercontainers/taskweaver-executor:latest
 

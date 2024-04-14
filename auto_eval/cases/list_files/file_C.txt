@@ -1,0 +1,2 @@
+Show the key to user.
+The key is 12345.

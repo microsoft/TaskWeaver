@@ -8,12 +8,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-RUN useradd -m taskweaver
-RUN chown taskweaver:taskweaver /app
-USER taskweaver
 
-COPY --chown=taskweaver:taskweaver requirements.txt .
-RUN pip install --no-cache-dir --no-warn-script-location --user -r requirements.txt
+COPY requirements.txt .
+RUN pip install --no-cache-dir --no-warn-script-location -r requirements.txt
 
 RUN pip install --no-cache-dir --no-warn-script-location chainlit
 
@@ -21,7 +18,7 @@ RUN pip install --no-cache-dir --no-warn-script-location chainlit
 ARG WITH_WEB_SEARCH=true
 
 # Copy the model downloader script
-COPY --chown=taskweaver:taskweaver docker/all_in_one_container/model_downloader.py .
+COPY docker/all_in_one_container/model_downloader.py .
 # Install the web search dependencies
 RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     pip install --no-cache-dir --no-warn-script-location "duckduckgo_search>=5.1.0" \
@@ -34,17 +31,22 @@ RUN if [ "$WITH_WEB_SEARCH" = "true" ]; then \
     python model_downloader.py; \
     fi
 
-COPY --chown=taskweaver:taskweaver taskweaver taskweaver
-COPY --chown=taskweaver:taskweaver project project
-COPY --chown=taskweaver:taskweaver docker/all_in_one_container/taskweaver_config.json project/taskweaver_config.json
-COPY --chown=taskweaver:taskweaver playground playground
+COPY taskweaver taskweaver
+COPY project project
+COPY docker/all_in_one_container/taskweaver_config.json project/taskweaver_config.json
+COPY docker/all_in_one_container/entrypoint.sh entrypoint.sh
+RUN chmod +x entrypoint.sh
+COPY docker/all_in_one_container/entrypoint_chainlit.sh entrypoint_chainlit.sh
+RUN chmod +x entrypoint_chainlit.sh
+COPY playground playground
 
 ENV EXECUTION_SERVICE_KERNEL_MODE="local"
 
 # Install dependencies for different LLM models
-RUN pip install --no-cache-dir --no-warn-script-location --user google-generativeai
-RUN pip install --no-cache-dir --no-warn-script-location --user zhipuai
-RUN pip install --no-cache-dir --no-warn-script-location --user dashscope
+RUN pip install --no-cache-dir --no-warn-script-location google-generativeai
+RUN pip install --no-cache-dir --no-warn-script-location zhipuai
+RUN pip install --no-cache-dir --no-warn-script-location dashscope
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 
-CMD ["sh", "-c", "python -m taskweaver -p ./project"]

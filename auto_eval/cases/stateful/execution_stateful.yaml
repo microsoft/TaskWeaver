@@ -1,0 +1,19 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+app_dir: ../project/
+task_description: |- 
+  The task is to send 3 requests one-by-one and get the agent responses, no need to check the response content: 
+  1. generate 1 random integer number and save it to a file named 'a.txt', just tell me if the task is done
+  2. tell me a random joke
+  3. save the previously generated random number to a file named 'b.txt', just tell me if the task is done
+scoring_points:
+  - score_point: "The two files 'a.txt' and 'b.txt' should contain the same number"
+    weight: 1
+    eval_code: |-
+      content_a = open('a.txt', 'r').read().strip()
+      content_b = open('b.txt', 'r').read().strip()
+      if content_a == content_b:
+          return True
+      else:
+          return False
