@@ -25,7 +25,7 @@ class ExecutionServiceConfig(ModuleConfig):
                 "the code execution service will run on the same machine as the TaskWeaver server. "
                 "For better security, it is recommended to run the code execution service in the `container` mode. "
                 "More information can be found in the documentation "
-                "(https://microsoft.github.io/TaskWeaver/docs/advanced/code_execution).",
+                "(https://microsoft.github.io/TaskWeaver/docs/code_execution/).",
             )
 
 
