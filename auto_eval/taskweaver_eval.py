@@ -59,7 +59,10 @@ def auto_evaluate_for_taskweaver(
             raise FileNotFoundError(f"Data file {data_file} is not found.")
         else:
             file_path = os.path.join(eval_case_dir, data_file)
-            shutil.copy(file_path, working_directory)
+            if os.path.isfile(file_path):
+                shutil.copy(file_path, working_directory)
+            else:
+                shutil.copytree(file_path, os.path.join(working_directory, data_file))
 
     chat_history = taskweaver_vuser.talk_with_agent()
 

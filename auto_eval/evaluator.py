@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -181,10 +182,16 @@ class Evaluator(object):
                 f"  result = False\n"
             )
 
+            original_cwd = os.getcwd()
+            original_sys_path = sys.path
             if cwd is not None:
                 os.chdir(cwd)
+                sys.path.append(os.getcwd())
             local_vars = locals()
             exec(func_code, None, local_vars)
+            if cwd is not None:
+                os.chdir(original_cwd)
+                sys.path = original_sys_path
             reason = local_vars["exception_message"] if "exception_message" in local_vars else ""
             return local_vars["result"], reason
         else:
