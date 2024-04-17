@@ -22,8 +22,7 @@ You should not help the agent to complete the code or provide any hints beyond t
 def preprocess(original_prompt: str):
     _prompt = original_prompt.replace(
         "A:\n<code>\n",
-        "I have writen my code as follows and you need to complete it to solve the problem:\n"
-        "```python\n%%writefile solution.py # make sure this as the first line of code\n",
+        "I have writen my code as follows and you need to complete it to solve the problem:\n" "```python\n",
     )
 
     _prompt = _prompt.replace(

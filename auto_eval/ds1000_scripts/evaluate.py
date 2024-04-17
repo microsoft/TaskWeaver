@@ -13,9 +13,5 @@ def extract_solution_code(file_path):
 
 from code_context import test_execution
 
-try:
-    test_execution(extract_solution_code("solution.py"))
-    return True
-except Exception as e:
-    print(f"failed to run test case, {e}")
-    return False
+test_execution(extract_solution_code("solution.py"))
+return True

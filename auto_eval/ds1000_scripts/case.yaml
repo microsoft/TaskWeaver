@@ -1,6 +1,7 @@
 version: 0.1
 config_var:
   execution_service.kernel_mode: "local"
+  code_interpreter.code_prefix: "%%writefile solution.py\n"
 app_dir: ../project/
 dependencies: []
 data_files:

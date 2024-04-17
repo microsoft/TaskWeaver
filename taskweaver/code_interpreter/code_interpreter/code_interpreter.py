@@ -60,6 +60,8 @@ class CodeInterpreterConfig(RoleConfig):
             ],
         )
 
+        self.code_prefix = self._get_str("code_prefix", "")
+
 
 def update_verification(
     response: PostEventProxy,
@@ -233,7 +235,7 @@ class CodeInterpreter(Role):
 
         exec_result = self.executor.execute_code(
             exec_id=post_proxy.post.id,
-            code=code.content,
+            code=f"{self.config.code_prefix}{code.content}",
         )
 
         code_output = self.executor.format_code_output(
