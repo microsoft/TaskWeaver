@@ -13,7 +13,5 @@ scoring_points:
     eval_code: |-
       content_a = open('a.txt', 'r').read().strip()
       content_b = open('b.txt', 'r').read().strip()
-      if content_a == content_b:
-          return True
-      else:
-          return False
+      assert content_a == content_b, f"content of a.txt: {content_a}, content of b.txt: {content_b}"
+

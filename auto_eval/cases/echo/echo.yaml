@@ -9,11 +9,8 @@ scoring_points:
   - score_point: \"Hello World\" should appear in the last agent response
     weight: 1
     eval_code: |-
-      last_agent_response = chat_history[-2]  # you can check the `chat_history` via python code, it is a list of `langchain.schema.messages` objects
-      if isinstance(last_agent_response, HumanMessage) and last_agent_response.content == "Hello World":
-          return True
-      else:
-          return False
+      last_agent_response = chat_history[-1]  # you can check the `chat_history` via python code, it is a list of `langchain.schema.messages` objects
+      assert isinstance(last_agent_response, HumanMessage) and last_agent_response.content == "Hello World", f"last agent response: {last_agent_response} is not as expected"
   - score_point: The agent should repeat the word "Hello World" in the response
     weight: 1
     eval_code: null
