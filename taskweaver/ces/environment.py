@@ -431,7 +431,7 @@ class Environment:
         session_id: str,
         session_dir: Optional[str] = None,
     ) -> EnvSession:
-        if session_id not in self.session_dict and session_dir is not None:
+        if session_id not in self.session_dict:
             new_session = EnvSession(session_id)
             new_session.session_dir = (
                 session_dir if session_dir is not None else self._get_default_session_dir(session_id)
