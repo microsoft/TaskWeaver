@@ -13,8 +13,9 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
 def connect_and_execute_code(
-    connection_file: str,
-    ports_file: Optional[str] = None,
+        connection_file: str,
+        ports_file: Optional[str] = None,
+        code: str = 'open("filename.txt", "w").write("File content goes here.")',
 ):
     # Create the blocking client
     client = BlockingKernelClient()
@@ -35,7 +36,7 @@ def connect_and_execute_code(
     client.start_channels()
 
     result_msg_id = client.execute(
-        code='open("filename.txt", "w").write("File content goes here.")',
+        code=code,
         silent=False,
         store_history=True,
         allow_stdin=False,
@@ -114,6 +115,37 @@ def test_environment_start_subprocess():
 
         env.stop_session("session_id")
         assert not os.path.isfile(connection_file)
+    finally:
+        # delete sessions
+        shutil.rmtree(sessions)
+
+
+@pytest.mark.skipif(IN_GITHUB_ACTIONS, reason="Test doesn't work in Github Actions.")
+def test_environment_update_session_var():
+    # get cwd of current file
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    sessions = os.path.join(cwd, "sessions")
+    try:
+        env = Environment("local", env_mode=EnvMode.Local)
+        env.start_session(
+            session_id="session_id",
+            session_dir=os.path.join(sessions, "session_id"),
+        )
+
+        assert os.path.isdir(sessions)
+        session_dir = os.path.join(sessions, "session_id")
+        assert os.path.isdir(session_dir)
+        ces_dir = os.path.join(session_dir, "ces")
+        assert os.path.isdir(ces_dir)
+        file_glob = os.path.join(ces_dir, "conn-session_id-*.json")
+        assert len(glob.glob(file_glob)) == 1
+        connection_file = glob.glob(file_glob)[0]
+        log_file = os.path.join(ces_dir, "kernel_logging.log")
+        assert os.path.isfile(log_file)
+        env.update_session_var("session_id", {"test_session_variable": "test_value"})
+        connect_and_execute_code(connection_file, code=r"%%_taskweaver_check_session_var")
+        
+
     finally:
         # delete sessions
         shutil.rmtree(sessions)
