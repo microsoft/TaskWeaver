@@ -313,6 +313,10 @@ class Environment:
             session.session_id,
             f"%_taskweaver_exec_pre_check {execution_index} {exec_id}",
         )
+        # update session variables before executing the code
+        if session.session_var:
+            self._update_session_var(session)
+        # execute the code on the kernel
         exec_result = self._execute_code_on_kernel(
             session.session_id,
             exec_id=exec_id,
@@ -379,7 +383,6 @@ class Environment:
     ) -> None:
         session = self._get_session(session_id)
         session.session_var.update(session_var)
-        self._update_session_var(session)
 
     def stop_session(self, session_id: str) -> None:
         session = self._get_session(session_id)

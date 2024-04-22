@@ -145,6 +145,7 @@ class Session:
         code_interpreter_role_name = [w for w in self.config.roles if w.startswith("code_interpreter")][0]
         code_interpreter_role_entry = self.role_registry.get(code_interpreter_role_name)
         code_interpreter_instance = self.worker_instances[code_interpreter_role_entry.alias]
+        code_interpreter_instance.update_session_variables(variables)
         self.logger.info(f"Update session variables: {variables} for {code_interpreter_instance.get_alias()}")
 
     @tracing_decorator
