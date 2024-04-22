@@ -143,8 +143,11 @@ def test_environment_update_session_var():
         log_file = os.path.join(ces_dir, "kernel_logging.log")
         assert os.path.isfile(log_file)
         env.update_session_var("session_id", {"test_session_variable": "test_value"})
-        connect_and_execute_code(connection_file, code=r"%%_taskweaver_check_session_var")
-        
+        execute_result = str(connect_and_execute_code(connection_file, code=r"%_taskweaver_check_session_var"))
+        assert "test_value" in execute_result
+        assert "test_session_variable" in execute_result
+
+        env.stop_session("session_id")
 
     finally:
         # delete sessions
