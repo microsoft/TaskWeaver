@@ -122,7 +122,7 @@ class CodeInterpreter(Role, Interpreter):
     
     def update_session_variables(self, session_variables: Dict[str, str]):
         self.logger.info(f"Updating session variables: {session_variables}")
-        self.executor.exec_client.update_session_var(session_variables)
+        self.executor.update_session_var(session_variables)
 
     @tracing_decorator
     def reply(

@@ -63,6 +63,7 @@ class CodeExecutor:
         self.plugin_loaded: bool = False
         self.config = config
         self.tracing = tracing
+        self.session_variables = {}
 
     @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
@@ -75,6 +76,9 @@ class CodeExecutor:
             with get_tracer().start_as_current_span("load_plugin"):
                 self.load_plugin()
                 self.plugin_loaded = True
+        
+        # update session variables
+        self.exec_client.update_session_var(self.session_variables)
 
         with get_tracer().start_as_current_span("run_code"):
             self.tracing.set_span_attribute("code", code)
@@ -104,6 +108,9 @@ class CodeExecutor:
         self.tracing.set_span_attribute("result", self.format_code_output(result, with_code=False))
 
         return result
+    
+    def update_session_var(self, session_var_dict: dict) -> None:
+        self.session_variables.update(session_var_dict)
 
     def _save_file(
         self,

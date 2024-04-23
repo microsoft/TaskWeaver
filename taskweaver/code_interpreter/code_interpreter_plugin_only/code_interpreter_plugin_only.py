@@ -57,7 +57,7 @@ class CodeInterpreterPluginOnly(Role, Interpreter):
         return self.intro.format(plugin_description=self.plugin_description)
     
     def update_session_variables(self, session_variables: dict) -> None:
-        self.executor.exec_client.update_session_variables(session_variables)
+        self.executor.update_session_var(session_variables)
 
     @tracing_decorator
     def reply(
