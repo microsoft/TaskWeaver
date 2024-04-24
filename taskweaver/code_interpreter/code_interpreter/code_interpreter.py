@@ -1,5 +1,5 @@
 import os
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional
 
 from injector import inject
 
@@ -10,6 +10,7 @@ from taskweaver.code_interpreter.code_interpreter import (
     format_output_revision_message,
 )
 from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
+from taskweaver.code_interpreter.interpreter import Interpreter
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
@@ -82,7 +83,7 @@ def update_execution(
     response.update_attachment(result, AttachmentType.execution_result)
 
 
-class CodeInterpreter(Role):
+class CodeInterpreter(Role, Interpreter):
     @inject
     def __init__(
         self,
@@ -118,6 +119,10 @@ class CodeInterpreter(Role):
 
     def get_intro(self) -> str:
         return self.intro.format(plugin_description=self.plugin_description)
+    
+    def update_session_variables(self, session_variables: Dict[str, str]):
+        self.logger.info(f"Updating session variables: {session_variables}")
+        self.executor.update_session_var(session_variables)
 
     @tracing_decorator
     def reply(

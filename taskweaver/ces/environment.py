@@ -304,8 +304,6 @@ class Environment:
     ) -> ExecutionResult:
         exec_id = get_id(prefix="exec") if exec_id is None else exec_id
         session = self._get_session(session_id)
-        if session.kernel_status == "pending":
-            self.start_session(session_id)
 
         session.execution_count += 1
         execution_index = session.execution_count
@@ -313,6 +311,10 @@ class Environment:
             session.session_id,
             f"%_taskweaver_exec_pre_check {execution_index} {exec_id}",
         )
+        # update session variables before executing the code
+        if session.session_var:
+            self._update_session_var(session)
+        # execute the code on the kernel
         exec_result = self._execute_code_on_kernel(
             session.session_id,
             exec_id=exec_id,
@@ -379,7 +381,6 @@ class Environment:
     ) -> None:
         session = self._get_session(session_id)
         session.session_var.update(session_var)
-        self._update_session_var(session)
 
     def stop_session(self, session_id: str) -> None:
         session = self._get_session(session_id)
@@ -435,6 +436,8 @@ class Environment:
             )
             os.makedirs(new_session.session_dir, exist_ok=True)
             self.session_dict[session_id] = new_session
+        elif session_id not in self.session_dict:
+            raise ValueError(f"Session {session_id} not found.")
 
         return self.session_dict.get(session_id, None)
 
