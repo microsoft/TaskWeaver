@@ -229,6 +229,7 @@ class Environment:
                 "TASKWEAVER_KERNEL_MODE": "container",
                 "TASKWEAVER_SESSION_ID": session_id,
                 "TASKWEAVER_KERNEL_ID": new_kernel_id,
+                "TASKWEAVER_SESSION_DIR": "/app/",
                 "TASKWEAVER_CES_DIR": "/app/ces/",
                 "TASKWEAVER_CWD": "/app/cwd/",
                 "TASKWEAVER_PORT_START": str(new_port_start),
