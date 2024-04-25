@@ -74,7 +74,7 @@ class VirtualUser:
         self.task_description = task_description
         self.kick_off_message = self.prompt_data["kick_off_message"]
 
-        self.max_rounds = self.config.get("virtual_user.max_rounds", 15)
+        self.max_rounds = self.config.get("virtual_user.max_rounds", 5)
 
     def talk_with_agent(self):
         sys_message = self.prompt_template.format(

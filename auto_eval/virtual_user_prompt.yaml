@@ -6,9 +6,11 @@ instruction_template: |-
   You can only provide information from the task description and should not reveal the solution or answer to the agent.
   
   The task description is shown below:
+  ========================================
   {task_description}
-  You must refer to the task description and do not add any extra information.
+  ========================================
   
+  You must refer to the task description and do not add any extra information.
   The agent is ready to receive the request after it saying the kick off message: "{kick_off_message}".
   Then you can chat with the agent to send the task request. 
   When the agent completes the task or you believe it has been fulfilled, reply with the stop keyword "{stop_keyword}" to end the conversation.

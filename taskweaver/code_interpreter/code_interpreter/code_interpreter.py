@@ -233,9 +233,12 @@ class CodeInterpreter(Role):
         post_proxy.update_status("executing code")
         self.logger.info(f"Code to be executed: {code.content}")
 
+        executable_code = f"{code.content}"
+        if self.config.code_prefix:
+            executable_code = f"{self.config.code_prefix}\n{executable_code}"
         exec_result = self.executor.execute_code(
             exec_id=post_proxy.post.id,
-            code=f"{self.config.code_prefix}{code.content}",
+            code=executable_code,
         )
 
         code_output = self.executor.format_code_output(
@@ -268,6 +271,7 @@ class CodeInterpreter(Role):
                 exec_result,
                 with_code=True,  # the message to be sent to the user should contain the code
                 use_local_uri=self.config.use_local_uri,
+                code_mask=self.config.code_prefix if self.config.code_prefix else None,
             ),
             is_end=True,
         )
