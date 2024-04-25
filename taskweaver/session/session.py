@@ -29,10 +29,10 @@ class AppSessionConfig(ModuleConfig):
         self.roles = self._get_list("roles", ["planner", "code_interpreter"])
 
         assert len(self.roles) > 0, "At least one role should be provided."
-        num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
+        self.num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
         assert (
-            num_code_interpreters <= 1
-        ), f"Only single code_interpreter is allowed, but {num_code_interpreters} are provided."
+            self.num_code_interpreters <= 1
+        ), f"Only single code_interpreter is allowed, but {self.num_code_interpreters} are provided."
 
 
 @dataclass
@@ -92,13 +92,14 @@ class Session:
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
 
+        self.role_registry = role_registry
         self.worker_instances = {}
         for role_name in self.config.roles:
             if role_name == "planner":
                 continue
             if role_name not in role_registry.get_role_name_list():
                 raise ValueError(f"Unknown role {role_name}")
-            role_entry = role_registry.get(role_name)
+            role_entry = self.role_registry.get(role_name)
             role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
             self.worker_instances[role_instance.get_alias()] = role_instance
 
@@ -138,7 +139,14 @@ class Session:
         Update the session variables.
         :param variables: The variables to update.
         """
+        assert self.config.num_code_interpreters > 0, "No code_interpreter role is provided."
         self.session_var.update(variables)
+        # get the alias of the code_interpreter
+        code_interpreter_role_name = [w for w in self.config.roles if w.startswith("code_interpreter")][0]
+        code_interpreter_role_entry = self.role_registry.get(code_interpreter_role_name)
+        code_interpreter_instance = self.worker_instances[code_interpreter_role_entry.alias]
+        code_interpreter_instance.update_session_variables(variables)
+        self.logger.info(f"Update session variables: {variables} for {code_interpreter_instance.get_alias()}")
 
     @tracing_decorator
     def _send_text_message(

@@ -35,6 +35,10 @@ class TaskWeaverContextMagic(Magics):
         self.executor.update_session_var(session_var_dict)
         return fmt_response(True, "Session var updated.", self.executor.session_var)
 
+    @line_magic
+    def _taskweaver_check_session_var(self, line: str):
+        return fmt_response(True, "Session var printed.", self.executor.session_var)
+
     @cell_magic
     def _taskweaver_convert_path(self, line: str, cell: str):
         raw_path_str = cell

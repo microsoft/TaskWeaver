@@ -280,6 +280,7 @@ class Planner(Role):
         llm_stream = self.llm_api.chat_completion_stream(
             chat_history,
             use_smoother=True,
+            llm_alias=self.config.llm_alias,
         )
 
         llm_output: List[str] = []
