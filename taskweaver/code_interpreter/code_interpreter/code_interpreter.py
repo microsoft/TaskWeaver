@@ -230,12 +230,15 @@ class CodeInterpreter(Role):
         elif len(code_verify_errors) == 0:
             update_verification(post_proxy, "CORRECT", "No error is found.")
 
-        post_proxy.update_status("executing code")
-        self.logger.info(f"Code to be executed: {code.content}")
-
         executable_code = f"{code.content}"
+        full_code_prefix = None
         if self.config.code_prefix:
-            executable_code = f"{self.config.code_prefix}\n{executable_code}"
+            full_code_prefix = f"{self.config.code_prefix}\n" "## CODE START ##\n"
+            executable_code = f"{full_code_prefix}{executable_code}"
+
+        post_proxy.update_status("executing code")
+        self.logger.info(f"Code to be executed: {executable_code}")
+
         exec_result = self.executor.execute_code(
             exec_id=post_proxy.post.id,
             code=executable_code,
@@ -245,6 +248,7 @@ class CodeInterpreter(Role):
             exec_result,
             with_code=False,
             use_local_uri=self.config.use_local_uri,
+            code_mask=full_code_prefix,
         )
 
         update_execution(
@@ -271,7 +275,7 @@ class CodeInterpreter(Role):
                 exec_result,
                 with_code=True,  # the message to be sent to the user should contain the code
                 use_local_uri=self.config.use_local_uri,
-                code_mask=self.config.code_prefix if self.config.code_prefix else None,
+                code_mask=full_code_prefix,
             ),
             is_end=True,
         )
