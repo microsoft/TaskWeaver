@@ -4,6 +4,7 @@ from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.code_interpreter.code_interpreter_cli_only import CodeGeneratorCLIOnly
+from taskweaver.code_interpreter.interpreter import Interpreter
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
 from taskweaver.memory.attachment import AttachmentType
@@ -19,7 +20,7 @@ class CodeInterpreterConfig(RoleConfig):
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
 
-class CodeInterpreterCLIOnly(Role):
+class CodeInterpreterCLIOnly(Role, Interpreter):
     @inject
     def __init__(
         self,
@@ -40,7 +41,10 @@ class CodeInterpreterCLIOnly(Role):
         self.return_index = 0
 
         self.logger.info(f"{self.alias} initialized successfully.")
-
+        
+    def update_session_variables(self, session_variables: dict) -> None:
+        assert False, "Not implemented"
+        
     @tracing_decorator
     def reply(
         self,
