@@ -229,6 +229,7 @@ class Environment:
                 "TASKWEAVER_KERNEL_MODE": "container",
                 "TASKWEAVER_SESSION_ID": session_id,
                 "TASKWEAVER_KERNEL_ID": new_kernel_id,
+                "TASKWEAVER_SESSION_DIR": "/app/",
                 "TASKWEAVER_CES_DIR": "/app/ces/",
                 "TASKWEAVER_CWD": "/app/cwd/",
                 "TASKWEAVER_PORT_START": str(new_port_start),
@@ -436,8 +437,6 @@ class Environment:
             )
             os.makedirs(new_session.session_dir, exist_ok=True)
             self.session_dict[session_id] = new_session
-        elif session_id not in self.session_dict:
-            raise ValueError(f"Session {session_id} not found.")
 
         return self.session_dict.get(session_id, None)
 
