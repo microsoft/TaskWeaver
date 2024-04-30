@@ -56,10 +56,12 @@ def preprocess(original_prompt: str):
 
     new_solution_start = (
         "# Solution\n"
-        "Complete the code by adding your solution in the designated area marked by "
+        "The following is the solution code to the problem statement provided above.\n"
+        "You must complete the code by filling in the missing parts between "
         "`### SOLUTION START` and `### SOLUTION END`.\n"
-        "Any code outside of `### SOLUTION START` and `### SOLUTION END` should remain untouched.\n"
-        "Keep `### SOLUTION START` and `### SOLUTION END` in the code in order for auto-evaluation.\n"
+        "You must keep any code outside of `### SOLUTION START` and `### SOLUTION END` untouched.\n"
+        "Once you have completed the code, run it to check if your solution is correct.\n"
+        "Make sure you keep `### SOLUTION START` and `### SOLUTION END` along with your solution code.\n"
         "{instruction}\n"
         "\n"
         "```python\n"

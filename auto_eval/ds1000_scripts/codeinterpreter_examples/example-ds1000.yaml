@@ -26,9 +26,11 @@ rounds:
       3    10    11    12     2
 
       # Solution
-      Complete the code by adding your solution in the designated area marked by `### SOLUTION START` and `### SOLUTION END`.
-      Any code outside of `### SOLUTION START` and `### SOLUTION END` should remain untouched.
-      Keep `### SOLUTION START` and `### SOLUTION END` in the code in order for auto-evaluation.
+      The following is the solution code to the problem statement provided above.
+      You must complete the code by filling in the missing parts between `### SOLUTION START` and `### SOLUTION END`.
+      You must keep any code outside of `### SOLUTION START` and `### SOLUTION END` untouched.
+      Once you have completed the code, run it to check if your solution is correct.
+      Make sure you keep `### SOLUTION START` and `### SOLUTION END` along with your solution code.
 
       ```python
       import pandas as pd
@@ -73,10 +75,11 @@ rounds:
           3    10    11    12     2
 
           # Solution
-          Complete the code by adding your solution in the designated area marked by `### SOLUTION START` and `### SOLUTION END`.
-          Any code outside of `### SOLUTION START` and `### SOLUTION END` should remain untouched.
-          Keep `### SOLUTION START` and `### SOLUTION END` in the code in order for auto-evaluation.
-
+          The following is the solution code to the problem statement provided above.
+          You must complete the code by filling in the missing parts between `### SOLUTION START` and `### SOLUTION END`.
+          You must keep any code outside of `### SOLUTION START` and `### SOLUTION END` untouched.
+          Once you have completed the code, run it to check if your solution is correct.
+          Make sure you keep `### SOLUTION START` and `### SOLUTION END` along with your solution code.
           ```python
           import pandas as pd
 
@@ -120,7 +123,7 @@ rounds:
           - type: thought
             content: "{ROLE_NAME} must not modify the code outside of `### SOLUTION START` and `### SOLUTION END`."
           - type: thought
-            content: "{ROLE_NAME} must keep `### SOLUTION START` and `### SOLUTION END` in the code for auto-evaluation."
+            content: "{ROLE_NAME} must keep `### SOLUTION START` and `### SOLUTION END` in the code for running it."
           - type: python
             content: |-
               import pandas as pd
