@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 
 import yaml
 
@@ -123,35 +124,36 @@ def package_mapping(pkg: str):
     return pkg
 
 
-jsonl_path = r"D:\DS-1000-main\simplified\data\ds1000.jsonl\ds1000.jsonl"
-case_path = r"d:\ds-1000-cases-pad"
-case_yaml = yaml.safe_load(open("case.yaml", "r"))
+if __name__ == "__main__":
+    jsonl_path = sys.argv[1]
+    case_path = sys.argv[2]
+    case_yaml = yaml.safe_load(open("case.yaml", "r"))
 
-for line in open(jsonl_path, "r"):
-    case = json.loads(line)
-    prompt = case["prompt"]
-    reference_code = case["reference_code"]
-    metadata = case["metadata"]
-    code_context = case["code_context"]
-    dependencies = [package_mapping(metadata["library"].lower())]
-    problem_id = str(metadata["problem_id"])
+    for line in open(jsonl_path, "r"):
+        case = json.loads(line)
+        prompt = case["prompt"]
+        reference_code = case["reference_code"]
+        metadata = case["metadata"]
+        code_context = case["code_context"]
+        dependencies = [package_mapping(metadata["library"].lower())]
+        problem_id = str(metadata["problem_id"])
 
-    if metadata["problem_id"] >= 817:
-        continue
-    # pad problem_id with 0s
-    problem_id = problem_id.zfill(3)
+        if metadata["problem_id"] >= 817:
+            continue
+        # pad problem_id with 0s
+        problem_id = problem_id.zfill(3)
 
-    os.makedirs(os.path.join(case_path, problem_id), exist_ok=True)
-    with open(os.path.join(case_path, problem_id, "prompt.txt"), "w", encoding="utf-8") as f:
-        f.write(preprocess(prompt))
-    with open(os.path.join(case_path, problem_id, "reference_code.py"), "w", encoding="utf-8") as f:
-        f.write(reference_code)
-    with open(os.path.join(case_path, problem_id, "metadata.json"), "w", encoding="utf-8") as f:
-        json.dump(metadata, f)
-    with open(os.path.join(case_path, problem_id, f"code_context.py"), "w", encoding="utf-8") as f:
-        f.write(code_context)
+        os.makedirs(os.path.join(case_path, problem_id), exist_ok=True)
+        with open(os.path.join(case_path, problem_id, "prompt.txt"), "w", encoding="utf-8") as f:
+            f.write(preprocess(prompt))
+        with open(os.path.join(case_path, problem_id, "reference_code.py"), "w", encoding="utf-8") as f:
+            f.write(reference_code)
+        with open(os.path.join(case_path, problem_id, "metadata.json"), "w", encoding="utf-8") as f:
+            json.dump(metadata, f)
+        with open(os.path.join(case_path, problem_id, f"code_context.py"), "w", encoding="utf-8") as f:
+            f.write(code_context)
 
-    case_yaml["task_description"] = preprocess(prompt)
-    case_yaml["dependencies"] = dependencies
-    with open(os.path.join(case_path, problem_id, "case.yaml"), "w", encoding="utf-8") as f:
-        yaml.safe_dump(case_yaml, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+        case_yaml["task_description"] = preprocess(prompt)
+        case_yaml["dependencies"] = dependencies
+        with open(os.path.join(case_path, problem_id, "case.yaml"), "w", encoding="utf-8") as f:
+            yaml.safe_dump(case_yaml, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
