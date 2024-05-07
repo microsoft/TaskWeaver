@@ -61,9 +61,9 @@ and the current flow actually incurred unnecessary LLM call overhead to generate
 Second, it does not make sense to represent the instructions in variables.
 The instructions are not data to be processed, but a text guide for the agent to follow.
 
-For these reasons, we introduced the concept of [roles](../docs/concepts/role) in TaskWeaver.
+For these reasons, we introduced the concept of [roles](../docs/concepts/role.md) in TaskWeaver.
 Roles are actually not new in TaskWeaver as there are already roles like `Planner` and `CodeInterpreter`.
-To add a new role, the developer can follow the documentation [here](../docs/concepts/role).
+To add a new role, the developer can follow the documentation [here](../docs/concepts/role.md).
 In general, a role is a class that inherits the `Role` class and implements the `reply` method.
 The `reply` method is the function that the agent calls to interact with the role, which has the 
 following signature:
@@ -73,7 +73,7 @@ def reply(self, memory: Memory, **kwargs) -> Post:
     # implementation
 ```
 
-It takes the `memory` object, which is the memory of the agent, and returns a [Post](../docs/concepts/post) object, which is the response of the role to the Planner.
+It takes the `memory` object, which is the memory of the agent, and returns a [Post](../docs/concepts/post.md) object, which is the response of the role to the Planner.
 With the `memory` object, the role can access the history of the conversation and the context of the conversation.
 You may have noticed that all roles in TaskWeaver can only talk to the Planner, not to each other.
 If a role needs to talk to another role, it should go through the Planner.
@@ -94,7 +94,7 @@ flowchart TD
     B --response--> A
 ```
 
-The communication between the Planner and the roles is done through the [Post](../docs/concepts/post) object.
+The communication between the Planner and the roles is done through the [Post](../docs/concepts/post.md) object.
 In other words, they talk to each other by sending messages in natural language.
 What if a role needs to send some data to another role? If this is the case, we would recommend to implement a new plugin
 instead of a new role. Otherwise, you may need to store the data in an external storage like a database and let the other role to access it.
@@ -107,7 +107,7 @@ Even though we can emphasize the importance of the Planner to pass all the neces
 it is still possible that the Planner misses some information.
 
 To address this challenge, we introduce the concept of `board` in TaskWeaver. 
-The `board` is a shared memory space that can be accessed by all roles, which is associated with the current [Round](../docs/concepts/round).
+The `board` is a shared memory space that can be accessed by all roles, which is associated with the current [Round](../docs/concepts/round.md).
 The `board` is a dictionary-like object that can store any information that is needed by the roles.
 Each role can decide to write or read any information from the `board`.
 
