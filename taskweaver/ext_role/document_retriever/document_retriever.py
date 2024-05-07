@@ -2,29 +2,60 @@ import json
 import os
 import pickle
 
-from taskweaver.plugin import Plugin, register_plugin
+from injector import inject
+
+from taskweaver.logging import TelemetryLogger
+from taskweaver.memory import Memory, Post
+from taskweaver.module.event_emitter import SessionEventEmitter
+from taskweaver.module.prompt_util import PromptUtil
+from taskweaver.module.tracing import Tracing
+from taskweaver.role import Role
+from taskweaver.role.role import RoleConfig, RoleEntry
 
 
-@register_plugin
-class DocumentRetriever(Plugin):
-    vectorstore = None
+class DocumentRetrieverConfig(RoleConfig):
+    def _configure(self):
+        # default is the directory where this file is located
+        self.index_folder = self._get_str(
+            "index_folder",
+            os.path.join(
+                os.path.dirname(__file__),
+                "knowledge_base",
+            ),
+        )
+        self.size = self._get_int("size", 5)
+        self.target_length = self._get_int("target_length", 256)
 
-    def _init(self):
-        try:
-            import tiktoken
-            from langchain_community.embeddings import HuggingFaceEmbeddings
-            from langchain_community.vectorstores import FAISS
-        except ImportError:
-            raise ImportError("Please install langchain-community first.")
+
+class DocumentRetriever(Role):
+    @inject
+    def __init__(
+        self,
+        config: DocumentRetrieverConfig,
+        logger: TelemetryLogger,
+        tracing: Tracing,
+        event_emitter: SessionEventEmitter,
+        role_entry: RoleEntry,
+    ):
+        super().__init__(config, logger, tracing, event_emitter, role_entry)
+        self.enc = None
+        self.chunk_id_to_index = None
+        self.vectorstore = None
+        self.embeddings = None
+
+    def initialize(self):
+        import tiktoken
+        from langchain_community.embeddings import HuggingFaceEmbeddings
+        from langchain_community.vectorstores import FAISS
 
         self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
         self.vectorstore = FAISS.load_local(
-            folder_path=self.config.get("index_folder"),
+            folder_path=self.config.index_folder,
             embeddings=self.embeddings,
         )
         with open(
             os.path.join(
-                self.config.get("index_folder"),
+                self.config.index_folder,
                 "chunk_id_to_index.pkl",
             ),
             "rb",
@@ -33,20 +64,38 @@ class DocumentRetriever(Plugin):
 
         self.enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def __call__(self, query: str, size: int = 5, target_length: int = 256):
-        if self.vectorstore is None:
-            self._init()
+    def reply(self, memory: Memory, **kwargs) -> Post:
+        if not self.vectorstore:
+            self.initialize()
+
+        rounds = memory.get_role_rounds(
+            role=self.alias,
+            include_failure_rounds=False,
+        )
+
+        # obtain the query from the last round
+        last_post = rounds[-1].post_list[-1]
+
+        post_proxy = self.event_emitter.create_post_proxy(self.alias)
+
+        post_proxy.update_send_to(last_post.send_from)
 
         result = self.vectorstore.similarity_search(
-            query=query,
-            k=size,
+            query=last_post.message,
+            k=self.config.size,
         )
 
-        expanded_chunks = self.do_expand(result, target_length)
+        expanded_chunks = self.do_expand(result, self.config.target_length)
 
-        return f"DocumentRetriever has done searching for `{query}`.\n" + self.ctx.wrap_text_with_delimiter_temporal(
-            "\n```json\n" + json.dumps(expanded_chunks, indent=4) + "```\n",
+        post_proxy.update_message(
+            f"DocumentRetriever has done searching for `{last_post.message}`.\n"
+            + PromptUtil.wrap_text_with_delimiter(
+                "\n```json\n" + json.dumps(expanded_chunks, indent=4) + "```\n",
+                PromptUtil.DELIMITER_TEMPORAL,
+            ),
         )
+
+        return post_proxy.end()
 
     def do_expand(self, result, target_length):
         expanded_chunks = []
