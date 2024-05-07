@@ -60,6 +60,16 @@ class TaskWeaverContextMagic(Magics):
             self.executor.ctx.set_output(local_ns["_"])
         return fmt_response(True, "", self.executor.get_post_execution_state())
 
+    @cell_magic
+    def _taskweaver_write_and_run(self, line: str, cell: str):
+        file_path = line.strip()
+        if not file_path:
+            return fmt_response(False, "File path not provided.")
+
+        with open(file_path, "w") as file:
+            file.write(cell)
+        self.shell.run_cell(cell)
+
 
 @magics_class
 class TaskWeaverPluginMagic(Magics):

@@ -1,0 +1,30 @@
+version: 0.1
+config_var:
+  execution_service.kernel_mode: "local"
+  code_interpreter.code_prefix: |-
+    %%_taskweaver_write_and_run solution.py
+app_dir: ../project/
+dependencies: []
+data_files:
+  - code_context.py
+task_description: ""
+scoring_points:
+  - score_point: solution code much pass the test
+    weight: 1
+    eval_code: |-
+      import re
+      
+      def extract_solution_code(file_path):
+          with open(file_path, "r") as file:
+              solution_code = file.read()
+      
+          # Find the part between the solution comments using a regular expression
+          solution_regex = re.compile(r"### SOLUTION START(.*?)### SOLUTION END", re.DOTALL)
+          solution_match = solution_regex.search(solution_code)
+          return solution_match.group(1)
+      
+      from code_context import test_execution
+      
+      test_execution(extract_solution_code("solution.py"))
+      
+      

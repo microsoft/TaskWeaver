@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from injector import inject
 
@@ -105,7 +105,10 @@ class CodeExecutor:
 
         if not result.is_success:
             self.tracing.set_span_status("ERROR", "Code execution failed.")
-        self.tracing.set_span_attribute("result", self.format_code_output(result, with_code=False))
+        self.tracing.set_span_attribute(
+            "result",
+            self.format_code_output(result, with_code=False, code_mask=None),
+        )
 
         return result
     
@@ -153,14 +156,19 @@ class CodeExecutor:
         result: ExecutionResult,
         indent: int = 0,
         with_code: bool = True,
+        code_mask: Optional[str] = None,
         use_local_uri: bool = False,
     ) -> str:
         lines: List[str] = []
 
         # code execution result
         if with_code:
+            if code_mask is not None and len(code_mask) > 0:
+                display_code = result.code.replace(code_mask, "")
+            else:
+                display_code = result.code
             lines.append(
-                f"The following python code has been executed:\n" "```python\n" f"{result.code}\n" "```\n\n",
+                f"The following python code has been executed:\n" "```python\n" f"{display_code}\n" "```\n\n",
             )
 
         lines.append(

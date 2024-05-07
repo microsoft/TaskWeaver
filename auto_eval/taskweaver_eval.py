@@ -59,7 +59,10 @@ def auto_evaluate_for_taskweaver(
             raise FileNotFoundError(f"Data file {data_file} is not found.")
         else:
             file_path = os.path.join(eval_case_dir, data_file)
-            shutil.copy(file_path, working_directory)
+            if os.path.isfile(file_path):
+                shutil.copy(file_path, working_directory)
+            else:
+                shutil.copytree(file_path, os.path.join(working_directory, data_file))
 
     chat_history = taskweaver_vuser.talk_with_agent()
 
@@ -86,8 +89,8 @@ def batch_auto_evaluate_for_taskweaver(
         df = pd.DataFrame(columns=["case_file", "score", "normalized_score"])
         df.to_csv(result_file_path, index=False)
 
-    results = pd.read_csv(result_file_path)
-    evaluated_case_files = results["case_file"].tolist()
+    results = pd.read_csv(result_file_path, dtype={"case_file": str})
+    evaluated_case_files = [str(f) for f in results["case_file"].tolist()]
     if flush_result_file:
         evaluated_case_files = []
     print(f"Evaluated case files: {evaluated_case_files}")

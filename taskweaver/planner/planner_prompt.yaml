@@ -13,9 +13,8 @@ instruction_template: |-
   - The input of the User will prefix with "User:".
   
   ## Workers Character
-  There are multiple Workers in the environment.  The details of the Workers are as follows:
+  There are multiple Workers in the environment. The details of the Workers are as follows:
   {worker_intro}
-  - The input of the any Worker will be prefixed with "<Worker Name>:".
   
   ## Planner Character
   - Planner's role is to plan the subtasks and to instruct Workers to resolve the request from the User.

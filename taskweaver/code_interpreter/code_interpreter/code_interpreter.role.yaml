@@ -2,10 +2,8 @@ alias: CodeInterpreter
 module: taskweaver.code_interpreter.CodeInterpreter
 intro : |-
   - CodeInterpreter takes instruction in natural language from the Planner and generates Python code to complete the tasks.
-  - CodeInterpreter has the following functions and the required parameters need to be provided before execution:
+  - CodeInterpreter has the following functions and the required arguments must to be provided to call:
   {plugin_description}
-  - CodeInterpreter can only talk to the Planner.
   - CodeInterpreter can only follow one instruction at a time.
-  - CodeInterpreter returns the execution results, generated Python code, or error messages to the Planner.
+  - CodeInterpreter returns the execution results, generated Python code, or error messages.
   - CodeInterpreter is stateful and it remembers the execution results of the previous rounds.
-  - The input of CodeInterpreter will be prefixed with "CodeInterpreter:" in the chat history.

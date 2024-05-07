@@ -1,10 +1,12 @@
 import json
 import os
+import subprocess
+import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
 import yaml
-from langchain.load.dump import dumps
+from langchain.load import dumps
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
 from langchain_openai import AzureChatOpenAI
@@ -72,7 +74,7 @@ class VirtualUser:
         self.task_description = task_description
         self.kick_off_message = self.prompt_data["kick_off_message"]
 
-        self.max_rounds = self.config.get("virtual_user.max_rounds", 15)
+        self.max_rounds = self.config.get("virtual_user.max_rounds", 5)
 
     def talk_with_agent(self):
         sys_message = self.prompt_template.format(
@@ -139,7 +141,8 @@ class Evaluator(object):
         chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
         scoring_point: ScoringPoint,
     ) -> str:
-        chat_history_text = dumps(chat_history)
+        chat_history_text = dumps(chat_history[:-1])  # exclude the last message with "stop_keyword"
+        chat_history_text = chat_history_text.replace("HumanMessage", "AgentMessage")
         return (
             f"The task description is: {task_description}\n"
             f"The chat history between user and agent is: {chat_history_text}\n"
@@ -161,6 +164,52 @@ class Evaluator(object):
             else:
                 raise e
 
+    @staticmethod
+    def eval_via_code(
+        chat_history: List[Union[AIMessage, HumanMessage, SystemMessage]],
+        scoring_point: ScoringPoint,
+        cwd: Optional[str] = None,
+    ) -> Tuple[bool, str]:
+        code = scoring_point.eval_code
+        eval_code_snippet = "\n".join([f"{line}" for line in code.strip().split("\n")])
+        func_code = (
+            f"from langchain.load import load\n"
+            f"import json\n"
+            f"from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage\n"
+            f"from langchain_community.chat_models import ChatOpenAI\n"
+            f"from langchain_openai import AzureChatOpenAI\n"
+            f"with open('eval_chat_history.json', 'r') as f:\n"
+            f"  chat_history = load(json.load(f))\n"
+            f"chat_history = chat_history[:-1]\n"  # exclude the last message with "stop_keyword"
+            f"{eval_code_snippet}"
+        )
+
+        original_cwd = os.getcwd()
+        original_sys_path = sys.path
+        if cwd is not None:
+            os.chdir(cwd)
+            sys.path.append(os.getcwd())
+
+        chat_history_text = dumps(chat_history)
+        with open("eval_chat_history.json", "w") as f:
+            f.write(chat_history_text)
+        with open("evaluator_code.py", "w") as f:
+            f.write(func_code)
+
+        try:
+            subprocess.check_output(["python", "evaluator_code.py"], stderr=subprocess.STDOUT)
+            result = True
+            error_message = ""
+        except subprocess.CalledProcessError as e:
+            result = False
+            error_message = e.output.decode()
+        finally:
+            if cwd is not None:
+                os.chdir(original_cwd)
+                sys.path = original_sys_path
+
+        return result, error_message
+
     def score(
         self,
         task_description: str,
@@ -169,24 +218,7 @@ class Evaluator(object):
         cwd: Optional[str] = None,
     ) -> Tuple[bool, str]:
         if scoring_point.eval_code is not None:
-            code = scoring_point.eval_code
-            indented_code = "\n".join([f"    {line}" for line in code.strip().split("\n")])
-            func_code = (
-                f"def check_agent_response(chat_history):\n"
-                f"{indented_code}\n"
-                f"try:\n"
-                f"  result = check_agent_response(chat_history)\n"
-                f"except Exception as e:\n"
-                f"  exception_message = str(e)\n"
-                f"  result = False\n"
-            )
-
-            if cwd is not None:
-                os.chdir(cwd)
-            local_vars = locals()
-            exec(func_code, None, local_vars)
-            reason = local_vars["exception_message"] if "exception_message" in local_vars else ""
-            return local_vars["result"], reason
+            return self.eval_via_code(chat_history, scoring_point, cwd)
         else:
             messages = [
                 SystemMessage(content=self.prompt),
