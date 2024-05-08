@@ -1,14 +1,23 @@
 In this role, we load a previously indexed document collection and retrieve the top-k documents based on a natural language query.
 To enable this role, you need to configure the path to the folder containing the index files in the project configuration file `project/taskweaver_config.json`.
 In addition, you need to add `document_retriever` to the `session.roles` list in the project configuration file `project/taskweaver_config.json`.
-A pre-built sample index is provided in the `knowledge_base` folder which contains all documents for TaskWeaver under `website/docs` folder.
+A pre-built sample index is provided which contains all documents for TaskWeaver under `project/sample_data/knowledge_base` folder.
+So, an example configuration is as follows:
+```json
+{
+  "session.roles": ["document_retriever", "planner", "code_interpreter"],
+  "document_retriever.index_folder": "/path/to/TaskWeaver/project/sample_data/knowledge_base"
+}
+```
 
 To build your own index, we provide a script in `script/document_indexer.py` to build the index.
 You can run the following command to build the index:
 ```bash
+cd TaskWeaver
 python script/document_indexer.py \
-  --doc_path project/sample_data/knowledge_base/website/docs \
-  --output_path project/sample_data/knowledge_base/index
+  --doc_paths website/docs website/blog \
+  --output_path project/sample_data/knowledge_base \
+  --extensions md
 ```
 Please take a look at the import section in the script to install the required python packages.
 There are two parameters `--chunk_step` and `--chunk_size` that can be specified to control the chunking of the documents.
