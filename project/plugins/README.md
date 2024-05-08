@@ -24,21 +24,3 @@ Finally, we use the SQL query to pull data from the sqlite database.
 Because we need to generate the SQL query, we need to access GPT model. 
 So, you need to configure the GPT model (similar with configuring the main project) in the plugin configuration file `sql_pull_data.yaml`.
 
-
-## vision_web_explorer
-This plugin has been re-implemented as a role in the `taskweaver/ext_role/web_explorer` directory.
-
-[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/7f819524-2c5b-46a8-9c0c-e001a2c7131b)
-
-## web_search
-
-This plugin has been re-implemented as a role in the `taskweaver/ext_role/web_search` directory.
-
-A video demo using web search to find out information and then complete the task based on the retrieved information:
-
-[Plugin Demo](https://github.com/microsoft/TaskWeaver/assets/7489260/d078a05b-a19b-498c-b712-6f8c4855cefa)
-
-
-## document_retriever
-
-This plugin has been re-implemented as a role in the `taskweaver/ext_role/document_retriever` directory.
