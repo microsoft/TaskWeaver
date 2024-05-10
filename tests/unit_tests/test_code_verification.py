@@ -212,6 +212,16 @@ def test_allow_variable():
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 0
 
+    code_snippet = "name, age = 'John', 25\n" "print(f'Hello, {name}! You are {age} years old.')\n"
+    allowed_variables = ["name", "age"]
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        allowed_variables=allowed_variables,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) == 0
+
 
 def test_magic_code():
     code_snippet = (
