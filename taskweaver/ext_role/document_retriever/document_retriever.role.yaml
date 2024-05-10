@@ -1,0 +1,7 @@
+alias: DocumentRetriever
+module: taskweaver.ext_role.document_retriever.document_retriever.DocumentRetriever
+intro : |-
+  - DocumentRetriever takes a query and returns a list of documents that are most relevant to the query.
+  - DocumentRetriever only takes self-contained queries that do not require any context to understand.
+  - DocumentRetriever does not take queries that is not clear, or irrelevant to the topic.
+  - DocumentRetriever has a document base that is a collection of documents about a project named "TaskWeaver".
