@@ -47,7 +47,7 @@ flowchart TD
         plugin to extract  the instructions"--> C[Code Generator]
         subgraph Code Interpreter
             C --"instructions=read_manual()
-            follow_instructions(manual)"--> D[Code Executor]
+            follow_instructions(instructions)"--> D[Code Executor]
         end
     end
     D --instructions--> B
