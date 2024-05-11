@@ -5,7 +5,7 @@ import os
 import pickle
 import re
 import traceback
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Literal, Optional, Tuple
 
 try:
     import tiktoken
@@ -169,6 +169,12 @@ def text_parser(
     soup = None
     supported_extensions = ["md", "markdown", "html", "htm", "txt", "json", "jsonl"]
     other_extensions = ["docx", "pptx", "pdf", "csv"]
+    if extension not in supported_extensions + other_extensions:
+        print(
+            f"Not support for file with extension: {extension}. "
+            f"The supported extensions are {supported_extensions}",
+        )
+        return title, ""
 
     # utf-8-sig will treat BOM header as a metadata of a file not a part of the file content
     default_encoding = "utf-8-sig"
@@ -218,13 +224,14 @@ def text_parser(
 
 
 def chunk_document(
-    doc_path: str,
+    doc_paths: List[str],
     chunk_size: int,
     chunk_step: int,
+    extensions: Optional[List[str]] = None,
 ) -> Tuple[int, List[str], List[Dict[str, str]], Dict[str, int]]:
     """
     Split documents into chunks
-    :param doc_path: the path of the documents
+    :param doc_paths: the paths of the documents
     :param chunk_size: the size of the chunk
     :param chunk_step: the step size of the chunk
     """
@@ -237,39 +244,43 @@ def chunk_document(
 
     # traverse all files under dir
     print("Split documents into chunks...")
-    for root, dirs, files in os.walk(doc_path):
-        for name in files:
-            f = os.path.join(root, name)
-            print(f"Reading {f}")
-            try:
-                title, content = text_parser(f)
-                file_count += 1
-                if file_count % 100 == 0:
-                    print(f"{file_count} files read.")
-
-                if len(content) == 0:
+    for doc_path in doc_paths:
+        for root, dirs, files in os.walk(doc_path):
+            for name in files:
+                extension = name.split(".")[-1]
+                if extensions is not None and extension not in extensions:
                     continue
+                f = os.path.join(root, name)
+                print(f"Reading {f}")
+                try:
+                    title, content = text_parser(f)
+                    file_count += 1
+                    if file_count % 100 == 0:
+                        print(f"{file_count} files read.")
 
-                chunks = chunk_str_overlap(
-                    content.strip(),
-                    num_tokens=chunk_size,
-                    step_tokens=chunk_step,
-                    separator="\n",
-                    encoding=enc,
-                )
-                source = os.path.sep.join(f.split(os.path.sep)[4:])
-                for i in range(len(chunks)):
-                    # custom metadata if needed
-                    metadata = {
-                        "source": source,
-                        "title": title,
-                        "chunk_id": i,
-                    }
-                    chunk_id_to_index[f"{source}_{i}"] = len(texts) + i
-                    metadata_list.append(metadata)
-                texts.extend(chunks)
-            except Exception as e:
-                print(f"Error encountered when reading {f}: {traceback.format_exc()} {e}")
+                    if len(content) == 0:
+                        continue
+
+                    chunks = chunk_str_overlap(
+                        content.strip(),
+                        num_tokens=chunk_size,
+                        step_tokens=chunk_step,
+                        separator="\n",
+                        encoding=enc,
+                    )
+                    source = os.path.sep.join(f.split(os.path.sep)[4:])
+                    for i in range(len(chunks)):
+                        # custom metadata if needed
+                        metadata = {
+                            "source": source,
+                            "title": title,
+                            "chunk_id": i,
+                        }
+                        chunk_id_to_index[f"{source}_{i}"] = len(texts) + i
+                        metadata_list.append(metadata)
+                    texts.extend(chunks)
+                except Exception as e:
+                    print(f"Error encountered when reading {f}: {traceback.format_exc()} {e}")
     return file_count, texts, metadata_list, chunk_id_to_index
 
 
@@ -278,10 +289,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-d",
-        "--doc_path",
+        "--doc_paths",
         help="the path of the documents",
         type=str,
-        default="",
+        nargs="+",
+        default=".",
     )
     parser.add_argument(
         "-c",
@@ -304,12 +316,21 @@ if __name__ == "__main__":
         type=str,
         default="",
     )
+    parser.add_argument(
+        "-e",
+        "--extensions",
+        help="the extensions of the files",
+        type=str,
+        nargs="+",
+        default=None,
+    )
     args = parser.parse_args()
 
     file_count, texts, metadata_list, chunk_id_to_index = chunk_document(
-        doc_path=args.doc_path,
+        doc_paths=args.doc_paths,
         chunk_size=args.chunk_size,
         chunk_step=args.chunk_step,
+        extensions=args.extensions,
     )
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vectorstore = FAISS.from_texts(

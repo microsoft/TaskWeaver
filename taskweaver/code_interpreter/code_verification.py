@@ -42,6 +42,9 @@ class FunctionCallValidator(ast.NodeVisitor):
         return True
 
     def visit_Call(self, node):
+        if self.allowed_functions is None and self.blocked_functions is None:
+            return
+
         if isinstance(node.func, ast.Name):
             function_name = node.func.id
         elif isinstance(node.func, ast.Attribute):
@@ -67,6 +70,9 @@ class FunctionCallValidator(ast.NodeVisitor):
         return True
 
     def visit_Import(self, node):
+        if self.allowed_modules is None and self.blocked_modules is None:
+            return
+
         for alias in node.names:
             if "." in alias.name:
                 module_name = alias.name.split(".")[0]
@@ -80,6 +86,9 @@ class FunctionCallValidator(ast.NodeVisitor):
                 )
 
     def visit_ImportFrom(self, node):
+        if self.allowed_modules is None and self.blocked_modules is None:
+            return
+
         if "." in node.module:
             module_name = node.module.split(".")[0]
         else:
@@ -99,21 +108,23 @@ class FunctionCallValidator(ast.NodeVisitor):
         return True
 
     def visit_Assign(self, node: ast.Assign):
-        for target in node.targets:
-            if isinstance(target, ast.Name):
-                variable_name = target.id
-            else:
-                self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
-                    "=> Complex assignments are not allowed.",
-                )
-                continue
+        if self.allowed_variables is None:
+            return
 
-            if not self._is_allowed_variable(variable_name):
-                self.errors.append(
-                    f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
-                    f"=> Assigning to {variable_name} is not allowed.",
-                )
+        for target in node.targets:
+            variable_names = []
+            if isinstance(target, ast.Name):
+                variable_names.append(target.id)
+            else:
+                for name in ast.walk(target):
+                    if isinstance(name, ast.Name):
+                        variable_names.append(name.id)
+            for variable_name in variable_names:
+                if not self._is_allowed_variable(variable_name):
+                    self.errors.append(
+                        f"Error on line {node.lineno}: {self.lines[node.lineno - 1]} "
+                        f"=> Assigning to {variable_name} is not allowed.",
+                    )
 
     def generic_visit(self, node):
         super().generic_visit(node)

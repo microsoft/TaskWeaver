@@ -41,6 +41,7 @@ If current environment is not compatible with the dependencies, it will report a
 
 > 💡 for the `eval_code` field, you can use the variable `chat_history` in your evaluation code snippet.
 It is a list of [Messages objects of Langchain](https://python.langchain.com/docs/modules/model_io/concepts#messages) that contain the chat history between the virtual user and the agent.
+The `eval_code` should use the `assert` statement to check the criterion.
 
 
 ## How to evaluate other Agents

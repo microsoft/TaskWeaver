@@ -437,8 +437,6 @@ class Environment:
             )
             os.makedirs(new_session.session_dir, exist_ok=True)
             self.session_dict[session_id] = new_session
-        elif session_id not in self.session_dict:
-            raise ValueError(f"Session {session_id} not found.")
 
         return self.session_dict.get(session_id, None)
 
