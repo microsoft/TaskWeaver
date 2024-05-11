@@ -52,6 +52,7 @@ class DocumentRetriever(Role):
         self.vectorstore = FAISS.load_local(
             folder_path=self.config.index_folder,
             embeddings=self.embeddings,
+            allow_dangerous_deserialization=True,
         )
         with open(
             os.path.join(

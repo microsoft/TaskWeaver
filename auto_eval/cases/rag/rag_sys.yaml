@@ -1,0 +1,12 @@
+version: 0.1
+app_dir: ../project/
+config_var:
+  session.roles: ["document_retriever", "planner"]
+  document_retriever.index_folder: "../auto_eval/cases/rag/knowledge_base"
+  execution_service.kernel_mode: "local"
+pre_command: ["python ../scripts/document_indexer.py --doc_paths ./cases/rag/docs --output_path ./cases/rag/knowledge_base --extensions md"]
+task_description: |- 
+  The task is to ask the agent what are the two modes of code execution in TaskWeaver.
+scoring_points:
+  - score_point: "Agent should say the two modes are 'local' and 'container' in TaskWeaver."
+    weight: 1

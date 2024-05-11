@@ -66,6 +66,7 @@ class AppConfigSource:
                 self.json_file_store = json.load(f)
                 return self.json_file_store
         except Exception as e:
+            print("Failed to load config file", config_file_path)
             raise e
 
     def _get_config_value(
