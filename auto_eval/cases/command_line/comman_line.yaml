@@ -1,0 +1,10 @@
+version: 0.1
+app_dir: ../project/
+config_var:
+  session.roles: ["code_interpreter_cli_only"]
+  execution_service.kernel_mode: "local"
+task_description: |- 
+  The task is to ask the agent to get the current date and time on the system using the command line.
+scoring_points:
+  - score_point: "Agent should return a date-time like response (e.g., Sat May 11 07:03:23 AM UTC 2024) to the user"
+    weight: 1
