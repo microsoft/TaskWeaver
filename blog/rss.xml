@@ -4,7 +4,7 @@
         <title>TaskWeaver Blog</title>
         <link>https://docusaurus.io/TaskWeaver/blog</link>
         <description>TaskWeaver Blog</description>
-        <lastBuildDate>Sat, 11 May 2024 09:29:48 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 13 May 2024 03:29:25 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en</language>
@@ -12,7 +12,7 @@
             <title><![CDATA[How to evaluate a LLM agent?]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/evaluation</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/evaluation</guid>
-            <pubDate>Sat, 11 May 2024 09:29:48 GMT</pubDate>
+            <pubDate>Mon, 13 May 2024 03:29:25 GMT</pubDate>
             <description><![CDATA[The challenges]]></description>
             <content:encoded><![CDATA[<h2 class="anchor anchorWithStickyNavbar_LWe7" id="the-challenges">The challenges<a href="https://docusaurus.io/TaskWeaver/blog/evaluation#the-challenges" class="hash-link" aria-label="Direct link to The challenges" title="Direct link to The challenges">​</a></h2>
 <p>It is nontrivial to evaluate the performance of a LLM agent.
@@ -79,7 +79,7 @@ as we did for TaskWeaver in <code>auto_eval/taskweaver_eval.py</code>:</p>
             <title><![CDATA[Roles in TaskWeaver]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/role</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/role</guid>
-            <pubDate>Sat, 11 May 2024 09:29:48 GMT</pubDate>
+            <pubDate>Mon, 13 May 2024 03:29:25 GMT</pubDate>
             <description><![CDATA[We frame TaskWeaver as a code-first agent framework. The term "code-first" means that the agent is designed to]]></description>
             <content:encoded><![CDATA[<p>We frame TaskWeaver as a <strong>code-first</strong> agent framework. The term "code-first" means that the agent is designed to
 convert the user's request into one or multiple runnable code snippets and then execute them to generate the response.
