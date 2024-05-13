@@ -182,7 +182,7 @@ test_workspace
 
 
 # extensions template
-taskweaver/cli/taskweaver-ext.zip
+taskweaver/cli/taskweaver-project.zip
 
 # General
 .DS_Store
