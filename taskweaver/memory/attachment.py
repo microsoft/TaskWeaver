@@ -46,7 +46,7 @@ class AttachmentType(Enum):
     # Misc
     invalid_response = "invalid_response"
 
-    # board infor
+    # board info
     board = "board"
 
 
