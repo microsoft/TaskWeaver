@@ -225,6 +225,9 @@ class Session:
                 )
                 while True:
                     if post.send_to == "Planner":
+                        # add the original message to the chat round
+                        chat_round.add_post(post)
+                        # create a reply post
                         reply_post = Post.create(
                             message=post.message,
                             send_from="Planner",
