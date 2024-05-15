@@ -155,6 +155,10 @@ class PostTranslator:
         :param ignored_types:
         :return: str
         """
+        if ignored_types is None:
+            ignored_types = []
+        ignored_types.append(AttachmentType.board)
+
         structured_llm: List[Dict[str, str]] = []
         for attachment in post.attachment_list:
             attachments_dict = {}

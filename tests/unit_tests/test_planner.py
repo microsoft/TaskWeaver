@@ -85,7 +85,12 @@ def test_compose_prompt():
         message="Please load the data file /home/data.csv and count the rows of the loaded data",
         send_from="Planner",
         send_to="CodeInterpreter",
-        attachment_list=[],
+        attachment_list=[
+            Attachment.create(
+                AttachmentType.board,
+                "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n",
+            ),
+        ],
     )
     post2.add_attachment(
         Attachment.create(
