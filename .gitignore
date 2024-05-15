@@ -3,6 +3,8 @@ auto_eval/evaluator_config.json
 !tests/blackbox/*.csv
 workspace/*
 set_env.sh
+sample_case_results.csv
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

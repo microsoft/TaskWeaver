@@ -76,7 +76,7 @@ class VirtualUser:
 
         self.max_rounds = self.config.get("virtual_user.max_rounds", 5)
 
-    def talk_with_agent(self):
+    def talk_with_agent(self, verbose: bool = False):
         sys_message = self.prompt_template.format(
             task_description=self.task_description,
             stop_keyword=self.stop_keyword,
@@ -91,7 +91,7 @@ class VirtualUser:
         print(f"User: {user_query}")
         while True:
             try:
-                agent_response = self.get_reply_from_agent(user_query)
+                agent_response = self.get_reply_from_agent(user_query, verbose=verbose)
                 print(f"Agent: {agent_response}")
                 vuser_response = self.get_reply_from_vuser(agent_response, chat_history)
                 print(f"User: {vuser_response}")

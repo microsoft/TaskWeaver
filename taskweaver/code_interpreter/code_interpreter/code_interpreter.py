@@ -121,7 +121,7 @@ class CodeInterpreter(Role, Interpreter):
 
     def get_intro(self) -> str:
         return self.intro.format(plugin_description=self.plugin_description)
-    
+
     def update_session_variables(self, session_variables: Dict[str, str]):
         self.logger.info(f"Updating session variables: {session_variables}")
         self.executor.update_session_var(session_variables)
