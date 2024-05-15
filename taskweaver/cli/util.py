@@ -16,7 +16,7 @@ def require_workspace():
             else:
                 click.echo(
                     "The current directory is not a valid Task Weaver project directory. "
-                    "There needs to be a `taskweaver-config.json` in the root of the project directory. "
+                    "There needs to be a `taskweaver_config.json` in the root of the project directory. "
                     "Please change the working directory to a valid project directory or initialize a new one. "
                     "Refer to --help for more information.",
                 )

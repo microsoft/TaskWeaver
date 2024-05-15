@@ -56,46 +56,21 @@ def init(
     if not os.path.exists(project):
         os.mkdir(project)
 
-    def get_dir(*dir: str):
-        return os.path.join(project, *dir)
-
-    dir_list = [
-        "codeinterpreter_examples",
-        "planner_examples",
-        "plugins",
-        "config",
-        "workspace",
-    ]
-    for dir in dir_list:
-        dir_path = get_dir(dir)
-        if not os.path.exists(dir_path):
-            os.mkdir(dir_path)
-
-    init_temp_dir = get_dir("init")
     import zipfile
     from pathlib import Path
 
-    tpl_dir = os.path.join(init_temp_dir, "template")
-    ext_zip_file = Path(__file__).parent / "taskweaver-ext.zip"
+    tpl_dir = os.path.join(project, "temp")
+    if not os.path.exists(tpl_dir):
+        os.mkdir(tpl_dir)
+
+    ext_zip_file = Path(__file__).parent / "taskweaver-project.zip"
     if os.path.exists(ext_zip_file):
         with zipfile.ZipFile(ext_zip_file, "r") as zip_ref:
             # Extract all files to the current directory
             zip_ref.extractall(tpl_dir)
-
-        tpl_planner_example_dir = os.path.join(tpl_dir, "taskweaver-ext", "planner_examples")
-        tpl_ci_example_dir = os.path.join(tpl_dir, "taskweaver-ext", "codeinterpreter_examples")
-        tpl_plugin_dir = os.path.join(tpl_dir, "taskweaver-ext", "plugins")
-        tpl_config_dir = os.path.join(tpl_dir, "taskweaver-ext")
-        planner_example_dir = get_dir("planner_examples")
-        ci_example_dir = get_dir("codeinterpreter_examples")
-        plugin_dir = get_dir("plugins")
-        copy_files(tpl_planner_example_dir, planner_example_dir)
-        copy_files(tpl_ci_example_dir, ci_example_dir)
-        copy_files(tpl_plugin_dir, plugin_dir)
-        copy_file(tpl_config_dir, "taskweaver_config.json", get_dir(""))
-
+        copy_files(os.path.join(tpl_dir, "project"), project)
     try:
-        shutil.rmtree(init_temp_dir)
+        shutil.rmtree(tpl_dir)
     except Exception:
         click.secho("Failed to remove temporary directory", fg="yellow")
     click.secho(
@@ -105,17 +80,8 @@ def init(
 
 
 def copy_files(src_dir: str, dst_dir: str):
-    # Get a list of all files in the source directory
-    files = os.listdir(src_dir)
-
-    # Loop through the files and copy each one to the destination directory
-    for file in files:
-        if os.path.isfile(os.path.join(src_dir, file)):
-            copy_file(src_dir, file, dst_dir)
-
-
-def copy_file(src_dir: str, filename: str, dst_dir: str):
-    shutil.copy(
-        os.path.join(src_dir, filename),
-        os.path.join(dst_dir, filename),
-    )
+    # Check if the destination folder exists. If not, create it.
+    if not os.path.exists(dst_dir):
+        os.makedirs(dst_dir)
+    # Copy the content of source_folder to destination_folder
+    shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)
