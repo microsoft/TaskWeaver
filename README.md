@@ -69,6 +69,10 @@ cd TaskWeaver
 pip install -r requirements.txt
 ```
 
+If you want to install an earlier version of TaskWeaver, you may check the [release](https://github.com/microsoft/TaskWeaver/releases) page, find the tag (e.g., `v0.0.1`) and install it by 
+```
+pip install git+https://github.com/microsoft/TaskWeaver@<TAG>
+```
 
 ### 🖊️ Step 2: Configure the LLMs
 Before running TaskWeaver, you need to provide your LLM configurations. Taking OpenAI as an example, you can configure `taskweaver_config.json` file as follows. 
@@ -114,6 +118,8 @@ TaskWeaver also supports WebUI for demo purpose, please refer to [web UI docs](h
 
 #### or 📋 Import as a Library
 TaskWeaver can be imported as a library to integrate with your existing project, more information can be found in [docs](https://microsoft.github.io/TaskWeaver/docs/usage/library)
+
+
 
 ## 📖 Documentation
 More documentations can be found on [TaskWeaver Website](https://microsoft.github.io/TaskWeaver).
