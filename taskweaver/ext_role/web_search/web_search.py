@@ -50,7 +50,7 @@ def browse_page(
     query: str,
     urls: List[str],
     top_k: int = 3,
-    chunk_size: int = 1000,
+    chunk_size: int = 2000,
     chunk_overlap: int = 250,
     post_proxy: PostEventProxy = None,
 ) -> list[dict[str, Any]]:
@@ -133,6 +133,8 @@ class WebSearchConfig(RoleConfig):
         self.google_api_key = self._get_str("google_api_key", "")
         self.google_search_engine_id = self._get_str("google_search_engine_id", "")
         self.bing_api_key = self._get_str("bing_api_key", "")
+        self.chunk_size = self._get_int("chunk_size", 2000)
+        self.chunk_overlap = self._get_int("chunk_overlap", 500)
 
 
 class WebSearch(Role):
@@ -152,6 +154,8 @@ class WebSearch(Role):
         self.google_api_key = config.google_api_key
         self.google_search_engine_id = config.google_search_engine_id
         self.bing_api_key = config.bing_api_key
+        self.chunk_size = config.chunk_size
+        self.chunk_overlap = config.chunk_overlap
 
     def close(self) -> None:
         super().close()
@@ -192,7 +196,13 @@ class WebSearch(Role):
             + PromptUtil.wrap_text_with_delimiter(
                 "\n```json\n"
                 + json.dumps(
-                    browse_page(",".join(queries), list(query_urls), post_proxy=post_proxy),
+                    browse_page(
+                        ",".join(queries),
+                        list(query_urls),
+                        post_proxy=post_proxy,
+                        chunk_size=self.chunk_size,
+                        chunk_overlap=self.chunk_overlap,
+                    ),
                     indent=4,
                 )
                 + "```\n",
