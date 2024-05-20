@@ -1,5 +1,5 @@
 {
-  "llm.api_base": "https://api.keywordsai.co/api/",
-  "llm.api_key": "essxYPOB.uYBaWXDZzL9rnJA7CD6r943lgPoBMY7M",
-  "llm.model": "gpt-4o"
+  "llm.api_base": "https://api.openai.com/v1",
+  "llm.api_key": "",
+  "llm.model": "gpt-4-1106-preview"
 }
