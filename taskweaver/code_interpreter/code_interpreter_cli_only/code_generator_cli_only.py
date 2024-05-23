@@ -106,7 +106,10 @@ class CodeGeneratorCLIOnly(Role):
         )
 
         try:
-            llm_response = json.loads(llm_response["content"])
+            response_content = llm_response["content"]
+            if "```json" in response_content:
+                response_content = response_content[7:-3]
+            llm_response = json.loads(response_content)
             output_size = self.tracing.count_tokens(llm_response)
             self.tracing.set_span_attribute("output_size", output_size)
             self.tracing.add_prompt_size(

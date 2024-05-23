@@ -4,7 +4,7 @@ config_var:
   execution_service.kernel_mode: "local"
   code_generator.enable_auto_plugin_selection: true
   code_generator.auto_plugin_selection_topk: 1
-pre_command: ["cd ../scripts", "python -m plugin_mgt --refresh"]
+pre_command: ["cd ../scripts;python -m plugin_mgt --refresh"]
 verbose: true
 dependencies: []
 data_files:

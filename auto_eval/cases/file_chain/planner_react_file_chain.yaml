@@ -3,13 +3,11 @@ config_var:
   execution_service.kernel_mode: "local"
 app_dir: ../project/
 task_description: |-
-  The task is to read the ./file_A.txt and follow the instructions in it
+  Read the ./file_A.txt and follow the instructions in it
 data_files:
   - file_A.txt
   - file_B.txt
   - file_C.txt
 scoring_points:
-  - score_point: "Agent read the file_A.txt, file_B.txt and file_C.txt in order to finish the task"
-    weight: 1
   - score_point: "The final output key shown to user is 12345"
     weight: 1
