@@ -107,7 +107,7 @@ class CodeGeneratorCLIOnly(Role):
 
         try:
             response_content = llm_response["content"]
-            if "```json" in response_content:
+            if response_content.startswith("```json"):
                 response_content = response_content[7:-3]
             llm_response = json.loads(response_content)
             output_size = self.tracing.count_tokens(llm_response)
