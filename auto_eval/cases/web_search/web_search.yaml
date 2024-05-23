@@ -12,5 +12,3 @@ scoring_points:
     weight: 1
   - score_point: The affiliation list should include Microsoft
     weight: 1
-  - score_point: The home page of the first author should be found at Microsoft Research (https://www.microsoft.com/en-us/research/people/boqiao/) or Google Scholar (https://scholar.google.com/citations?user=_6ugrdYAAAAJ). Either one is acceptable.
-    weight: 1
