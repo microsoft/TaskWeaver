@@ -87,6 +87,7 @@ class CodeGenerator(Role):
         self.user_message_head_template = self.prompt_data["user_message_head"]
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
+        self.response_json_schema = self.prompt_data["response_json_schema"]
 
         self.examples = None
         self.code_verification_on: bool = False
@@ -380,6 +381,7 @@ class CodeGenerator(Role):
                 prompt,
                 use_smoother=True,
                 llm_alias=self.config.llm_alias,
+                json_schema=self.response_json_schema,
             ),
             post_proxy=post_proxy,
             early_stop=early_stop,

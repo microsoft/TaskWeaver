@@ -97,6 +97,8 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.frequency_penalty = self._get_float("frequency_penalty", 0)
         self.presence_penalty = self._get_float("presence_penalty", 0)
         self.seed = self._get_int("seed", 123456)
+        self.require_alternative_roles = self._get_bool("require_alternative_roles", False)
+        self.support_system_role = self._get_bool("support_system_role", True)
 
 
 class OpenAIService(CompletionService, EmbeddingService):
@@ -144,12 +146,29 @@ class OpenAIService(CompletionService, EmbeddingService):
             if "tools" in kwargs and "tool_choice" in kwargs:
                 tools_kwargs["tools"] = kwargs["tools"]
                 tools_kwargs["tool_choice"] = kwargs["tool_choice"]
+
             if "response_format" in kwargs:
                 response_format = kwargs["response_format"]
             elif self.config.response_format == "json_object":
                 response_format = {"type": "json_object"}
             else:
                 response_format = None
+
+            extra_body = {}
+            if "json_schema" in kwargs:
+                extra_body["guided_json"] = kwargs["json_schema"]
+                extra_body["guided_decoding_backend"] = "lm-format-enforcer"
+
+            # preprocess messages
+            # 1. change `system` to `user`
+            # 2. add dummy `assistant` message between consecutive `user` messages
+            # to achieve alternating user/assistant messages
+            for i, message in enumerate(messages):
+                if (not self.config.support_system_role) and message["role"] == "system":
+                    message["role"] = "user"
+                if self.config.require_alternative_roles:
+                    if i > 0 and message["role"] == "user" and messages[i - 1]["role"] == "user":
+                        messages.insert(i, {"role": "assistant", "content": "I get it."})
 
             res: Any = self.client.chat.completions.create(
                 model=engine,
@@ -163,6 +182,7 @@ class OpenAIService(CompletionService, EmbeddingService):
                 stream=stream,
                 seed=seed,
                 response_format=response_format,
+                extra_body=extra_body,
                 **tools_kwargs,
             )
             if stream:

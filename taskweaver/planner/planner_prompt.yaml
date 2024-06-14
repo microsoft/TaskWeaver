@@ -137,3 +137,42 @@ experience_instruction: |-
   Before starting planning, please refer to the following experiences and lessons learned from the previous tasks and include them in your plan.
   {experiences}
   You need to borrow the experience and lessons learned from the previous tasks in your current plan.
+
+planner_response_json_schema: |-
+  {
+      "type": "object",
+      "properties": {
+          "response": {
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "type": {
+                          "type": "string",
+                          "enum": [
+                              "plan",
+                              "current_plan_step",
+                              "message",
+                              "send_to",
+                              "init_plan"
+                          ]
+                      },
+                      "content": {
+                          "type": "string"
+                      }
+                  },
+                  "required": ["type", "content"]
+              },
+              "minItems": 5,
+              "maxItems": 5,
+              "allOf": [
+                  {"contains": {"type": "object", "properties": {"type": {"const": "plan"}}}},
+                  {"contains": {"type": "object", "properties": {"type": {"const": "current_plan_step"}}}},
+                  {"contains": {"type": "object", "properties": {"type": {"const": "message"}}}},
+                  {"contains": {"type": "object", "properties": {"type": {"const": "send_to"}}}},
+                  {"contains": {"type": "object", "properties": {"type": {"const": "init_plan"}}}}
+              ]
+          }
+      },
+      "required": ["response"]
+  }

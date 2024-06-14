@@ -88,6 +88,8 @@ class Planner(Role):
 
         self.response_schema = self.prompt_data["planner_response_schema"]
 
+        self.response_json_schema = json.loads(self.prompt_data["planner_response_json_schema"])
+
         self.instruction = self.compose_sys_prompt()
 
         self.ask_self_cnt = 0
@@ -281,6 +283,7 @@ class Planner(Role):
             chat_history,
             use_smoother=True,
             llm_alias=self.config.llm_alias,
+            json_schema=self.response_json_schema,
         )
 
         llm_output: List[str] = []
