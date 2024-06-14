@@ -31,7 +31,7 @@ class TaskWeaverVirtualUser(VirtualUser):
         )
         assert response_round.state != "failed", "Failed to get response from agent."
         if verbose:
-            verbose_response = "\n"
+            verbose_response = "\n Below are conversation details inside the Agent: \n"
             for post in response_round.post_list:
                 message = f"{post.send_from} -> {post.send_to}: {post.message}"
                 verbose_response += f"{message}\n"
@@ -69,8 +69,14 @@ def auto_evaluate_for_taskweaver(
     for command in pre_command:
         # run the command
         # subprocess.run(command, shell=True)
-        result = subprocess.check_output(command.split(" "), stderr=subprocess.STDOUT)
-        print(result)
+        result = subprocess.run(command, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        # result = subprocess.check_output(command.split(" "), stderr=subprocess.STDOUT)
+        if result.returncode == 0:
+            print("Precommand executed successfully")
+            print(result.stdout)
+        else:
+            print("Command failed")
+            print(result.stderr)
 
     taskweaver_vuser = TaskWeaverVirtualUser(task_description, app_dir, config_var)
     taskweaver_evaluator = Evaluator()
