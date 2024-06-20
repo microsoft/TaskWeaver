@@ -207,7 +207,7 @@ class OpenAIService(CompletionService, EmbeddingService):
                     role=oai_response.role if oai_response.role is not None else "assistant",
                     message=oai_response.content if oai_response.content is not None else "",
                 )
-                if oai_response.tool_calls is not None:
+                if oai_response.tool_calls is not None and len(oai_response.tool_calls) > 0:
                     import json
 
                     response["role"] = "function"

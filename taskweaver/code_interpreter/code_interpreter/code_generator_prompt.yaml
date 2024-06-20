@@ -35,51 +35,29 @@ response_json_schema: |-
         "type": "object",
         "properties": {
             "response": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "type": {
-                            "type": "string",
-                            "enum": ["thought", "sample", "python", "text"]
-                        },
-                        "content": {
-                            "type": "string"
-                        }
+                "type": "object",
+                "properties": {
+                    "thought": {
+                        "type": "string"
                     },
-                    "required": ["type", "content"]
-                },
-                "minItems": 1,
-                "oneOf": [
-                    {
-                        "contains": {
-                            "type": "object",
-                            "properties": {
-                                "type": { "const": "code" }
-                            }
-                        }
-                    },
-                    {
-                        "contains": {
-                            "type": "object",
-                            "properties": {
-                                "type": { "const": "text" }
-                            }
-                        }
-                    },
-                    {
-                        "contains": {
-                            "type": "object",
-                            "properties": {
-                                "type": { "const": "sample" }
+                    "reply": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": ["python", "text"]
+                            },
+                            "content": {
+                                "type": "string"
                             }
                         }
                     }
-                ]
+                },
+                "required": ["thought", "reply"]
             }
         },
         "required": ["response"]
-    }
+    } 
 
     
 conversation_head: |-

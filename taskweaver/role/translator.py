@@ -42,15 +42,9 @@ class PostTranslator:
         use_v2_parser: bool = True,
     ) -> None:
         """
-        Convert the raw text output of LLM to a Post object.
-        :param llm_output_stream:
-        :param send_from:
-        :param early_stop:
-        :return: Post
+        Convert the raw text output from LLM to a Post object.
         """
 
-        # llm_output_list = [token for token in llm_output_stream]  # collect all the llm output via iterator
-        # llm_output = "".join(llm_output_list)
         def stream_filter(s: Iterable[ChatMessageType]) -> Iterator[str]:
             full_llm_content = ""
             try:
@@ -74,12 +68,13 @@ class PostTranslator:
                 self.logger.info(f"LLM output: {full_llm_content}")
 
         value_buf: str = ""
-        filtered_stream = stream_filter(llm_output)
-        parser_stream = (
-            self.parse_llm_output_stream_v2(filtered_stream)
-            if use_v2_parser
-            else self.parse_llm_output_stream(filtered_stream)
-        )
+        # filtered_stream = stream_filter(llm_output)
+        # parser_stream = (
+        #     self.parse_llm_output_stream_v2(filtered_stream)
+        #     if use_v2_parser
+        #     else self.parse_llm_output_stream(filtered_stream)
+        # )
+        parser_stream = self.parse_llm_output("".join([c["content"] for c in llm_output]))
         cur_attachment: Optional[Attachment] = None
         try:
             for type_str, value, is_end in parser_stream:
@@ -148,12 +143,6 @@ class PostTranslator:
     ) -> str:
         """
         Convert a Post object to raw text in the format of LLM output.
-        :param post:
-        :param content_formatter:
-        :param if_format_message:
-        :param if_format_send_to:
-        :param ignored_types:
-        :return: str
         """
         if ignored_types is None:
             ignored_types = []
@@ -174,14 +163,26 @@ class PostTranslator:
         structured_llm_text = json.dumps({"response": structured_llm})
         return structured_llm_text
 
-    def parse_llm_output(self, llm_output: str) -> List[Dict[str, str]]:
+    def parse_llm_output(self, llm_output: str) -> Iterator[Tuple[str, str, bool]]:
         try:
             structured_llm_output: Any = json.loads(llm_output)["response"]
+            kv_pairs = []
             assert isinstance(
                 structured_llm_output,
-                list,
-            ), "LLM output should be a list object"
-            return structured_llm_output  # type: ignore
+                dict,
+            ), "LLM output should be a dict object"
+            for key in structured_llm_output:
+                if isinstance(structured_llm_output[key], str):
+                    kv_pairs.append((key, structured_llm_output[key], True))
+                elif isinstance(structured_llm_output[key], dict):
+                    _type = structured_llm_output[key]["type"]
+                    content = structured_llm_output[key]["content"]
+                    kv_pairs.append((_type, content, True))
+                else:
+                    raise AssertionError(
+                        f"Invalid LLM output format: {structured_llm_output[key]}",
+                    )
+            return kv_pairs  # type: ignore
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(
                 f"Failed to parse LLM output due to {str(e)}. LLM output:\n {llm_output}",

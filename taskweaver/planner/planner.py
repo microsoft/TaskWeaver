@@ -88,7 +88,7 @@ class Planner(Role):
 
         self.response_schema = self.prompt_data["planner_response_schema"]
 
-        self.response_json_schema = json.loads(self.prompt_data["planner_response_json_schema"])
+        self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.instruction = self.compose_sys_prompt()
 
@@ -284,6 +284,7 @@ class Planner(Role):
             use_smoother=True,
             llm_alias=self.config.llm_alias,
             json_schema=self.response_json_schema,
+            stream=False,
         )
 
         llm_output: List[str] = []
