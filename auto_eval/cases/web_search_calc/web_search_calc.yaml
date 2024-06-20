@@ -2,15 +2,16 @@ version: 0.1
 config_var:
   execution_service.kernel_mode: "local"
   session.roles: ["planner", "web_search", "code_interpreter"]
+  web_search.chunk_size: 2000
 app_dir: ../project/
 task_description: |-
-  The task is to find the top 3 highest grossing movies before 2024 and their worldwide gross.
-  You should first ask the agent to list the top 3 movies and their corresponding worldwide gross in the first step.
+  The task is to find the top 3 highest grossing movies in 2023 and their gross.
+  You should first ask the agent to list the top 3 movies and their corresponding gross in the first step.
   When you get the answer, ask the agent to calculate the square root of the sum of their gross, only the integer part is needed.
 scoring_points:
-  - score_point: "The top 3 movies are Avatar, Avengers: Endgame, and Avatar: The Way of Water. "
+  - score_point: "The top 3 movies are Barbie, The Super Mario Bros, and Spider-Man: Across the Spider-Verse. "
     weight: 1
-  - score_point: "Their corresponding worldwide gross should be $2,923,706,026, $2,797,501,328, and $2,320,250,281"
+  - score_point: "Their corresponding worldwide gross should be $636,236,401, $574,934,330, and $381,593,754"
     weight: 1
-  - score_point: "The sqrt of the sum of the gross should be around 89,674"
+  - score_point: "The sqrt of the sum of the gross should be around 39,909"
     weight: 1
