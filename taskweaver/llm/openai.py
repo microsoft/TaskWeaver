@@ -99,6 +99,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.seed = self._get_int("seed", 123456)
         self.require_alternative_roles = self._get_bool("require_alternative_roles", False)
         self.support_system_role = self._get_bool("support_system_role", True)
+        self.support_constrained_generation = self._get_bool("support_constrained_generation", False)
 
 
 class OpenAIService(CompletionService, EmbeddingService):
@@ -155,20 +156,25 @@ class OpenAIService(CompletionService, EmbeddingService):
                 response_format = None
 
             extra_body = {}
-            if "json_schema" in kwargs:
-                extra_body["guided_json"] = kwargs["json_schema"]
-                extra_body["guided_decoding_backend"] = "lm-format-enforcer"
+            if self.config.support_constrained_generation:
+                if "json_schema" in kwargs:
+                    extra_body["guided_json"] = kwargs["json_schema"]
+                    extra_body["guided_decoding_backend"] = "lm-format-enforcer"
+                else:
+                    raise Exception("Constrained generation requires a JSON schema")
 
-            # preprocess messages
-            # 1. change `system` to `user`
-            # 2. add dummy `assistant` message between consecutive `user` messages
-            # to achieve alternating user/assistant messages
+            # Preprocess messages
+            # 1. change `system` to `user` if `support_system_role` is False
+            # 2. add dummy `assistant` messages if alternating user/assistant is required
             for i, message in enumerate(messages):
                 if (not self.config.support_system_role) and message["role"] == "system":
                     message["role"] = "user"
                 if self.config.require_alternative_roles:
                     if i > 0 and message["role"] == "user" and messages[i - 1]["role"] == "user":
-                        messages.insert(i, {"role": "assistant", "content": "I get it."})
+                        messages.insert(
+                            i,
+                            {"role": "assistant", "content": "I get it."},
+                        )
 
             res: Any = self.client.chat.completions.create(
                 model=engine,

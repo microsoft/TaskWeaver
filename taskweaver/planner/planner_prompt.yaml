@@ -140,8 +140,7 @@ response_json_schema: |-
                     "type": "string"
                 },
                 "send_to": {
-                    "type": "string",
-                    "enum": ["User", "CodeInterpreter"]
+                    "type": "string"
                 },
                 "message": {
                     "type": "string"
@@ -158,12 +157,3 @@ response_json_schema: |-
     },
     "required": ["response"]
   }
-
-response_text_schema: |-
-  My initial plan is as follows: {init_plan}
-  
-  After refining the plan, the final plan is: {plan}
-  
-  The current step I am executing is: {current_plan_step}
-  
-  I will send the {message} to {send_to}.

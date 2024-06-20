@@ -68,13 +68,13 @@ class PostTranslator:
                 self.logger.info(f"LLM output: {full_llm_content}")
 
         value_buf: str = ""
-        # filtered_stream = stream_filter(llm_output)
-        # parser_stream = (
-        #     self.parse_llm_output_stream_v2(filtered_stream)
-        #     if use_v2_parser
-        #     else self.parse_llm_output_stream(filtered_stream)
-        # )
-        parser_stream = self.parse_llm_output("".join([c["content"] for c in llm_output]))
+        filtered_stream = stream_filter(llm_output)
+        parser_stream = (
+            self.parse_llm_output_stream_v3(filtered_stream)
+            if use_v2_parser
+            else self.parse_llm_output_stream(filtered_stream)
+        )
+        # parser_stream = self.parse_llm_output("".join([c["content"] for c in llm_output]))
         cur_attachment: Optional[Attachment] = None
         try:
             for type_str, value, is_end in parser_stream:
@@ -175,8 +175,8 @@ class PostTranslator:
                 if isinstance(structured_llm_output[key], str):
                     kv_pairs.append((key, structured_llm_output[key], True))
                 elif isinstance(structured_llm_output[key], dict):
-                    _type = structured_llm_output[key]["type"]
-                    content = structured_llm_output[key]["content"]
+                    _type = structured_llm_output[key]["key"]
+                    content = structured_llm_output[key]["value"]
                     kv_pairs.append((_type, content, True))
                 else:
                     raise AssertionError(
@@ -236,13 +236,9 @@ class PostTranslator:
         cur_content: Optional[str] = None
         try:
             for prefix, event, value in parser:
-                if prefix == "response.item" and event == "map_key" and value == "type":
-                    cur_type = None
-                elif prefix == "response.item.type" and event == "string":
+                if prefix == "response" and event == "map_key":
                     cur_type = value
-                elif prefix == "response.item" and event == "map_key" and value == "content":
-                    cur_content = None
-                elif prefix == "response.item.content" and event == "string":
+                if prefix == "response.{}".format(cur_type) and event == "string":
                     cur_content = value
 
                 if cur_type is not None and cur_content is not None:
@@ -256,6 +252,38 @@ class PostTranslator:
             if isinstance(llm_output, types.GeneratorType):
                 try:
                     llm_output.close()
+                except GeneratorExit:
+                    pass
+
+    def parse_llm_output_stream_v3(
+        self,
+        llm_output: Iterator[str],
+    ) -> Iterator[Tuple[str, str, bool]]:
+        parser = json_parser.parse_json_stream(llm_output, skip_after_root=True)
+        root_element_prefix = ".response"
+
+        cur_type: Optional[str] = None
+        try:
+            for ev in parser:
+                if ev.prefix == root_element_prefix and ev.event == "map_key" and ev.is_end:
+                    cur_type = ev.value
+
+                if ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
+                    if not ev.is_end:
+                        yield cur_type, ev.value_str, ev.is_end
+                    else:
+                        yield cur_type, ev.value, ev.is_end
+                        cur_type = None
+
+        except json_parser.StreamJsonParserError as e:
+            self.logger.warning(
+                f"Failed to parse LLM output stream due to JSONError: {str(e)}",
+            )
+
+        finally:
+            if isinstance(parser, types.GeneratorType):
+                try:
+                    parser.close()
                 except GeneratorExit:
                     pass
 
