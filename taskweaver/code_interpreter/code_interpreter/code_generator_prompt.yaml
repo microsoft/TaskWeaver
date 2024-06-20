@@ -22,13 +22,7 @@ content: |-
 
     ## On {ROLE_NAME}'s response format:
     - The response is a JSON object with the following format:
-    {
-        "response": {
-            "thought": "The thoughts on the intermediate steps",
-            "reply_type": "python | text",
-            "reply_content": "The code to be executed by the User or the direct response in text without code"
-        }
-    }
+    {RESPONSE_JSON_SCHEMA}
     - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
     
 response_json_schema: |-

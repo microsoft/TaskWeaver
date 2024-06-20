@@ -151,7 +151,7 @@ class CodeInterpreter(Role, Interpreter):
             return post_proxy.end()
 
         code = next(
-            (a for a in post_proxy.post.attachment_list if a.type == AttachmentType.python),
+            (a for a in post_proxy.post.attachment_list if a.type == AttachmentType.reply_content),
             None,
         )
 

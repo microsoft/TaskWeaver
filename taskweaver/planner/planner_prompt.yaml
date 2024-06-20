@@ -96,7 +96,7 @@ instruction_template: |-
   
   ## Planner's response format
   - Planner must strictly format the response into the following JSON object:
-    {planner_response_schema}
+    {response_json_schema}
   - Planner's response must include 5 attributes "init_plan", "plan", "current_plan_step", "send_to", and "message".
     - "init_plan" is the initial plan.
     - "plan" is the refined plan.
@@ -104,18 +104,6 @@ instruction_template: |-
     - "send_to" is the name of character (User or name of the Worker) that Planner wants to speak to.
     - "message" is the message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)
   - Planner must not include any other elements in the response that can cause parsing errors.
-
-planner_response_schema: |-
-  {
-    "response": {
-      "init_plan": "1. step 1\n2. step 2 <interactively or sequentially depend on 1>\n 3. step 3 <interactively or sequentially depend on 2>",
-      "plan": "1. step 1 in the refined plan\n2. step 2 in the refined plan\n3. step 3 in the refined plan",
-      "current_plan_step": "the current subtask that the Planner is executing",
-      "send_to": "User or the name of Worker",
-      "message": "The text message from the Planner"
-    }
-  }
-
 
 experience_instruction: |-
   # Experience And Lessons

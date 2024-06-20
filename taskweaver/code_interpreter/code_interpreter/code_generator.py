@@ -95,6 +95,7 @@ class CodeGenerator(Role):
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
+            RESPONSE_JSON_SCHEMA=self.response_json_schema,
         )
 
         self.round_compressor: RoundCompressor = round_compressor
@@ -371,7 +372,7 @@ class CodeGenerator(Role):
         )
 
         def early_stop(_type: AttachmentType, value: str) -> bool:
-            if _type in [AttachmentType.text, AttachmentType.python, AttachmentType.sample]:
+            if _type in [AttachmentType.reply_content]:
                 return True
             else:
                 return False
@@ -389,13 +390,19 @@ class CodeGenerator(Role):
 
         post_proxy.update_send_to("Planner")
         generated_code = ""
+        reply_type: Optional[str] = None
         for attachment in post_proxy.post.attachment_list:
-            if attachment.type in [AttachmentType.sample, AttachmentType.text]:
-                post_proxy.update_message(attachment.content)
+            if attachment.type == AttachmentType.reply_type:
+                reply_type = attachment.content
                 break
-            elif attachment.type == AttachmentType.python:
-                generated_code = attachment.content
-                break
+        for attachment in post_proxy.post.attachment_list:
+            if attachment.type == AttachmentType.reply_content:
+                if reply_type == "python":
+                    generated_code = attachment.content
+                    break
+                elif reply_type == "text":
+                    post_proxy.update_message(attachment.content)
+                    break
 
         if self.config.enable_auto_plugin_selection:
             # filter out plugins that are not used in the generated code

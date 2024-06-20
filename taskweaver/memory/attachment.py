@@ -15,16 +15,11 @@ class AttachmentType(Enum):
 
     # CodeInterpreter - generate code
     thought = "thought"
-    python = "python"
-
-    # CodeInterpreter - sample code
-    sample = "sample"
+    reply_type = "reply_type"
+    reply_content = "reply_content"
 
     # CodeInterpreter - verification
     verification = "verification"
-
-    # CodeInterpreter - text message
-    text = "text"
 
     # CodeInterpreter - execute code
     code_error = "code_error"

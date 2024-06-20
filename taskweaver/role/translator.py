@@ -148,18 +148,18 @@ class PostTranslator:
             ignored_types = []
         ignored_types.append(AttachmentType.board)
 
-        structured_llm: List[Dict[str, str]] = []
+        structured_llm: Dict[str, str] = {}
         for attachment in post.attachment_list:
-            attachments_dict = {}
             if ignored_types is not None and attachment.type in ignored_types:
                 continue
-            attachments_dict["type"] = attachment.type.value
-            attachments_dict["content"] = content_formatter(attachment)
-            structured_llm.append(attachments_dict)
+            if attachment.type.value not in structured_llm:
+                structured_llm[attachment.type.value] = content_formatter(attachment)
+            else:
+                structured_llm[attachment.type.value] += f"\n{content_formatter(attachment)}"
         if if_format_send_to:
-            structured_llm.append({"type": "send_to", "content": post.send_to})
+            structured_llm["send_to"] = post.send_to
         if if_format_message:
-            structured_llm.append({"type": "message", "content": post.message})
+            structured_llm["message"] = post.message
         structured_llm_text = json.dumps({"response": structured_llm})
         return structured_llm_text
 
@@ -174,10 +174,6 @@ class PostTranslator:
             for key in structured_llm_output:
                 if isinstance(structured_llm_output[key], str):
                     kv_pairs.append((key, structured_llm_output[key], True))
-                elif isinstance(structured_llm_output[key], dict):
-                    _type = structured_llm_output[key]["key"]
-                    content = structured_llm_output[key]["value"]
-                    kv_pairs.append((_type, content, True))
                 else:
                     raise AssertionError(
                         f"Invalid LLM output format: {structured_llm_output[key]}",
@@ -269,11 +265,7 @@ class PostTranslator:
                     cur_type = ev.value
 
                 if ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
-                    if not ev.is_end:
-                        yield cur_type, ev.value_str, ev.is_end
-                    else:
-                        yield cur_type, ev.value, ev.is_end
-                        cur_type = None
+                    yield cur_type, ev.value_str, ev.is_end
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(

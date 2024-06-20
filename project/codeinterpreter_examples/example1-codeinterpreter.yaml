@@ -11,7 +11,9 @@ rounds:
         send_from: CodeInterpreter
         send_to: Planner
         attachment_list:
-          - type: text
+          - type: reply_type
+            content: text
+          - type: reply_content
             content: Greetings! I can understand the user request and generate syntactically correct python code to complete tasks and can utilize pre-defined plugins in the form of python functions to achieve tasks.
           - type: verification
             content: NONE
@@ -36,7 +38,9 @@ rounds:
         send_from: CodeInterpreter
         send_to: Planner
         attachment_list:
-          - type: sample
+          - type: reply_type
+            content: text
+          - type: reply_content
             content: |-
               This is the sample code:
               ```python
@@ -63,7 +67,9 @@ rounds:
         attachment_list:
           - type: thought
             content: "{ROLE_NAME} will generate a code snippet to create an array of 10 random numbers using np.random.rand()."
-          - type: python
+          - type: reply_type
+            content: python
+          - type: reply_content
             content: |-
               import numpy as np
               random_numbers = np.random.rand(10)

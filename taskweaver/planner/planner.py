@@ -86,8 +86,6 @@ class Planner(Role):
 
         self.instruction_template = self.prompt_data["instruction_template"]
 
-        self.response_schema = self.prompt_data["planner_response_schema"]
-
         self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.instruction = self.compose_sys_prompt()
@@ -120,7 +118,7 @@ class Planner(Role):
             )
 
         instruction = self.instruction_template.format(
-            planner_response_schema=self.response_schema,
+            response_json_schema=self.response_json_schema,
             worker_intro=worker_description,
         )
 
