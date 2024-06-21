@@ -23,12 +23,12 @@ class OpenAIServiceConfig(LLMServiceConfig):
         shared_api_base = self.llm_module_config.api_base
         self.api_base = self._get_str(
             "api_base",
-            shared_api_base if shared_api_base is not None else "https://api.openai.com/v1",
+            (shared_api_base if shared_api_base is not None else "https://api.openai.com/v1"),
         )
         shared_api_key = self.llm_module_config.api_key
         self.api_key = self._get_str(
             "api_key",
-            shared_api_key if shared_api_key is not None else ("" if self.api_type == "azure_ad" else None),
+            (shared_api_key if shared_api_key is not None else ("" if self.api_type == "azure_ad" else None)),
         )
 
         shared_model = self.llm_module_config.model
@@ -40,7 +40,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         shared_embedding_model = self.llm_module_config.embedding_model
         self.embedding_model = self._get_str(
             "embedding_model",
-            shared_embedding_model if shared_embedding_model is not None else "text-embedding-ada-002",
+            (shared_embedding_model if shared_embedding_model is not None else "text-embedding-ada-002"),
         )
 
         self.response_format = self.llm_module_config.response_format
@@ -108,18 +108,27 @@ class OpenAIService(CompletionService, EmbeddingService):
 
         assert api_type in ["openai", "azure", "azure_ad"], "Invalid API type"
 
-        self.client: OpenAI = (
-            OpenAI(
+        if api_type == "openai":
+            client = OpenAI(
                 base_url=self.config.api_base,
                 api_key=self.config.api_key,
             )
-            if api_type == "openai"
-            else AzureOpenAI(
+        elif api_type == "azure":
+            client = AzureOpenAI(
                 api_version=self.config.api_version,
                 azure_endpoint=self.config.api_base,
-                api_key=(self.config.api_key if api_type == "azure" else self._get_aad_token()),
+                api_key=self.config.api_key,
             )
-        )
+        elif api_type == "azure_ad":
+            client = AzureOpenAI(
+                api_version=self.config.api_version,
+                azure_endpoint=self.config.api_base,
+                azure_ad_token_provider=lambda: self._get_aad_token(),
+            )
+        else:
+            raise Exception(f"Invalid API type: {api_type}")
+
+        self.client: OpenAI = client
 
     def chat_completion(
         self,
@@ -184,8 +193,8 @@ class OpenAIService(CompletionService, EmbeddingService):
                 if oai_response is None:
                     raise Exception("OpenAI API returned an empty response")
                 response: ChatMessageType = format_chat_message(
-                    role=oai_response.role if oai_response.role is not None else "assistant",
-                    message=oai_response.content if oai_response.content is not None else "",
+                    role=(oai_response.role if oai_response.role is not None else "assistant"),
+                    message=(oai_response.content if oai_response.content is not None else ""),
                 )
                 if oai_response.tool_calls is not None:
                     import json
