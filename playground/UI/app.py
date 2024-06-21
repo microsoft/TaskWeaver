@@ -130,6 +130,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
     def __init__(self, root_step: cl.Step):
         self.root_step = root_step
         self.reset_cur_step()
+        self.suppress_blinking_cursor()
 
     def reset_cur_step(self):
         self.cur_step: Optional[cl.Step] = None
@@ -139,6 +140,11 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
         self.cur_message: str = ""
         self.cur_message_is_end: bool = False
         self.cur_message_sent: bool = False
+
+    def suppress_blinking_cursor(self):
+        cl.run_sync(self.root_step.stream_token(""))
+        if self.cur_step is not None:
+            cl.run_sync(self.cur_step.stream_token(""))
 
     def handle_round(
         self,
@@ -209,6 +215,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     ),
                 ]
                 cl.run_sync(self.cur_step.update())
+        self.suppress_blinking_cursor()
 
     def get_message_from_user(self, prompt: str, timeout: int = 120) -> Optional[str]:
         ask_user_msg = cl.AskUserMessage(content=prompt, author=" ", timeout=timeout)
