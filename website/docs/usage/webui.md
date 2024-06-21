@@ -4,7 +4,12 @@ Please note that this Web UI is for development and testing purposes only.
 
 Follow the instruction in [Quick Start](../quickstart.md) to clone the repository and fill in the necessary configurations.
 
-Install the `chainlit` package by `pip install -U chainlit` if you don't have it in your environment.
+Install the `chainlit` package by `pip install -U "chainlit<1.1.300"` if you don't have it in your environment.
+
+:::note
+Chainlit has a major update in version 1.1.300 that may cause compatibility issues. 
+Please make sure you have the correct version installed.
+:::
 
 Start the service by running the following command.
 
