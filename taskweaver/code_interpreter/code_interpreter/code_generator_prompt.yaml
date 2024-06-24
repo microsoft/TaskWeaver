@@ -23,7 +23,9 @@ content: |-
     ## On {ROLE_NAME}'s response format:
     - The response is a JSON object with the following format:
     {RESPONSE_JSON_SCHEMA}
-    - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
+    - The value of "thought" is a string that contains the thought of {ROLE_NAME} before generating the code.
+    - The value of "reply_type" is a string that indicates the type of the reply, which can be "python" or "text". Select "text" if the response is not a executable code snippet.
+    - The value of "reply_content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
     
 response_json_schema: |-
     {

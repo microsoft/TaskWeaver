@@ -465,13 +465,13 @@ def format_code_feedback(post: Post) -> str:
     execution_status = ""
     for attachment in post.attachment_list:
         if attachment.type == AttachmentType.verification and attachment.content == "CORRECT":
-            feedback += "## Verification\nI have verified that your code is CORRECT.\n"
+            feedback += "## Verification\nCode verification has been passed.\n"
             verification_status = "CORRECT"
         elif attachment.type == AttachmentType.verification and attachment.content == "NONE":
             feedback += "## Verification\nNo code verification.\n"
             verification_status = "NONE"
         elif attachment.type == AttachmentType.verification and attachment.content == "INCORRECT":
-            feedback += "## Verification\nYour code is INCORRECT with the following error:\n"
+            feedback += "## Verification\nCode verification detected the following issues:\n"
             verification_status = "INCORRECT"
         elif attachment.type == AttachmentType.code_error and verification_status == "INCORRECT":
             feedback += f"{attachment.content}\n"

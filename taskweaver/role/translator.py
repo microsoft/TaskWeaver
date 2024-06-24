@@ -70,7 +70,7 @@ class PostTranslator:
         value_buf: str = ""
         filtered_stream = stream_filter(llm_output)
         parser_stream = (
-            self.parse_llm_output_stream_v3(filtered_stream)
+            self.parse_llm_output_stream_v2(filtered_stream)
             if use_v2_parser
             else self.parse_llm_output_stream(filtered_stream)
         )
@@ -251,7 +251,7 @@ class PostTranslator:
                 except GeneratorExit:
                     pass
 
-    def parse_llm_output_stream_v3(
+    def parse_llm_output_stream_v2(
         self,
         llm_output: Iterator[str],
     ) -> Iterator[Tuple[str, str, bool]]:
@@ -266,83 +266,6 @@ class PostTranslator:
 
                 if ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
                     yield cur_type, ev.value_str, ev.is_end
-
-        except json_parser.StreamJsonParserError as e:
-            self.logger.warning(
-                f"Failed to parse LLM output stream due to JSONError: {str(e)}",
-            )
-
-        finally:
-            if isinstance(parser, types.GeneratorType):
-                try:
-                    parser.close()
-                except GeneratorExit:
-                    pass
-
-    def parse_llm_output_stream_v2(
-        self,
-        llm_output: Iterator[str],
-    ) -> Iterator[Tuple[str, str, bool]]:
-        parser = json_parser.parse_json_stream(llm_output, skip_after_root=True)
-        root_element_prefix = ".response"
-
-        list_begin, list_end = False, False
-        item_idx = 0
-
-        cur_content_sent: bool = False
-        cur_content_sent_end: bool = False
-        cur_type: Optional[str] = None
-        cur_content: Optional[str] = None
-
-        try:
-            for ev in parser:
-                if ev.prefix == root_element_prefix:
-                    if ev.event == "start_array":
-                        list_begin = True
-                    if ev.event == "end_array":
-                        list_end = True
-
-                if not list_begin or list_end:
-                    continue
-
-                cur_item_prefix = f"{root_element_prefix}[{item_idx}]"
-                if ev.prefix == cur_item_prefix:
-                    if ev.event == "start_map":
-                        cur_content_sent, cur_content_sent_end = False, False
-                        cur_type, cur_content = None, None
-                    if ev.event == "end_map":
-                        if cur_type is None or cur_content is None:
-                            raise Exception(
-                                f"Incomplete generate kv pair in index {item_idx}. "
-                                f"type: {cur_type} content {cur_content}",
-                            )
-
-                        if cur_content_sent and not cur_content_sent_end:
-                            # possible incomplete string, trigger end prematurely
-                            yield cur_type, "", True
-
-                        if not cur_content_sent:
-                            yield cur_type, cur_content, True
-
-                        cur_content_sent, cur_content_sent_end = False, False
-                        cur_type, cur_content = None, None
-                        item_idx += 1
-
-                if ev.prefix == cur_item_prefix + ".type":
-                    if ev.event == "string" and ev.is_end:
-                        cur_type = ev.value
-
-                if ev.prefix == cur_item_prefix + ".content":
-                    if ev.event == "string":
-                        if cur_type is not None:
-                            cur_content_sent = True
-                            yield cur_type, ev.value_str, ev.is_end
-
-                            assert not cur_content_sent_end, "Invalid state: already sent is_end marker"
-                            if ev.is_end:
-                                cur_content_sent_end = True
-                        if ev.is_end:
-                            cur_content = ev.value
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(

@@ -10,7 +10,7 @@ instruction_template: |-
   ## User Character
   - The User's input should be the request or additional information required to complete the user's task.
   - The User can only talk to the Planner.
-  - The input of the User will prefix with "User:".
+  - The input of the User will contain a `send_from` field, which is the name of the User.
   
   ## Worker Character
   There are multiple Workers in the environment. The details of the Workers are as follows:
