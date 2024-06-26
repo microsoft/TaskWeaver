@@ -155,6 +155,7 @@ class PostTranslator:
             if attachment.type.value not in structured_llm:
                 structured_llm[attachment.type.value] = content_formatter(attachment)
             else:
+                # append the content of the same type of attachment
                 structured_llm[attachment.type.value] += f"\n{content_formatter(attachment)}"
         if if_format_send_to:
             structured_llm["send_to"] = post.send_to
@@ -259,13 +260,34 @@ class PostTranslator:
         root_element_prefix = ".response"
 
         cur_type: Optional[str] = None
+        mark_start: bool = False
         try:
             for ev in parser:
                 if ev.prefix == root_element_prefix and ev.event == "map_key" and ev.is_end:
                     cur_type = ev.value
+                    continue
 
                 if ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
                     yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "number":
+                    yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "boolean":
+                    yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_map":
+                    self.logger.warning(f"Start map in property: {root_element_prefix}.{cur_type}")
+                    mark_start = True
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_map":
+                    mark_start = False
+                    yield cur_type, ev.value_str, True
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_array":
+                    self.logger.warning(f"Start array in property: {root_element_prefix}.{cur_type}")
+                    mark_start = True
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_array":
+                    mark_start = False
+                    yield cur_type, ev.value_str, True
+
+                if mark_start:
+                    yield cur_type, ev.value_str, False
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(

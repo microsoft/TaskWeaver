@@ -100,6 +100,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.require_alternative_roles = self._get_bool("require_alternative_roles", False)
         self.support_system_role = self._get_bool("support_system_role", True)
         self.support_constrained_generation = self._get_bool("support_constrained_generation", False)
+        self.json_schema_enforcer = self._get_str("json_schema_enforcer", None, required=False)
 
 
 class OpenAIService(CompletionService, EmbeddingService):
@@ -159,7 +160,14 @@ class OpenAIService(CompletionService, EmbeddingService):
             if self.config.support_constrained_generation:
                 if "json_schema" in kwargs:
                     extra_body["guided_json"] = kwargs["json_schema"]
-                    extra_body["guided_decoding_backend"] = "lm-format-enforcer"
+                    assert isinstance(extra_body["guided_json"], dict), "JSON schema must be a dictionary"
+
+                    assert self.config.json_schema_enforcer in [
+                        "outlines",
+                        "lm-format-enforcer",
+                    ], f"Invalid JSON schema enforcer: {self.config.json_schema_enforcer}"
+                    extra_body["guided_decoding_backend"] = self.config.json_schema_enforcer
+
                 else:
                     raise Exception("Constrained generation requires a JSON schema")
 

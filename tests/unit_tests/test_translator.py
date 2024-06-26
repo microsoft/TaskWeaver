@@ -23,6 +23,35 @@ response_str1 = """{
     }
 }"""
 
+response_err_str1 = """{
+    "response": {
+        "thought": "This is the thought",
+        "python": "print('This is the code')",
+        "text": {"error": {"type": "t1", "content": "This is the error"}},
+        "execution_status": 1,
+        "execution_result": ["This", "is the execution", "result"],
+        "send_to": "Planner",
+        "message": "This is the message",
+        "obj_in_arr": [{"key1": "value1"}, {"key2": "value2"}],
+        "arr_in_obj": {"key1": ["value1", "value2"], "key2": ["value3", "value4"]}
+    }
+}"""
+
+
+response_err_str2 = """{
+    "response": {
+        "thought": "This is the thought",
+        "python": "print('This is the code')",
+        "text": {"error": "This is the error",
+        "execution_status": "ERROR",
+        "execution_result": ["This", "is the execution", "result"],
+        "send_to": "Planner",
+        "message": "This is the message",
+        "obj_in_arr": [{"key1": "value1"}, {"key2": "value2"}],
+        "arr_in_obj": {"key1": ["value1", "value2"], "key2": ["value3", "value4"]}
+    }
+}"""
+
 role_name = "ProgramApe"
 executor_name = "CodeExecutor"
 
@@ -32,27 +61,64 @@ app_injector = Injector(
 translator = app_injector.create_object(PostTranslator)
 
 
+def response_str(response: str) -> Iterator[str]:
+    words = response.split(" ")
+    # everytime return random number (max 10) of words from response_str1
+    pos = 0
+
+    while True:
+        n = randint(1, 10)
+        part = " ".join(words[pos : pos + n]) + " "
+        yield part
+        pos += n
+        if pos >= len(words):
+            break
+
+
 def test_parse_llm_stream():
-    def response_str() -> Iterator[str]:
-        words = response_str1.split(" ")
-        # everytime return random number (max 10) of words from response_str1
-        pos = 0
-
-        while True:
-            n = randint(1, 10)
-            part = " ".join(words[pos : pos + n]) + " "
-            yield part
-            pos += n
-            if pos >= len(words):
-                break
-
-    attachments = translator.parse_llm_output_stream(response_str())
+    attachments = translator.parse_llm_output_stream(response_str(response_str1))
     attachment_list = list(attachments)
     assert len(attachment_list) == 7
 
-    attachments = translator.parse_llm_output_stream_v2(response_str())
+    attachments = translator.parse_llm_output_stream_v2(response_str(response_str1))
     attachment_list = list(a for a in attachments if a[2])  # only count is_end is true
     assert len(attachment_list) == 7
+
+
+def test_parse_err_llm_stream():
+    attachments = translator.parse_llm_output_stream(response_str(response_err_str1))
+    attachment_list = list(attachments)
+    assert len(attachment_list) == 4
+
+    attachments = list(translator.parse_llm_output_stream_v2(response_str(response_err_str1)))
+    attachment_list = [a for a in attachments if a[2]]  # only count is_end is true
+    assert len(attachment_list) == 9
+
+    text_attachment = [a for a in attachments if a[0] == "text"]
+    text_value = "".join(a[1] for a in text_attachment)
+    assert text_value == "{error {type t1 content This is the error}}"
+
+    text_attachment = [a for a in attachments if a[0] == "execution_result"]
+    text_value = "".join(a[1] for a in text_attachment)
+    assert text_value == "[This is the execution result]"
+
+    text_attachment = [a for a in attachments if a[0] == "execution_status"]
+    text_value = "".join(a[1] for a in text_attachment)
+    assert text_value == "1"
+
+    text_attachment = [a for a in attachments if a[0] == "obj_in_arr"]
+    text_value = "".join(a[1] for a in text_attachment)
+    assert text_value == "[{key1 value1} {key2 value2}]"
+
+    text_attachment = [a for a in attachments if a[0] == "arr_in_obj"]
+    text_value = "".join(a[1] for a in text_attachment)
+    assert text_value == "{key1 [value1 value2] key2 [value3 value4]}"
+
+
+def test_parse_err_llm_stream2():
+    attachments = list(translator.parse_llm_output_stream_v2(response_str(response_err_str2)))
+    attachment_list = [a for a in attachments if a[2]]  # only count is_end is true
+    assert len(attachment_list) == 3
 
 
 response_str2 = (
