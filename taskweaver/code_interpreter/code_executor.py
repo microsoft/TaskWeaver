@@ -134,7 +134,7 @@ class CodeExecutor:
     def load_plugin(self):
         for p in self.plugin_registry.get_list():
             try:
-                src_file = f"{self.config.app_base_path}/plugins/{p.impl}.py"
+                src_file = f"{self.config.app_base_path}/plugins/{p.impl}/{p.impl}.py"
                 with open(src_file, "r") as f:
                     plugin_code = f.read()
                 self.exec_client.load_plugin(
