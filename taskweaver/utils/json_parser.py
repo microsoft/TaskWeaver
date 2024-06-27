@@ -358,6 +358,7 @@ def parse_json_stream(
 
         for ev in result:
             if not ev.is_end:
+                yield ev
                 continue
             evt = ev.event
             val = ev.value
