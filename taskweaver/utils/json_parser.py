@@ -358,6 +358,7 @@ def parse_json_stream(
 
         for ev in result:
             if not ev.is_end:
+                yield ev
                 continue
             evt = ev.event
             val = ev.value
@@ -468,15 +469,20 @@ def parse_json(token_stream: Iterable[str], skip_after_root: bool = False) -> An
         skip_after_root=skip_after_root,
         include_all_values=True,
     ):
-        if ev.prefix == "" and ev.event in [
-            # all value closing events
-            "end_map",
-            "end_array",
-            "number",
-            "string",
-            "boolean",
-            "null",
-        ]:
+        if (
+            ev.prefix == ""
+            and ev.is_end
+            and ev.event
+            in [
+                # all value closing events
+                "end_map",
+                "end_array",
+                "number",
+                "string",
+                "boolean",
+                "null",
+            ]
+        ):
             ev_queue.append(ev)
     assert len(ev_queue) == 1
     return ev_queue[0].value
