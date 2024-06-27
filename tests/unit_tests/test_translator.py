@@ -37,21 +37,6 @@ response_err_str1 = """{
     }
 }"""
 
-
-response_err_str2 = """{
-    "response": {
-        "thought": "This is the thought",
-        "python": "print('This is the code')",
-        "text": {"error": "This is the error",
-        "execution_status": "ERROR",
-        "execution_result": ["This", "is the execution", "result"],
-        "send_to": "Planner",
-        "message": "This is the message",
-        "obj_in_arr": [{"key1": "value1"}, {"key2": "value2"}],
-        "arr_in_obj": {"key1": ["value1", "value2"], "key2": ["value3", "value4"]}
-    }
-}"""
-
 role_name = "ProgramApe"
 executor_name = "CodeExecutor"
 
@@ -95,24 +80,39 @@ def test_parse_err_llm_stream():
     assert len(attachment_list) == 9
 
     text_attachment = [a for a in attachments if a[0] == "text"]
-    text_value = "".join(a[1] for a in text_attachment)
-    assert text_value == "{error {type t1 content This is the error}}"
+    text_value = "".join(str(a[1]) for a in text_attachment)
+    assert text_value == "{'error': {'type': 't1', 'content': 'This is the error'}}"
 
     text_attachment = [a for a in attachments if a[0] == "execution_result"]
-    text_value = "".join(a[1] for a in text_attachment)
-    assert text_value == "[This is the execution result]"
+    text_value = "".join(str(a[1]) for a in text_attachment)
+    assert text_value == "['This', 'is the execution', 'result']"
 
     text_attachment = [a for a in attachments if a[0] == "execution_status"]
-    text_value = "".join(a[1] for a in text_attachment)
+    text_value = "".join(str(a[1]) for a in text_attachment)
     assert text_value == "1"
 
     text_attachment = [a for a in attachments if a[0] == "obj_in_arr"]
-    text_value = "".join(a[1] for a in text_attachment)
-    assert text_value == "[{key1 value1} {key2 value2}]"
+    text_value = "".join(str(a[1]) for a in text_attachment)
+    assert text_value == "[{'key1': 'value1'}, {'key2': 'value2'}]"
 
     text_attachment = [a for a in attachments if a[0] == "arr_in_obj"]
-    text_value = "".join(a[1] for a in text_attachment)
-    assert text_value == "{key1 [value1 value2] key2 [value3 value4]}"
+    text_value = "".join(str(a[1]) for a in text_attachment)
+    assert text_value == "{'key1': ['value1', 'value2'], 'key2': ['value3', 'value4']}"
+
+
+response_err_str2 = """{
+    "response": {
+        "thought": "This is the thought",
+        "python": "print('This is the code')",
+        "text": {"error": "This is the error",
+        "execution_status": "ERROR",
+        "execution_result": ["This", "is the execution", "result"],
+        "send_to": "Planner",
+        "message": "This is the message",
+        "obj_in_arr": [{"key1": "value1"}, {"key2": "value2"}],
+        "arr_in_obj": {"key1": ["value1", "value2"], "key2": ["value3", "value4"]}
+    }
+}"""
 
 
 def test_parse_err_llm_stream2():
@@ -173,6 +173,61 @@ def test_parse_llm(use_v2_parser: bool):
     assert response.attachment_list[3].content == "SUCCESS"
     assert response.attachment_list[4].type == AttachmentType.execution_result
     assert response.attachment_list[4].content == "This is the execution result"
+
+
+response_str_non_stop = (
+    '{"response": {"thought": "This is the thought", "reply_type": "python", '
+    '"reply_content": "print(\'This is the code\')", "execution_status": '
+    '"SUCCESS", "execution_result": "This is the execution result", "send_to": '
+    '"Planner", "message": "This is '
+)
+
+
+def test_parse_llm2():
+    def early_stop(type: AttachmentType, text: str) -> bool:
+        if type in [AttachmentType.reply_content]:
+            return True
+        return False
+
+    event_emitter = SessionEventEmitter()
+    event_emitter.start_round("test_round")
+
+    post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
+    translator.raw_text_to_post(
+        llm_output=[format_chat_message("assistant", response_str_non_stop)],
+        post_proxy=post_proxy,
+        early_stop=early_stop,
+        use_v2_parser=True,
+    )
+    response = post_proxy.end()
+    assert response.message == ""
+    assert response.send_to is "Unknown"
+    assert response.send_from == "CodeInterpreter"
+    assert len(response.attachment_list) == 3
+    assert response.attachment_list[0].type == AttachmentType.thought
+    assert response.attachment_list[0].content == "This is the thought"
+
+    assert response.attachment_list[1].type == AttachmentType.reply_type
+    assert response.attachment_list[1].content == "python"
+
+    assert response.attachment_list[2].type == AttachmentType.reply_content
+    assert response.attachment_list[2].content == "print('This is the code')"
+
+    post_proxy = event_emitter.create_post_proxy("CodeInterpreter")
+    translator.raw_text_to_post(
+        llm_output=[format_chat_message("assistant", response_str_non_stop)],
+        post_proxy=post_proxy,
+        use_v2_parser=True,
+    )
+    response = post_proxy.end()
+
+    assert len(response.attachment_list) == 5
+    assert response.attachment_list[3].type == AttachmentType.execution_status
+    assert response.attachment_list[3].content == "SUCCESS"
+    assert response.attachment_list[4].type == AttachmentType.execution_result
+    assert response.attachment_list[4].content == "This is the execution result"
+    assert response.send_to == "Planner"
+    assert response.message == "This is "
 
 
 def test_post_to_raw_text():

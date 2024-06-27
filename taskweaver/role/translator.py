@@ -256,18 +256,21 @@ class PostTranslator:
         self,
         llm_output: Iterator[str],
     ) -> Iterator[Tuple[str, str, bool]]:
-        parser = json_parser.parse_json_stream(llm_output, skip_after_root=True)
+        parser = json_parser.parse_json_stream(
+            llm_output,
+            skip_after_root=True,
+            include_all_values=True,
+            skip_ws=True,
+        )
         root_element_prefix = ".response"
 
         cur_type: Optional[str] = None
-        mark_start: bool = False
         try:
             for ev in parser:
                 if ev.prefix == root_element_prefix and ev.event == "map_key" and ev.is_end:
                     cur_type = ev.value
-                    continue
-
-                if ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
+                    yield cur_type, "", False
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
                     yield cur_type, ev.value_str, ev.is_end
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "number":
                     yield cur_type, ev.value_str, ev.is_end
@@ -275,19 +278,12 @@ class PostTranslator:
                     yield cur_type, ev.value_str, ev.is_end
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_map":
                     self.logger.warning(f"Start map in property: {root_element_prefix}.{cur_type}")
-                    mark_start = True
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_map":
-                    mark_start = False
-                    yield cur_type, ev.value_str, True
+                    yield cur_type, ev.value, True
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_array":
                     self.logger.warning(f"Start array in property: {root_element_prefix}.{cur_type}")
-                    mark_start = True
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_array":
-                    mark_start = False
-                    yield cur_type, ev.value_str, True
-
-                if mark_start:
-                    yield cur_type, ev.value_str, False
+                    yield cur_type, ev.value, True
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(
