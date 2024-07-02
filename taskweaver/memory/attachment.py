@@ -102,6 +102,14 @@ class Attachment:
 
     @staticmethod
     def from_dict(content: AttachmentDict) -> Attachment:
+        # deprecated types
+        if content["type"] in ["python", "sample", "text"]:
+            raise ValueError(
+                f"Deprecated attachment type: {content['type']}. "
+                f"Please check our blog https://microsoft.github.io/TaskWeaver/blog/local_llm "
+                f"on how to fix it.",
+            )
+
         type = AttachmentType(content["type"])
         return Attachment.create(
             type=type,

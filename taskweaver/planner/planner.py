@@ -296,7 +296,7 @@ class Planner(Role):
             use_smoother=True,
             llm_alias=self.config.llm_alias,
             json_schema=self.response_json_schema,
-            stream=False,
+            stream=True,
         )
 
         llm_output: List[str] = []

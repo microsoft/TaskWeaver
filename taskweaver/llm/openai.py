@@ -97,6 +97,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.frequency_penalty = self._get_float("frequency_penalty", 0)
         self.presence_penalty = self._get_float("presence_penalty", 0)
         self.seed = self._get_int("seed", 123456)
+
         self.require_alternative_roles = self._get_bool("require_alternative_roles", False)
         self.support_system_role = self._get_bool("support_system_role", True)
         self.support_constrained_generation = self._get_bool("support_constrained_generation", False)
@@ -181,8 +182,8 @@ class OpenAIService(CompletionService, EmbeddingService):
                     raise Exception("Constrained generation requires a JSON schema")
 
             # Preprocess messages
-            # 1. change `system` to `user` if `support_system_role` is False
-            # 2. add dummy `assistant` messages if alternating user/assistant is required
+            # 1. Change `system` to `user` if `support_system_role` is False
+            # 2. Add dummy `assistant` messages if alternating user/assistant is required
             for i, message in enumerate(messages):
                 if (not self.config.support_system_role) and message["role"] == "system":
                     message["role"] = "user"
