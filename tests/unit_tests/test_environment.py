@@ -13,9 +13,9 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
 def connect_and_execute_code(
-        connection_file: str,
-        ports_file: Optional[str] = None,
-        code: str = 'open("filename.txt", "w").write("File content goes here.")',
+    connection_file: str,
+    ports_file: Optional[str] = None,
+    code: str = 'open("filename.txt", "w").write("File content goes here.")',
 ):
     # Create the blocking client
     client = BlockingKernelClient()
@@ -139,13 +139,14 @@ def test_environment_update_session_var():
         assert os.path.isdir(ces_dir)
         file_glob = os.path.join(ces_dir, "conn-session_id-*.json")
         assert len(glob.glob(file_glob)) == 1
-        connection_file = glob.glob(file_glob)[0]
+        glob.glob(file_glob)[0]
         log_file = os.path.join(ces_dir, "kernel_logging.log")
         assert os.path.isfile(log_file)
         env.update_session_var("session_id", {"test_session_variable": "test_value"})
-        execute_result = str(connect_and_execute_code(connection_file, code=r"%_taskweaver_check_session_var"))
-        assert "test_value" in execute_result
-        assert "test_session_variable" in execute_result
+        execute_result = env.execute_code("session_id", code=r"%_taskweaver_check_session_var")
+        assert execute_result.is_success
+        assert execute_result.output["message"] == "Session var printed."
+        assert execute_result.output["data"]["test_session_variable"] == "test_value"
 
         env.stop_session("session_id")
 

@@ -57,7 +57,7 @@ def reduce_events(
         if cur is None:
             cur = ev
             continue
-        if ev.event == cur.event:
+        if ev.event == cur.event and ev.prefix == cur.prefix:
             cur = ParserEvent(
                 ev.prefix,
                 cur.event,

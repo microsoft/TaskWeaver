@@ -86,7 +86,7 @@ class Planner(Role):
 
         self.instruction_template = self.prompt_data["instruction_template"]
 
-        self.response_schema = self.prompt_data["planner_response_schema"]
+        self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.instruction = self.compose_sys_prompt()
 
@@ -114,15 +114,18 @@ class Planner(Role):
                 f"###{alias}\n"
                 f"- The name of this Worker is `{alias}`\n"
                 f"{role.get_intro()}\n"
-                f'- The input of {alias} will be prefixed with "{alias}:" in the chat history.\n\n'
+                f'- The message from {alias} will start with "From: {alias}"\n'
             )
 
         instruction = self.instruction_template.format(
-            planner_response_schema=self.response_schema,
+            response_json_schema=self.response_json_schema,
             worker_intro=worker_description,
         )
 
         return instruction
+
+    def format_message(self, role: str, message: str) -> str:
+        return f"From: {role}\nMessage: {message}\n"
 
     def compose_conversation_for_prompt(
         self,
@@ -154,9 +157,8 @@ class Planner(Role):
                                 message=planner_message,
                             ),
                         )
-                    elif (
-                        post.send_to == self.alias
-                    ):  # self correction for planner response, e.g., format error/field check error
+                    elif post.send_to == self.alias:
+                        # self correction for planner response, e.g., format error/field check error
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
@@ -164,17 +166,26 @@ class Planner(Role):
                                     type=AttachmentType.invalid_response,
                                 )[0],
                             ),
-                        )  # append the invalid response to chat history
+                        )
+
+                        # append the invalid response to chat history
                         conversation.append(
                             format_chat_message(
                                 role="user",
-                                message="User: " + post.get_attachment(type=AttachmentType.revise_message)[0],
+                                message=self.format_message(
+                                    role="User",
+                                    message=post.get_attachment(type=AttachmentType.revise_message)[0],
+                                ),
                             ),
-                        )  # append the self correction instruction message to chat history
+                        )
+                        # append the self correction instruction message to chat history
 
                 else:
                     if conv_init_message is not None:
-                        message = post.send_from + ": " + conv_init_message + "\n" + post.message
+                        message = self.format_message(
+                            role=post.send_from,
+                            message=conv_init_message + "\n" + post.message,
+                        )
                         conversation.append(
                             format_chat_message(role="user", message=message),
                         )
@@ -183,7 +194,10 @@ class Planner(Role):
                         conversation.append(
                             format_chat_message(
                                 role="user",
-                                message=post.send_from + ": " + post.message,
+                                message=self.format_message(
+                                    role=post.send_from,
+                                    message=post.message,
+                                ),
                             ),
                         )
 
@@ -281,6 +295,8 @@ class Planner(Role):
             chat_history,
             use_smoother=True,
             llm_alias=self.config.llm_alias,
+            json_schema=self.response_json_schema,
+            stream=True,
         )
 
         llm_output: List[str] = []

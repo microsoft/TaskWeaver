@@ -21,14 +21,36 @@ content: |-
     - If any error occurs during the verification or execution, the User will provide feedback to the {ROLE_NAME}.
 
     ## On {ROLE_NAME}'s response format:
-    - The response is a JSON array of dictionaries, each dictionary has a key named 'type' and a key named 'content', i.e., {{"response": [{{"type": "thought", "content": "..." }}, ...]}}
-    - {ROLE_NAME} generates the reply to the user with 'type' that must be one of the following:
-      - "thought": the thoughts on the intermediate steps
-      - "sample": textual descriptions including the sample code 
-      - "python": the code that can be executed by the User; comments must be added calling functions from the pre-defined plugins, including the description of the function and the parameters.
-      - "text": the direct response in text without code
-    - The "response" array can include multiple thought replies, but it can have only one of sample, python, or text, exclusively.
-    - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
+    - The response is a JSON object with the following format:
+    {RESPONSE_JSON_SCHEMA}
+    - The value of "thought" is a string that contains the thought of {ROLE_NAME} before generating the code.
+    - The value of "reply_type" is a string that indicates the type of the reply, which can be "python" or "text". Select "text" if the response is not a executable code snippet.
+    - The value of "reply_content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
+
+response_json_schema: |-
+    {
+        "type": "object",
+        "properties": {
+            "response": {
+                "type": "object",
+                "properties": {
+                    "thought": {
+                        "type": "string"
+                    },
+                    "reply_type": {
+                        "type": "string",
+                        "enum": ["python", "text"]
+                    },
+                    "reply_content": {
+                        "type": "string"
+                    }   
+                },
+                "required": ["thought", "reply_type", "reply_content"]
+            }
+        },
+        "required": ["response"]
+    } 
+
 
 conversation_head: |-
     ==============================
@@ -49,8 +71,6 @@ user_message_head: |-
     
     # Additional information from the User in this round:
     {MESSAGE}
-    
-    
 
 requirements: |-
     Please follow the instructions below to complete the task:
@@ -58,4 +78,11 @@ requirements: |-
     - {ROLE_NAME} should not refer to any information from failed rounds, rounds that have not been executed, or previous Conversations.
     - {ROLE_NAME} put all the result variables in the last line of the code.
     - {ROLE_NAME} must not import the plugins and otherwise the code will be failed to execute.
+    - {ROLE_NAME} must try to directly import required modules without installing them, and only install the modules if the execution fails. 
     {CODE_GENERATION_REQUIREMENTS}
+
+experience_instruction: |-
+    ## Experience And Lessons
+    Before generating Python code, please refer to the experiences and lessons learned from the previous tasks:
+    {experiences}
+    You must use the experiences and lessons learned to generate the Python code.

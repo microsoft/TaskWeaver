@@ -60,7 +60,8 @@ def test_compose_prompt():
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_type, "python"))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_content, code1))
     post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -101,7 +102,13 @@ def test_compose_prompt():
     )
     post4.add_attachment(
         Attachment.create(
-            AttachmentType.python,
+            AttachmentType.reply_type,
+            "python",
+        ),
+    )
+    post4.add_attachment(
+        Attachment.create(
+            AttachmentType.reply_content,
             (
                 "min_value = df['VALUE'].min()\n"
                 "max_value = df['VALUE'].max()\n"
@@ -171,14 +178,13 @@ def test_compose_prompt():
     )
     assert messages[2]["role"] == "assistant"
     assert messages[2]["content"] == (
-        '{"response": [{"type": "thought", "content": "ProgramApe sees the user wants '
-        'generate a DataFrame."}, {"type": "thought", "content": "ProgramApe sees all '
-        "required Python libs have been imported, so will not generate import "
-        'codes."}, {"type": "python", "content": "df = pd.DataFrame(np.random.rand(10, '
-        "2), columns=['DATE', 'VALUE'])\\ndescriptions = "
-        '[(\\"sample_code_description\\", \\"Sample code has been generated to get a '
-        "dataframe `df` \\nwith 10 rows and 2 columns: 'DATE' and "
-        "'VALUE'\\\")]\"}]}"
+        '{"response": {"thought": "ProgramApe sees the user wants generate a '
+        "DataFrame.\\nProgramApe sees all required Python libs have been imported, so "
+        'will not generate import codes.", "reply_type": "python", "reply_content": '
+        "\"df = pd.DataFrame(np.random.rand(10, 2), columns=['DATE', "
+        '\'VALUE\'])\\ndescriptions = [(\\"sample_code_description\\", \\"Sample code '
+        "has been generated to get a dataframe `df` \\nwith 10 rows and 2 columns: "
+        "'DATE' and 'VALUE'\\\")]\"}}"
     )
 
     assert messages[5]["role"] == "user"
@@ -204,6 +210,8 @@ def test_compose_prompt():
         "- ProgramApe put all the result variables in the last line of the code.\n"
         "- ProgramApe must not import the plugins and otherwise the code will be "
         "failed to execute.\n"
+        "- ProgramApe must try to directly import required modules without installing "
+        "them, and only install the modules if the execution fails. \n"
     )
 
 
@@ -263,7 +271,9 @@ def test_compose_prompt_with_plugin():
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_type, "python"))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_content, code1))
+
     post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -343,7 +353,8 @@ def test_compose_prompt_with_plugin_only():
             "{ROLE_NAME} can use the `klarna_search` function to find iphones on sale.",
         ),
     )
-    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_type, "python"))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_content, code1))
     post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -435,7 +446,8 @@ def test_compose_prompt_with_not_plugin_only():
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create(AttachmentType.python, code1))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_type, "python"))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_content, code1))
     post2.add_attachment(Attachment.create(AttachmentType.execution_status, "SUCCESS"))
     post2.add_attachment(
         Attachment.create(
@@ -518,7 +530,8 @@ def test_code_correction_prompt():
             "{ROLE_NAME} sees all required Python libs have been imported, so will not generate import codes.",
         ),
     )
-    post2.add_attachment(Attachment.create("python", code1))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_type, "python"))
+    post2.add_attachment(Attachment.create(AttachmentType.reply_content, code1))
     post2.add_attachment(Attachment.create("execution_status", "FAILURE"))
     post2.add_attachment(
         Attachment.create(
@@ -563,4 +576,6 @@ def test_code_correction_prompt():
         "- ProgramApe put all the result variables in the last line of the code.\n"
         "- ProgramApe must not import the plugins and otherwise the code will be "
         "failed to execute.\n"
+        "- ProgramApe must try to directly import required modules without installing "
+        "them, and only install the modules if the execution fails. \n"
     )

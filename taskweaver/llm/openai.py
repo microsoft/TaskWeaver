@@ -98,6 +98,11 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.presence_penalty = self._get_float("presence_penalty", 0)
         self.seed = self._get_int("seed", 123456)
 
+        self.require_alternative_roles = self._get_bool("require_alternative_roles", False)
+        self.support_system_role = self._get_bool("support_system_role", True)
+        self.support_constrained_generation = self._get_bool("support_constrained_generation", False)
+        self.json_schema_enforcer = self._get_str("json_schema_enforcer", None, required=False)
+
 
 class OpenAIService(CompletionService, EmbeddingService):
     @inject
@@ -153,12 +158,41 @@ class OpenAIService(CompletionService, EmbeddingService):
             if "tools" in kwargs and "tool_choice" in kwargs:
                 tools_kwargs["tools"] = kwargs["tools"]
                 tools_kwargs["tool_choice"] = kwargs["tool_choice"]
+
             if "response_format" in kwargs:
                 response_format = kwargs["response_format"]
             elif self.config.response_format == "json_object":
                 response_format = {"type": "json_object"}
             else:
                 response_format = None
+
+            extra_body = {}
+            if self.config.support_constrained_generation:
+                if "json_schema" in kwargs:
+                    extra_body["guided_json"] = kwargs["json_schema"]
+                    assert isinstance(extra_body["guided_json"], dict), "JSON schema must be a dictionary"
+
+                    assert self.config.json_schema_enforcer in [
+                        "outlines",
+                        "lm-format-enforcer",
+                    ], f"Invalid JSON schema enforcer: {self.config.json_schema_enforcer}"
+                    extra_body["guided_decoding_backend"] = self.config.json_schema_enforcer
+
+                else:
+                    raise Exception("Constrained generation requires a JSON schema")
+
+            # Preprocess messages
+            # 1. Change `system` to `user` if `support_system_role` is False
+            # 2. Add dummy `assistant` messages if alternating user/assistant is required
+            for i, message in enumerate(messages):
+                if (not self.config.support_system_role) and message["role"] == "system":
+                    message["role"] = "user"
+                if self.config.require_alternative_roles:
+                    if i > 0 and message["role"] == "user" and messages[i - 1]["role"] == "user":
+                        messages.insert(
+                            i,
+                            {"role": "assistant", "content": "I get it."},
+                        )
 
             res: Any = self.client.chat.completions.create(
                 model=engine,
@@ -172,6 +206,7 @@ class OpenAIService(CompletionService, EmbeddingService):
                 stream=stream,
                 seed=seed,
                 response_format=response_format,
+                extra_body=extra_body,
                 **tools_kwargs,
             )
             if stream:
@@ -196,7 +231,7 @@ class OpenAIService(CompletionService, EmbeddingService):
                     role=(oai_response.role if oai_response.role is not None else "assistant"),
                     message=(oai_response.content if oai_response.content is not None else ""),
                 )
-                if oai_response.tool_calls is not None:
+                if oai_response.tool_calls is not None and len(oai_response.tool_calls) > 0:
                     import json
 
                     response["role"] = "function"

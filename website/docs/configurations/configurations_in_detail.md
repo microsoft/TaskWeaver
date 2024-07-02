@@ -111,3 +111,21 @@ In TaskWeaver, we support various embedding models to generate embeddings for au
   - zhipuai
     - embedding-2
 You also can use other embedding models supported by the above embedding APIs.
+
+
+## OpenAI Configuration
+
+Today, more and more inference frameworks support OpenAI compatible APIs. However, different models
+may have different configurations. Here are some supported configurations for other models adapted 
+for OpenAI API.
+
+- `llm.openai.support_system_role`: Whether to support system role in the conversation. The default value is `True`. For
+the models that do not support system role, you can set this value to `False`, and the system role will be replaced by the user role. 
+- `llm.openai.require_alternative_roles`: Whether to require alternative roles in the conversation. The default value is `False`.
+We notice that some models may require exactly alternative roles in the conversation. If you set this value to `True`, the system will
+check consecutive `user` messages in the conversation history. If there is, the system will add a dummy `assistant` message in between.
+- `llm.openai.support_constrained_generation`: Whether to support constrained generation in the conversation. The default value is `False`.
+Some inferencing frameworks like [vllm](https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html) and [llama.cpp](https://github.com/ggerganov/llama.cpp?tab=readme-ov-file#constrained-output-with-grammars)
+support constrained generation. Currently, we only support vllm. If you want to use this feature, you can set this value to `True`.
+- `llm.openai.json_schema_enforcer`: This is configured together with `llm.openai.support_constrained_generation`. If you want to use
+constrained generation. There are two valid options: `lm-format-enforcer` and `outlines`.
