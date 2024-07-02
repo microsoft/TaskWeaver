@@ -1,7 +1,6 @@
 import os
 from typing import Any, Generator, List, Optional
 
-from anthropic import Anthropic
 from injector import inject
 
 from taskweaver.llm.util import ChatMessageType, format_chat_message
@@ -24,10 +23,19 @@ class AnthropicServiceConfig(LLMServiceConfig):
         self.stop_token = self._get_list("stop_token", DEFAULT_STOP_TOKEN)
 
 class AnthropicService(CompletionService):
+    client = None
+
     @inject
     def __init__(self, config: AnthropicServiceConfig):
         self.config = config
-        self.client = Anthropic(api_key=self.config.api_key)
+        if AnthropicService.client is None:
+            try:
+                from anthropic import Anthropic
+                AnthropicService.client = Anthropic(api_key=self.config.api_key)
+            except Exception :
+                raise Exception(
+                    "Package anthropic is required for using Anthropic API. Run 'pip install anthropic' to install.",
+                )
 
     def chat_completion(
         self,
