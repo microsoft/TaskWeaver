@@ -119,19 +119,23 @@ response_json_schema: |-
             "type": "object",
             "properties": {
                 "init_plan": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                 },
                 "plan": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                 },
                 "current_plan_step": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                 },
                 "send_to": {
                     "type": "string"
                 },
                 "message": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 1000
                 }
             },
             "required": [

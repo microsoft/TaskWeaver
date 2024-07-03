@@ -87,6 +87,10 @@ class Planner(Role):
         self.instruction_template = self.prompt_data["instruction_template"]
 
         self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
+        # restrict the send_to field to the recipient alias set
+        self.response_json_schema["properties"]["response"]["properties"]["send_to"]["enum"] = list(
+            self.recipient_alias_set,
+        ) + ["User"]
 
         self.instruction = self.compose_sys_prompt()
 

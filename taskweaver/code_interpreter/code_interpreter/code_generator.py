@@ -451,10 +451,10 @@ def format_code_revision_message() -> str:
 def format_output_revision_message() -> str:
     return (
         "Your previous message is not following the output format. "
-        "You must generate the output as a JSON object with the following format:\n"
-        '{"response": [{"type":"this is the type", "content": "this is the content"}, ...]}\n'
-        "You need at least have an element with type 'python' and content being the code to be executed.\n"
-        "Don't surround the JSON with ```json and ```, just send the JSON object directly.\n"
+        "You must generate the output as a JSON object with the response that contains the following keys:\n"
+        "1. thought: Your thought about the task.\n"
+        "2. reply_type: The type of the reply. It should be either 'text' or 'python'.\n"
+        "3. reply_content: The content of the reply. It should be either the text or the code.\n"
         "Please try again."
     )
 

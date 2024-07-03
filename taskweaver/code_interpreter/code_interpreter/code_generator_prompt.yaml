@@ -35,14 +35,16 @@ response_json_schema: |-
                 "type": "object",
                 "properties": {
                     "thought": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 1000
                     },
                     "reply_type": {
                         "type": "string",
                         "enum": ["python", "text"]
                     },
                     "reply_content": {
-                        "type": "string"
+                        "type": "string",
+                        "minLength": 10
                     }   
                 },
                 "required": ["thought", "reply_type", "reply_content"]
