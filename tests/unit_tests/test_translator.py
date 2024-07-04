@@ -81,11 +81,11 @@ def test_parse_err_llm_stream():
 
     text_attachment = [a for a in attachments if a[0] == "text"]
     text_value = "".join(str(a[1]) for a in text_attachment)
-    assert text_value == "{'error': {'type': 't1', 'content': 'This is the error'}}"
+    assert text_value == '{"error": {"type": "t1", "content": "This is the error"}}'
 
     text_attachment = [a for a in attachments if a[0] == "execution_result"]
     text_value = "".join(str(a[1]) for a in text_attachment)
-    assert text_value == "['This', 'is the execution', 'result']"
+    assert text_value == '["This", "is the execution", "result"]'
 
     text_attachment = [a for a in attachments if a[0] == "execution_status"]
     text_value = "".join(str(a[1]) for a in text_attachment)
@@ -93,11 +93,11 @@ def test_parse_err_llm_stream():
 
     text_attachment = [a for a in attachments if a[0] == "obj_in_arr"]
     text_value = "".join(str(a[1]) for a in text_attachment)
-    assert text_value == "[{'key1': 'value1'}, {'key2': 'value2'}]"
+    assert text_value == '[{"key1": "value1"}, {"key2": "value2"}]'
 
     text_attachment = [a for a in attachments if a[0] == "arr_in_obj"]
     text_value = "".join(str(a[1]) for a in text_attachment)
-    assert text_value == "{'key1': ['value1', 'value2'], 'key2': ['value3', 'value4']}"
+    assert text_value == '{"key1": ["value1", "value2"], "key2": ["value3", "value4"]}'
 
 
 response_err_str2 = """{
