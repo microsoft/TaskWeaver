@@ -122,7 +122,7 @@ class Planner(Role):
             )
 
         instruction = self.instruction_template.format(
-            response_json_schema=self.response_json_schema,
+            response_json_schema=json.dumps(self.response_json_schema),
             worker_intro=worker_description,
         )
 

@@ -95,7 +95,7 @@ class CodeGenerator(Role):
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
-            RESPONSE_JSON_SCHEMA=self.response_json_schema,
+            RESPONSE_JSON_SCHEMA=json.dumps(self.response_json_schema),
         )
 
         self.round_compressor: RoundCompressor = round_compressor

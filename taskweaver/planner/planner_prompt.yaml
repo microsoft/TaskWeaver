@@ -105,4 +105,43 @@ experience_instruction: |-
   You need to borrow the experience and lessons learned from the previous tasks in your current plan.
 
 response_json_schema: |-
-  {"type":"object","properties":{"response":{"type":"object","properties":{"init_plan":{"type":"string","description":"The initial plan to decompose the User's task into subtasks and list them as the detailed subtask steps. The initial plan must contain dependency annotations for sequential and interactive dependencies."},"plan":{"type":"string","description":"The refined plan by merging adjacent steps that have sequential dependency or no dependency. The final plan must not contain dependency annotations."},"current_plan_step":{"type":"string","description":"The current step Planner is executing."},"send_to":{"type":"string","description":"The name of character (User or name of the Worker) that Planner wants to speak to."},"message":{"type":"string","description":"The message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)"}},"required":["init_plan","plan","current_plan_step","send_to","message"]}},"required":["response"]}
+  {
+    "type": "object",
+    "properties": {
+        "response": {
+            "type": "object",
+            "properties": {
+                "init_plan": {
+                    "type": "string",
+                    "description": "The initial plan to decompose the User's task into subtasks and list them as the detailed subtask steps. The initial plan must contain dependency annotations for sequential and interactive dependencies."
+                },
+                "plan": {
+                    "type": "string",
+                    "description": "The refined plan by merging adjacent steps that have sequential dependency or no dependency. The final plan must not contain dependency annotations."
+                },
+                "current_plan_step": {
+                    "type": "string",
+                    "description": "The current step Planner is executing."
+                },
+                "send_to": {
+                    "type": "string",
+                    "description": "The name of character (User or name of the Worker) that Planner wants to speak to."
+                },
+                "message": {
+                    "type": "string",
+                    "description": "The message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)"
+                }
+            },
+            "required": [
+                "init_plan",
+                "plan",
+                "current_plan_step",
+                "send_to",
+                "message"
+            ]
+        }
+    },
+    "required": [
+        "response"
+    ]
+  }
