@@ -276,14 +276,16 @@ class PostTranslator:
                     yield cur_type, ev.value_str, ev.is_end
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "boolean":
                     yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "null":
+                    yield cur_type, "", True
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_map":
                     self.logger.warning(f"Start map in property: {root_element_prefix}.{cur_type}")
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_map":
-                    yield cur_type, ev.value, True
+                    yield cur_type, json.dumps(ev.value), True
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_array":
                     self.logger.warning(f"Start array in property: {root_element_prefix}.{cur_type}")
                 elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_array":
-                    yield cur_type, ev.value, True
+                    yield cur_type, json.dumps(ev.value), True
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(

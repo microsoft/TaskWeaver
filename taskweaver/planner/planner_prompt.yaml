@@ -97,13 +97,6 @@ instruction_template: |-
   ## Planner's response format
   - Planner must strictly format the response into the following JSON object:
     {response_json_schema}
-  - Planner's response must include 5 attributes "init_plan", "plan", "current_plan_step", "send_to", and "message".
-    - "init_plan" is the initial plan.
-    - "plan" is the refined plan.
-    - "current_plan_step" is the current step Planner is executing.
-    - "send_to" is the name of character (User or name of the Worker) that Planner wants to speak to.
-    - "message" is the message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)
-  - Planner must not include any other elements in the response that can cause parsing errors.
 
 experience_instruction: |-
   # Experience And Lessons
@@ -112,40 +105,4 @@ experience_instruction: |-
   You need to borrow the experience and lessons learned from the previous tasks in your current plan.
 
 response_json_schema: |-
-  {
-    "type": "object",
-    "properties": {
-        "response": {
-            "type": "object",
-            "properties": {
-                "init_plan": {
-                    "type": "string",
-                    "maxLength": 1000
-                },
-                "plan": {
-                    "type": "string",
-                    "maxLength": 1000
-                },
-                "current_plan_step": {
-                    "type": "string",
-                    "maxLength": 1000
-                },
-                "send_to": {
-                    "type": "string"
-                },
-                "message": {
-                    "type": "string",
-                    "maxLength": 1000
-                }
-            },
-            "required": [
-                "init_plan",
-                "plan",
-                "current_plan_step",
-                "send_to",
-                "message"
-            ]
-        }
-    },
-    "required": ["response"]
-  }
+  {"type":"object","properties":{"response":{"type":"object","properties":{"init_plan":{"type":"string","description":"The initial plan to decompose the User's task into subtasks and list them as the detailed subtask steps. The initial plan must contain dependency annotations for sequential and interactive dependencies."},"plan":{"type":"string","description":"The refined plan by merging adjacent steps that have sequential dependency or no dependency. The final plan must not contain dependency annotations."},"current_plan_step":{"type":"string","description":"The current step Planner is executing."},"send_to":{"type":"string","description":"The name of character (User or name of the Worker) that Planner wants to speak to."},"message":{"type":"string","description":"The message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)"}},"required":["init_plan","plan","current_plan_step","send_to","message"]}},"required":["response"]}

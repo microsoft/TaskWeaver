@@ -87,7 +87,7 @@ class CodeGenerator(Role):
         self.user_message_head_template = self.prompt_data["user_message_head"]
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
-        self.response_json_schema = self.prompt_data["response_json_schema"]
+        self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.examples = None
         self.code_verification_on: bool = False
@@ -438,25 +438,21 @@ class CodeGenerator(Role):
     def get_plugin_pool(self) -> List[PluginEntry]:
         return self.plugin_pool
 
+    def format_code_revision_message(self) -> str:
+        return (
+            "The execution of the previous generated code has failed. "
+            "If you think you can fix the problem by rewriting the code, "
+            "please generate code and run it again.\n"
+            "Otherwise, please explain the problem to me."
+        )
 
-def format_code_revision_message() -> str:
-    return (
-        "The execution of the previous generated code has failed. "
-        "If you think you can fix the problem by rewriting the code, "
-        "please generate code and run it again.\n"
-        "Otherwise, please explain the problem to me."
-    )
-
-
-def format_output_revision_message() -> str:
-    return (
-        "Your previous message is not following the output format. "
-        "You must generate the output as a JSON object with the response that contains the following keys:\n"
-        "1. thought: Your thought about the task.\n"
-        "2. reply_type: The type of the reply. It should be either 'text' or 'python'.\n"
-        "3. reply_content: The content of the reply. It should be either the text or the code.\n"
-        "Please try again."
-    )
+    def format_output_revision_message(self) -> str:
+        return (
+            "Your previous message is not following the output format. "
+            "You must generate the output as a JSON object following the schema provided:\n"
+            f"{self.response_json_schema}\n"
+            "Please try again."
+        )
 
 
 def format_code_feedback(post: Post) -> str:
