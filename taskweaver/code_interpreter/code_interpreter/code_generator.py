@@ -87,6 +87,7 @@ class CodeGenerator(Role):
         self.user_message_head_template = self.prompt_data["user_message_head"]
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
+        self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.examples = None
         self.code_verification_on: bool = False
@@ -94,6 +95,7 @@ class CodeGenerator(Role):
 
         self.instruction = self.instruction_template.format(
             ROLE_NAME=self.role_name,
+            RESPONSE_JSON_SCHEMA=json.dumps(self.response_json_schema),
         )
 
         self.round_compressor: RoundCompressor = round_compressor
@@ -370,7 +372,7 @@ class CodeGenerator(Role):
         )
 
         def early_stop(_type: AttachmentType, value: str) -> bool:
-            if _type in [AttachmentType.text, AttachmentType.python, AttachmentType.sample]:
+            if _type in [AttachmentType.reply_content]:
                 return True
             else:
                 return False
@@ -380,6 +382,7 @@ class CodeGenerator(Role):
                 prompt,
                 use_smoother=True,
                 llm_alias=self.config.llm_alias,
+                json_schema=self.response_json_schema,
             ),
             post_proxy=post_proxy,
             early_stop=early_stop,
@@ -387,13 +390,19 @@ class CodeGenerator(Role):
 
         post_proxy.update_send_to("Planner")
         generated_code = ""
+        reply_type: Optional[str] = None
         for attachment in post_proxy.post.attachment_list:
-            if attachment.type in [AttachmentType.sample, AttachmentType.text]:
-                post_proxy.update_message(attachment.content)
+            if attachment.type == AttachmentType.reply_type:
+                reply_type = attachment.content
                 break
-            elif attachment.type == AttachmentType.python:
-                generated_code = attachment.content
-                break
+        for attachment in post_proxy.post.attachment_list:
+            if attachment.type == AttachmentType.reply_content:
+                if reply_type == "python":
+                    generated_code = attachment.content
+                    break
+                elif reply_type == "text":
+                    post_proxy.update_message(attachment.content)
+                    break
 
         if self.config.enable_auto_plugin_selection:
             # filter out plugins that are not used in the generated code
@@ -429,25 +438,21 @@ class CodeGenerator(Role):
     def get_plugin_pool(self) -> List[PluginEntry]:
         return self.plugin_pool
 
+    def format_code_revision_message(self) -> str:
+        return (
+            "The execution of the previous generated code has failed. "
+            "If you think you can fix the problem by rewriting the code, "
+            "please generate code and run it again.\n"
+            "Otherwise, please explain the problem to me."
+        )
 
-def format_code_revision_message() -> str:
-    return (
-        "The execution of the previous generated code has failed. "
-        "If you think you can fix the problem by rewriting the code, "
-        "please generate code and run it again.\n"
-        "Otherwise, please explain the problem to me."
-    )
-
-
-def format_output_revision_message() -> str:
-    return (
-        "Your previous message is not following the output format. "
-        "You must generate the output as a JSON object with the following format:\n"
-        '{"response": [{"type":"this is the type", "content": "this is the content"}, ...]}\n'
-        "You need at least have an element with type 'python' and content being the code to be executed.\n"
-        "Don't surround the JSON with ```json and ```, just send the JSON object directly.\n"
-        "Please try again."
-    )
+    def format_output_revision_message(self) -> str:
+        return (
+            "Your previous message is not following the output format. "
+            "You must generate the output as a JSON object following the schema provided:\n"
+            f"{self.response_json_schema}\n"
+            "Please try again."
+        )
 
 
 def format_code_feedback(post: Post) -> str:
@@ -456,13 +461,13 @@ def format_code_feedback(post: Post) -> str:
     execution_status = ""
     for attachment in post.attachment_list:
         if attachment.type == AttachmentType.verification and attachment.content == "CORRECT":
-            feedback += "## Verification\nI have verified that your code is CORRECT.\n"
+            feedback += "## Verification\nCode verification has been passed.\n"
             verification_status = "CORRECT"
         elif attachment.type == AttachmentType.verification and attachment.content == "NONE":
             feedback += "## Verification\nNo code verification.\n"
             verification_status = "NONE"
         elif attachment.type == AttachmentType.verification and attachment.content == "INCORRECT":
-            feedback += "## Verification\nYour code is INCORRECT with the following error:\n"
+            feedback += "## Verification\nCode verification detected the following issues:\n"
             verification_status = "INCORRECT"
         elif attachment.type == AttachmentType.code_error and verification_status == "INCORRECT":
             feedback += f"{attachment.content}\n"

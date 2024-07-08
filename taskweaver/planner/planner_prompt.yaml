@@ -10,9 +10,9 @@ instruction_template: |-
   ## User Character
   - The User's input should be the request or additional information required to complete the user's task.
   - The User can only talk to the Planner.
-  - The input of the User will prefix with "User:".
+  - The input of the User will contain a `send_from` field, which is the name of the User.
   
-  ## Workers Character
+  ## Worker Character
   There are multiple Workers in the environment. The details of the Workers are as follows:
   {worker_intro}
   
@@ -96,44 +96,52 @@ instruction_template: |-
   
   ## Planner's response format
   - Planner must strictly format the response into the following JSON object:
-    {planner_response_schema}
-  - Planner's response must include 5 elements "init_plan", "plan", "current_plan_step", "send_to", and "message".
-    - "init_plan" is the initial plan.
-    - "plan" is the refined plan.
-    - "current_plan_step" is the current step Planner is executing.
-    - "send_to" is the name of character (User or name of Worker) that Planner wants to speak to.
-    - "message" is the message of Planner sent to the receipt character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)
-  - Planner must not include any other elements in the response that can cause parsing errors.
-
-planner_response_schema: |-
-  { 
-    "response": [
-      {
-        "type": "init_plan",
-        "content": "1. step 1\n2. step 2 <interactively or sequentially depend on 1>\n 3. step 3 <interactively or sequentially depend on 2>"
-      },
-      {
-        "type": "plan",
-        "content": "1. step 1 in the refined plan\n2. step 2 in the refined plan\n3. step 3 in the refined plan"
-      },
-      {
-        "type": "current_plan_step",
-        "content": "the current subtask that the Planner is executing"
-      },
-      {
-        "type": "send_to",
-        "content": "User or the name of Worker"
-      },
-      {
-        "type": "message",
-        "content": "The text message from the Planner"
-      }
-    ]
-  }
-
+    {response_json_schema}
 
 experience_instruction: |-
   # Experience And Lessons
   Before starting planning, please refer to the following experiences and lessons learned from the previous tasks and include them in your plan.
   {experiences}
   You need to borrow the experience and lessons learned from the previous tasks in your current plan.
+
+response_json_schema: |-
+  {
+    "type": "object",
+    "properties": {
+        "response": {
+            "type": "object",
+            "properties": {
+                "init_plan": {
+                    "type": "string",
+                    "description": "The initial plan to decompose the User's task into subtasks and list them as the detailed subtask steps. The initial plan must contain dependency annotations for sequential and interactive dependencies."
+                },
+                "plan": {
+                    "type": "string",
+                    "description": "The refined plan by merging adjacent steps that have sequential dependency or no dependency. The final plan must not contain dependency annotations."
+                },
+                "current_plan_step": {
+                    "type": "string",
+                    "description": "The current step Planner is executing."
+                },
+                "send_to": {
+                    "type": "string",
+                    "description": "The name of character (User or name of the Worker) that Planner wants to speak to."
+                },
+                "message": {
+                    "type": "string",
+                    "description": "The message of Planner sent to the receipt Character. If there is any file path in the message, it should be formatted as links in Markdown, i.e., [file_name](file_path)"
+                }
+            },
+            "required": [
+                "init_plan",
+                "plan",
+                "current_plan_step",
+                "send_to",
+                "message"
+            ]
+        }
+    },
+    "required": [
+        "response"
+    ]
+  }

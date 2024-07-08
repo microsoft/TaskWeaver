@@ -55,7 +55,9 @@ rounds:
             content: "{ROLE_NAME} will generate a code snippet to read the file /abc/def.csv and add 1 to each value in column \"value\"."
           - type: thought
             content: "{ROLE_NAME} is prohibited to generate any code other than variable assignments and plugin calls."
-          - type: python
+          - type: reply_type
+            content: python
+          - type: reply_content
             content: |-
               df = read_csv("/abc/def.csv")
               status = write_csv(df, "/abc/backup.csv")

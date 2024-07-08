@@ -21,15 +21,46 @@ content: |-
     - If any error occurs during the verification or execution, the User will provide feedback to the {ROLE_NAME}.
 
     ## On {ROLE_NAME}'s response format:
-    - The response is a JSON array of dictionaries, each dictionary has a key named 'type' and a key named 'content', i.e., {{"response": [{{"type": "thought", "content": "..." }}, ...]}}
-    - {ROLE_NAME} generates the reply to the user with 'type' that must be one of the following:
-      - "thought": the thoughts on the intermediate steps
-      - "sample": textual descriptions including the sample code 
-      - "python": the code that can be executed by the User; comments must be added calling functions from the pre-defined plugins, including the description of the function and the parameters.
-      - "text": the direct response in text without code
-    - The "response" array can include multiple thought replies, but it can have only one of sample, python, or text, exclusively.
-    - The value of "content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
-    
+    - The response is a JSON object with the following format:
+    {RESPONSE_JSON_SCHEMA}
+
+response_json_schema: |-
+    {
+        "type": "object",
+        "properties": {
+            "response": {
+                "type": "object",
+                "properties": {
+                    "thought": {
+                        "type": "string",
+                        "maxLength": 1000,
+                        "description": "The thoughts before generating the code."
+                    },
+                    "reply_type": {
+                        "type": "string",
+                        "enum": [
+                            "python",
+                            "text"
+                        ],
+                        "description": "The type of the reply, which can be 'python' or 'text'. Select 'text' if the response is not a executable code snippet."
+                    },
+                    "reply_content": {
+                        "type": "string",
+                        "minLength": 10,
+                        "description": "The actual content of the response. If the reply_type is 'python', the content should be a valid python code snippet. Make sure escaping the special characters (e.g., '\\', '/', and '\"') in the strings for JSON format."
+                    }
+                },
+                "required": [
+                    "thought",
+                    "reply_type",
+                    "reply_content"
+                ]
+            }
+        },
+        "required": [
+            "response"
+        ]
+    }
 
     
 conversation_head: |-

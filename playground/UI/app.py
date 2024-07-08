@@ -261,7 +261,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                 continue
 
             # skip Python in final result
-            if is_end and a_type in [AttachmentType.python]:
+            if is_end and a_type in [AttachmentType.reply_content]:
                 continue
 
             content_chunks.append(self.format_attachment(attachment))
@@ -325,7 +325,7 @@ class ChainLitMessageUpdater(SessionEventHandlerBase):
                     elem("code")(txt(msg)),
                 ),
             )
-        elif a_type in [AttachmentType.python, AttachmentType.sample]:
+        elif a_type in [AttachmentType.reply_content]:
             atta_cnt.append(
                 elem("pre", "tw-python", {"data-lang": "python"})(
                     elem("code", "language-python")(txt(msg, br=False)),

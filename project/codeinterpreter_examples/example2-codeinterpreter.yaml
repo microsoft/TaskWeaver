@@ -13,7 +13,9 @@ rounds:
         attachment_list:
           - type: thought
             content: "{ROLE_NAME} will generate a code snippet to read the file /abc/def.txt and present the content to the user."
-          - type: python
+          - type: reply_type
+            content: python
+          - type: reply_content
             content: |-
               file_path = "/abc/def.txt"  
 
@@ -43,7 +45,9 @@ rounds:
             content: "{ROLE_NAME} understands that the execution of the previous round has failed."
           - type: thought
             content: "{ROLE_NAME} understands that the file /abc/def.txt does not exist and will not attempt to read it again."
-          - type: text
+          - type: reply_type
+            content: text
+          - type: reply_content
             content: I cannot find the file /abc/def.txt. An FileNotFoundException has been raised in my previous attempt.
           - type: verification
             content: NONE

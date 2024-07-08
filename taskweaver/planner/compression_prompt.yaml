@@ -3,10 +3,10 @@ content: |-
   ## On your profile and general capabilities:
   - Given a chat history and a previous summary, update the existing summary (if any) or create a new one.
   - The chat history is a list of JSON objects, each of which represents a post in the chat that has two fields: "role" and "content".
-  - The chat involves 3 participants: User, Planner, and CodeInterpreter.
+  - The chat involves multiple participants: User, Planner, and other Workers.
     + User: the "role" is "user" and the "content" starts with "User: ".
     + Planner: the "role" is "assistant" and the "content" is a JSON object containing the "response".
-    + CodeInterpreter: the "role" is "user" and the "content" starts with "CodeInterpreter: ".
+    + Other Workers: the "role" is "user" and the "content" starts with "<WorkerName>: ".
   - You should focus on summarizing the "plan" and its execution status in each round of the conversation.
   - You must retain the "message" sent from the Planner to the User.
   - You should remove duplicated information the plan steps repeated in the chat history.

@@ -42,15 +42,9 @@ class PostTranslator:
         use_v2_parser: bool = True,
     ) -> None:
         """
-        Convert the raw text output of LLM to a Post object.
-        :param llm_output_stream:
-        :param send_from:
-        :param early_stop:
-        :return: Post
+        Convert the raw text output from LLM to a Post object.
         """
 
-        # llm_output_list = [token for token in llm_output_stream]  # collect all the llm output via iterator
-        # llm_output = "".join(llm_output_list)
         def stream_filter(s: Iterable[ChatMessageType]) -> Iterator[str]:
             full_llm_content = ""
             try:
@@ -80,6 +74,7 @@ class PostTranslator:
             if use_v2_parser
             else self.parse_llm_output_stream(filtered_stream)
         )
+        # parser_stream = self.parse_llm_output("".join([c["content"] for c in llm_output]))
         cur_attachment: Optional[Attachment] = None
         try:
             for type_str, value, is_end in parser_stream:
@@ -148,40 +143,43 @@ class PostTranslator:
     ) -> str:
         """
         Convert a Post object to raw text in the format of LLM output.
-        :param post:
-        :param content_formatter:
-        :param if_format_message:
-        :param if_format_send_to:
-        :param ignored_types:
-        :return: str
         """
         if ignored_types is None:
             ignored_types = []
         ignored_types.append(AttachmentType.board)
 
-        structured_llm: List[Dict[str, str]] = []
+        structured_llm: Dict[str, str] = {}
         for attachment in post.attachment_list:
-            attachments_dict = {}
             if ignored_types is not None and attachment.type in ignored_types:
                 continue
-            attachments_dict["type"] = attachment.type.value
-            attachments_dict["content"] = content_formatter(attachment)
-            structured_llm.append(attachments_dict)
+            if attachment.type.value not in structured_llm:
+                structured_llm[attachment.type.value] = content_formatter(attachment)
+            else:
+                # append the content of the same type of attachment
+                structured_llm[attachment.type.value] += f"\n{content_formatter(attachment)}"
         if if_format_send_to:
-            structured_llm.append({"type": "send_to", "content": post.send_to})
+            structured_llm["send_to"] = post.send_to
         if if_format_message:
-            structured_llm.append({"type": "message", "content": post.message})
+            structured_llm["message"] = post.message
         structured_llm_text = json.dumps({"response": structured_llm})
         return structured_llm_text
 
-    def parse_llm_output(self, llm_output: str) -> List[Dict[str, str]]:
+    def parse_llm_output(self, llm_output: str) -> Iterator[Tuple[str, str, bool]]:
         try:
             structured_llm_output: Any = json.loads(llm_output)["response"]
+            kv_pairs = []
             assert isinstance(
                 structured_llm_output,
-                list,
-            ), "LLM output should be a list object"
-            return structured_llm_output  # type: ignore
+                dict,
+            ), "LLM output should be a dict object"
+            for key in structured_llm_output:
+                if isinstance(structured_llm_output[key], str):
+                    kv_pairs.append((key, structured_llm_output[key], True))
+                else:
+                    raise AssertionError(
+                        f"Invalid LLM output format: {structured_llm_output[key]}",
+                    )
+            return kv_pairs  # type: ignore
         except (JSONDecodeError, AssertionError) as e:
             self.logger.error(
                 f"Failed to parse LLM output due to {str(e)}. LLM output:\n {llm_output}",
@@ -235,13 +233,9 @@ class PostTranslator:
         cur_content: Optional[str] = None
         try:
             for prefix, event, value in parser:
-                if prefix == "response.item" and event == "map_key" and value == "type":
-                    cur_type = None
-                elif prefix == "response.item.type" and event == "string":
+                if prefix == "response" and event == "map_key":
                     cur_type = value
-                elif prefix == "response.item" and event == "map_key" and value == "content":
-                    cur_content = None
-                elif prefix == "response.item.content" and event == "string":
+                if prefix == "response.{}".format(cur_type) and event == "string":
                     cur_content = value
 
                 if cur_type is not None and cur_content is not None:
@@ -262,66 +256,36 @@ class PostTranslator:
         self,
         llm_output: Iterator[str],
     ) -> Iterator[Tuple[str, str, bool]]:
-        parser = json_parser.parse_json_stream(llm_output, skip_after_root=True)
+        parser = json_parser.parse_json_stream(
+            llm_output,
+            skip_after_root=True,
+            include_all_values=True,
+            skip_ws=True,
+        )
         root_element_prefix = ".response"
 
-        list_begin, list_end = False, False
-        item_idx = 0
-
-        cur_content_sent: bool = False
-        cur_content_sent_end: bool = False
         cur_type: Optional[str] = None
-        cur_content: Optional[str] = None
-
         try:
             for ev in parser:
-                if ev.prefix == root_element_prefix:
-                    if ev.event == "start_array":
-                        list_begin = True
-                    if ev.event == "end_array":
-                        list_end = True
-
-                if not list_begin or list_end:
-                    continue
-
-                cur_item_prefix = f"{root_element_prefix}[{item_idx}]"
-                if ev.prefix == cur_item_prefix:
-                    if ev.event == "start_map":
-                        cur_content_sent, cur_content_sent_end = False, False
-                        cur_type, cur_content = None, None
-                    if ev.event == "end_map":
-                        if cur_type is None or cur_content is None:
-                            raise Exception(
-                                f"Incomplete generate kv pair in index {item_idx}. "
-                                f"type: {cur_type} content {cur_content}",
-                            )
-
-                        if cur_content_sent and not cur_content_sent_end:
-                            # possible incomplete string, trigger end prematurely
-                            yield cur_type, "", True
-
-                        if not cur_content_sent:
-                            yield cur_type, cur_content, True
-
-                        cur_content_sent, cur_content_sent_end = False, False
-                        cur_type, cur_content = None, None
-                        item_idx += 1
-
-                if ev.prefix == cur_item_prefix + ".type":
-                    if ev.event == "string" and ev.is_end:
-                        cur_type = ev.value
-
-                if ev.prefix == cur_item_prefix + ".content":
-                    if ev.event == "string":
-                        if cur_type is not None:
-                            cur_content_sent = True
-                            yield cur_type, ev.value_str, ev.is_end
-
-                            assert not cur_content_sent_end, "Invalid state: already sent is_end marker"
-                            if ev.is_end:
-                                cur_content_sent_end = True
-                        if ev.is_end:
-                            cur_content = ev.value
+                if ev.prefix == root_element_prefix and ev.event == "map_key" and ev.is_end:
+                    cur_type = ev.value
+                    yield cur_type, "", False
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "string":
+                    yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "number":
+                    yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "boolean":
+                    yield cur_type, ev.value_str, ev.is_end
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "null":
+                    yield cur_type, "", True
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_map":
+                    self.logger.warning(f"Start map in property: {root_element_prefix}.{cur_type}")
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_map":
+                    yield cur_type, json.dumps(ev.value), True
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "start_array":
+                    self.logger.warning(f"Start array in property: {root_element_prefix}.{cur_type}")
+                elif ev.prefix == f"{root_element_prefix}.{cur_type}" and ev.event == "end_array":
+                    yield cur_type, json.dumps(ev.value), True
 
         except json_parser.StreamJsonParserError as e:
             self.logger.warning(

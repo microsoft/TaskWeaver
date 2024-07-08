@@ -4,11 +4,7 @@ from typing import Dict, Literal, Optional
 from injector import inject
 
 from taskweaver.code_interpreter.code_executor import CodeExecutor
-from taskweaver.code_interpreter.code_interpreter import (
-    CodeGenerator,
-    format_code_revision_message,
-    format_output_revision_message,
-)
+from taskweaver.code_interpreter.code_interpreter import CodeGenerator
 from taskweaver.code_interpreter.code_verification import code_snippet_verification, format_code_correction_message
 from taskweaver.code_interpreter.interpreter import Interpreter
 from taskweaver.logging import TelemetryLogger
@@ -151,7 +147,7 @@ class CodeInterpreter(Role, Interpreter):
             return post_proxy.end()
 
         code = next(
-            (a for a in post_proxy.post.attachment_list if a.type == AttachmentType.python),
+            (a for a in post_proxy.post.attachment_list if a.type == AttachmentType.reply_content),
             None,
         )
 
@@ -171,7 +167,7 @@ class CodeInterpreter(Role, Interpreter):
             )
             post_proxy.update_message("Failed to generate code.")
             if self.retry_count < self.config.max_retry_count:
-                error_message = format_output_revision_message()
+                error_message = self.generator.format_output_revision_message()
                 post_proxy.update_attachment(
                     error_message,
                     AttachmentType.revise_message,
@@ -290,7 +286,7 @@ class CodeInterpreter(Role, Interpreter):
         else:
             post_proxy.update_send_to("CodeInterpreter")
             post_proxy.update_attachment(
-                format_code_revision_message(),
+                self.generator.format_code_revision_message(),
                 AttachmentType.revise_message,
             )
             self.retry_count += 1
