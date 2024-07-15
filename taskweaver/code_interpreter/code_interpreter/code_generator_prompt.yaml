@@ -1,5 +1,8 @@
-version: 0.1
+version: 0.2
 content: |-
+    ## On current environment context:
+    {ENVIRONMENT_CONTEXT}
+    
     ## On conversations:
     - Each conversation starts with "==============================\n## Conversation Start"
     - Each conversation has multiple rounds, each round starts with "-----------------------------"

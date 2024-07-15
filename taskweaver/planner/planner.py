@@ -1,6 +1,7 @@
 import json
 import os
 import types
+from datetime import date
 from json import JSONDecodeError
 from typing import Dict, Iterable, List, Optional
 
@@ -121,7 +122,10 @@ class Planner(Role):
                 f'- The message from {alias} will start with "From: {alias}"\n'
             )
 
+        current_date = date.today()
+        day_of_week = current_date.strftime("%A")
         instruction = self.instruction_template.format(
+            environment_context=f"- Today is {current_date}\n- It is {day_of_week}.\n",
             response_json_schema=json.dumps(self.response_json_schema),
             worker_intro=worker_description,
         )

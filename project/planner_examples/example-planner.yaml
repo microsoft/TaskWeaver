@@ -13,15 +13,15 @@ rounds:
         attachment_list:
         - type: init_plan
           content: |-
-                1. load the data file
-                2. count the rows of the loaded data <sequentially depends on 1>
-                3. report the result to the user <interactively depends on 2>
+            1. Load the data file
+            2. Count the rows of the loaded data <sequentially depends on 1>
+            3. Check the execution result and report the result to the user <interactively depends on 2>
         - type: plan
           content: |-
-            1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
-            2. report the result to the user
+            1. Instruct CodeInterpreter to load the data file and count the rows of the loaded data
+            2. Check the execution result and report the result to the user if it is correct
         - type: current_plan_step
-          content: 1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
+          content: 1. Instruct CodeInterpreter to load the data file and count the rows of the loaded data
       - message: Load the data file /home/data.csv successfully and there are 100 rows in the data file
         send_from: CodeInterpreter
         send_to: Planner
@@ -32,12 +32,12 @@ rounds:
         attachment_list:
           - type: init_plan
             content: |-
-                1. load the data file
-                2. count the rows of the loaded data <sequentially depends on 1>
-                3. report the result to the user <interactively depends on 2>
+              1. Load the data file
+              2. Count the rows of the loaded data <sequentially depends on 1>
+              3. Check the execution result and report the result to the user <interactively depends on 2>
           - type: plan
             content: |-
-                1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
-                2. report the result to the user
+              1. Instruct CodeInterpreter to load the data file and count the rows of the loaded data
+              2. Check the execution result and report the result to the user if it is correct
           - type: current_plan_step
             content: 2. report the result to the user

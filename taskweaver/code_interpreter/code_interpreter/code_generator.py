@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import date
 from typing import List, Optional
 
 from injector import inject
@@ -93,7 +94,10 @@ class CodeGenerator(Role):
         self.code_verification_on: bool = False
         self.allowed_modules: List[str] = []
 
+        current_date = date.today()
+        day_of_week = current_date.strftime("%A")
         self.instruction = self.instruction_template.format(
+            ENVIRONMENT_CONTEXT=f"- Today is {current_date}.\n- It is {day_of_week}.\n",
             ROLE_NAME=self.role_name,
             RESPONSE_JSON_SCHEMA=json.dumps(self.response_json_schema),
         )
