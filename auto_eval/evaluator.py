@@ -9,6 +9,7 @@ import yaml
 from langchain.load import dumps
 from langchain.schema.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_community.chat_models import ChatOpenAI
+from langchain_community.chat_models.azureml_endpoint import AzureMLChatOnlineEndpoint, CustomOpenAIChatContentFormatter
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import AzureChatOpenAI
 
@@ -57,7 +58,7 @@ def config_llm(config: Dict[str, str]) -> Union[ChatOpenAI, AzureChatOpenAI]:
             temperature=0,
             verbose=True,
         )
-    elif api_type == "google":
+    elif api_type == "google_ai":
         os.environ["GOOGLE_API_KEY"] = get_config(config, "llm.api_key")
         model = ChatGoogleGenerativeAI(
             temperature=0,
@@ -65,7 +66,12 @@ def config_llm(config: Dict[str, str]) -> Union[ChatOpenAI, AzureChatOpenAI]:
             verbose=True,
             convert_system_message_to_human=True,
         )
-
+    elif api_type == "azure_ml":
+        model = AzureMLChatOnlineEndpoint(
+            endpoint_url=get_config(config, "llm.api_base"),
+            endpoint_api_key=get_config(config, "llm.api_key"),
+            content_formatter=CustomOpenAIChatContentFormatter(),
+        )
     else:
         raise ValueError("Invalid API type. Please check your config file.")
     return model

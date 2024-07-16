@@ -4,7 +4,9 @@ config_var:
   code_verification.code_verification_on: false
   execution_service.kernel_mode: "local"
 verbose: True
-task_description: use ARIMA model to forecast QQQ in next 7 days
+task_description: |-
+  use ARIMA model to forecast QQQ in next 7 days
+  If the agent asks for the data, you can suggest it to download using yfinance library.
 scoring_points:
   - score_point: "There should be 7 predicted stock prices in the output"
     weight: 1
