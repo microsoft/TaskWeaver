@@ -41,10 +41,10 @@ class CodeInterpreterCLIOnly(Role, Interpreter):
         self.return_index = 0
 
         self.logger.info(f"{self.alias} initialized successfully.")
-        
+
     def update_session_variables(self, session_variables: dict) -> None:
         assert False, "Not implemented"
-        
+
     @tracing_decorator
     def reply(
         self,
@@ -58,7 +58,7 @@ class CodeInterpreterCLIOnly(Role, Interpreter):
             prompt_log_path=prompt_log_path,
         )
 
-        code = post_proxy.post.get_attachment(type=AttachmentType.python)[0]
+        code = post_proxy.post.get_attachment(type=AttachmentType.reply_content)[0]
         if len(code) == 0:
             post_proxy.update_message(post_proxy.post.get_attachment(type=AttachmentType.thought)[0], is_end=True)
             return post_proxy.end()
