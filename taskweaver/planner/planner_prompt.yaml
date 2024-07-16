@@ -131,6 +131,10 @@ response_json_schema: |-
                     "type": "string",
                     "description": "The current step Planner is executing."
                 },
+                "review": {
+                    "type": "string",
+                    "description": "The review of the current step. If the Worker's response is incorrect or incomplete, Planner should provide feedback to the Worker."
+                },
                 "send_to": {
                     "type": "string",
                     "description": "The name of character (User or name of the Worker) that Planner wants to speak to."

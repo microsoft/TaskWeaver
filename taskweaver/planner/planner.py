@@ -1,7 +1,7 @@
+import datetime
 import json
 import os
 import types
-from datetime import date
 from json import JSONDecodeError
 from typing import Dict, Iterable, List, Optional
 
@@ -93,8 +93,6 @@ class Planner(Role):
             self.recipient_alias_set,
         ) + ["User"]
 
-        self.instruction = self.compose_sys_prompt()
-
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
@@ -112,7 +110,7 @@ class Planner(Role):
 
         self.logger.info("Planner initialized successfully")
 
-    def compose_sys_prompt(self):
+    def compose_sys_prompt(self, context: str):
         worker_description = ""
         for alias, role in self.workers.items():
             worker_description += (
@@ -122,10 +120,8 @@ class Planner(Role):
                 f'- The message from {alias} will start with "From: {alias}"\n'
             )
 
-        current_date = date.today()
-        day_of_week = current_date.strftime("%A")
         instruction = self.instruction_template.format(
-            environment_context=f"- Today is {current_date}\n- It is {day_of_week}.\n",
+            environment_context=context,
             response_json_schema=json.dumps(self.response_json_schema),
             worker_intro=worker_description,
         )
@@ -211,6 +207,13 @@ class Planner(Role):
 
         return conversation
 
+    def get_env_context(self) -> str:
+        # get the current time
+        now = datetime.datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        return f"- Current time: {current_time}"
+
     def compose_prompt(
         self,
         rounds: List[Round],
@@ -224,7 +227,13 @@ class Planner(Role):
             if self.config.use_experience
             else ""
         )
-        chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
+
+        chat_history = [
+            format_chat_message(
+                role="system",
+                message=f"{self.compose_sys_prompt(context=self.get_env_context())}" f"\n{experiences}",
+            ),
+        ]
 
         if self.config.use_example and len(self.examples) != 0:
             for conv_example in self.examples:

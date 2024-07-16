@@ -41,3 +41,8 @@ rounds:
               2. Check the execution result and report the result to the user if it is correct
           - type: current_plan_step
             content: 2. report the result to the user
+          - type: review
+            content: |-
+              The data file /home/data.csv is loaded and there are 100 rows in the data file
+              The execution result is correct
+              The user query is successfully answered

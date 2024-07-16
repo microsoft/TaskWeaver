@@ -1,6 +1,6 @@
+import datetime
 import json
 import os
-from datetime import date
 from typing import List, Optional
 
 from injector import inject
@@ -94,14 +94,6 @@ class CodeGenerator(Role):
         self.code_verification_on: bool = False
         self.allowed_modules: List[str] = []
 
-        current_date = date.today()
-        day_of_week = current_date.strftime("%A")
-        self.instruction = self.instruction_template.format(
-            ENVIRONMENT_CONTEXT=f"- Today is {current_date}.\n- It is {day_of_week}.\n",
-            ROLE_NAME=self.role_name,
-            RESPONSE_JSON_SCHEMA=json.dumps(self.response_json_schema),
-        )
-
         self.round_compressor: RoundCompressor = round_compressor
         self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
 
@@ -155,6 +147,20 @@ class CodeGenerator(Role):
             )
         return "\n".join(requirements)
 
+    def compose_sys_prompt(self, context: str):
+        return self.instruction_template.format(
+            ENVIRONMENT_CONTEXT=context,
+            ROLE_NAME=self.role_name,
+            RESPONSE_JSON_SCHEMA=json.dumps(self.response_json_schema),
+        )
+
+    def get_env_context(self):
+        # get date and time
+        now = datetime.datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+
+        return f"- Current time: {current_time}"
+
     def compose_prompt(
         self,
         rounds: List[Round],
@@ -170,7 +176,12 @@ class CodeGenerator(Role):
             else ""
         )
 
-        chat_history = [format_chat_message(role="system", message=f"{self.instruction}\n{experiences}")]
+        chat_history = [
+            format_chat_message(
+                role="system",
+                message=f"{self.compose_sys_prompt(context=self.get_env_context())}" f"\n{experiences}",
+            ),
+        ]
 
         if self.examples is None:
             self.examples = self.load_examples()
