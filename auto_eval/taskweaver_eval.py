@@ -113,6 +113,7 @@ def batch_auto_evaluate_for_taskweaver(
     result_file_path: str,
     eval_case_root: str,
     flush_result_file: bool = False,
+    sleep_time: int = 0,
 ):
     if not os.path.exists(result_file_path):
         df = pd.DataFrame(columns=["case_file", "score", "normalized_score"])
@@ -146,6 +147,12 @@ def batch_auto_evaluate_for_taskweaver(
         print("------------Finished evaluating------------", eval_case_dir)
 
         results.to_csv(result_file_path, index=False)
+
+        if sleep_time > 0:
+            print(f"Sleeping for {sleep_time} seconds...")
+            import time
+
+            time.sleep(sleep_time)
 
 
 if __name__ == "__main__":
@@ -186,6 +193,13 @@ if __name__ == "__main__":
         action="store_true",
         help="Flush the result file",
     )
+    parser.add_argument(
+        "-s",
+        "--sleep",
+        type=int,
+        default=0,
+        help="Sleep time between evaluations",
+    )
 
     args = parser.parse_args()
 
@@ -197,4 +211,5 @@ if __name__ == "__main__":
             args.result,
             args.path,
             flush_result_file=args.fresh,
+            sleep_time=args.sleep,
         )

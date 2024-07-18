@@ -136,7 +136,8 @@ class CodeGeneratorCLIOnly(Role):
             llm_response["code"] = f"powershell -Command {llm_response['code']}"
 
         post_proxy.update_attachment(llm_response["description"], AttachmentType.thought)
-        post_proxy.update_attachment(llm_response["code"], AttachmentType.python)
+        post_proxy.update_attachment("python", AttachmentType.reply_type)
+        post_proxy.update_attachment(llm_response["code"], AttachmentType.reply_content)
 
         self.tracing.set_span_attribute("code", llm_response["code"])
 
