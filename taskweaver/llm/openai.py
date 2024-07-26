@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Any, Generator, List, Optional
 
 import openai
@@ -79,6 +80,12 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.aad_client_secret = self._get_str(
             "aad_client_secret",
             None if is_app_login else "",
+        )
+        self.aad_skip_interactive = self._get_bool(
+            "aad_skip_interactive",
+            # support interactive on macOS and Windows by default, skip on other platforms
+            # could be overridden by config
+            not (sys.platform == "darwin" or sys.platform == "win32"),
         )
         self.aad_use_token_cache = self._get_bool("aad_use_token_cache", True)
         self.aad_token_cache_path = self._get_str(
@@ -362,6 +369,16 @@ class OpenAIService(CompletionService, EmbeddingService):
             result = None
         except Exception:
             pass
+
+        if not self.config.aad_skip_interactive:
+            try:
+                result = app.acquire_token_interactive(scopes=scopes)
+                if result is not None and "access_token" in result:
+                    save_cache()
+                    return result["access_token"]
+                result = None
+            except Exception:
+                pass
 
         flow = app.initiate_device_flow(scopes=scopes)
         print(flow["message"])
