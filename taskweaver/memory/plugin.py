@@ -297,7 +297,7 @@ class PluginModule(Module):
     ) -> PluginRegistry:
         import os
 
-        file_glob = os.path.join(config.base_path, "*.yaml")
+        file_glob = os.path.join(config.base_path, '**',"*.yaml")
         return PluginRegistry(
             file_glob=file_glob,
             ttl=timedelta(minutes=10),
