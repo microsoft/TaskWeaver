@@ -172,8 +172,6 @@ def test_compose_prompt():
         "None\n"
         "\n"
         "# Additional information from the User in this round:\n"
-        "The user request is: hello\n"
-        "\n"
         "create a dataframe"
     )
     assert messages[2]["role"] == "assistant"
