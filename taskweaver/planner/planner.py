@@ -353,8 +353,9 @@ class Planner(Role):
 
             plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
             bulletin_message = (
-                f"I have drawn up a plan: \n{plan}\n\n"
-                f"Please proceed with this step of this plan: {post_proxy.post.message}"
+                "\n====== Plan ======\n"
+                f"I have drawn up a plan:\n{plan}"
+                "\n==================\n"
             )
             post_proxy.update_attachment(
                 message=bulletin_message,
