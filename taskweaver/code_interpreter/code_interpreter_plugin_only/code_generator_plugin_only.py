@@ -1,12 +1,12 @@
 import json
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 
 from injector import inject
 
 from taskweaver.code_interpreter.plugin_selection import PluginSelector, SelectedPluginPool
 from taskweaver.llm import LLMApi, format_chat_message
-from taskweaver.llm.util import ChatMessageType
+from taskweaver.llm.util import PromptTypeWithTools
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
@@ -40,7 +40,10 @@ class CodeGeneratorPluginOnlyConfig(RoleConfig):
                 "compression_prompt.yaml",
             ),
         )
-        self.enable_auto_plugin_selection = self._get_bool("enable_auto_plugin_selection", False)
+        self.enable_auto_plugin_selection = self._get_bool(
+            "enable_auto_plugin_selection",
+            False,
+        )
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
@@ -58,7 +61,7 @@ class CodeGeneratorPluginOnly(Role):
         llm_api: LLMApi,
     ):
         super().__init__(config, logger, tracing, event_emitter)
-
+        self.config = config
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
@@ -83,7 +86,9 @@ class CodeGeneratorPluginOnly(Role):
         )
         self.selected_plugin_pool.add_selected_plugins(selected_plugins)
         self.logger.info(f"Selected plugins: {[p.name for p in selected_plugins]}")
-        self.logger.info(f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}")
+        self.logger.info(
+            f"Selected plugin pool: {[p.name for p in self.selected_plugin_pool.get_plugins()]}",
+        )
 
         return self.selected_plugin_pool.get_plugins()
 
@@ -93,6 +98,7 @@ class CodeGeneratorPluginOnly(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
@@ -104,12 +110,15 @@ class CodeGeneratorPluginOnly(Role):
 
         user_query = rounds[-1].user_query
         self.tracing.set_span_attribute("user_query", user_query)
-        self.tracing.set_span_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
+        self.tracing.set_span_attribute(
+            "enable_auto_plugin_selection",
+            self.config.enable_auto_plugin_selection,
+        )
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(user_query)
 
         # obtain the user query from the last round
-        prompt, tools = self._compose_prompt(
+        prompt_with_tools = self._compose_prompt(
             system_instructions=self.instruction_template.format(
                 ROLE_NAME=self.role_name,
             ),
@@ -119,9 +128,11 @@ class CodeGeneratorPluginOnly(Role):
         post_proxy.update_send_to("Planner")
 
         if prompt_log_path is not None:
-            self.logger.dump_log_file({"prompt": prompt, "tools": tools}, prompt_log_path)
+            self.logger.dump_prompt_file(prompt_with_tools, prompt_log_path)
 
-        prompt_size = self.tracing.count_tokens(json.dumps(prompt)) + self.tracing.count_tokens(json.dumps(tools))
+        prompt_size = self.tracing.count_tokens(
+            json.dumps(prompt_with_tools["prompt"]),
+        ) + self.tracing.count_tokens(json.dumps(prompt_with_tools["tools"]))
         self.tracing.set_span_attribute("prompt_size", prompt_size)
         self.tracing.add_prompt_size(
             size=prompt_size,
@@ -130,11 +141,14 @@ class CodeGeneratorPluginOnly(Role):
             },
         )
 
-        self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
+        self.tracing.set_span_attribute(
+            "prompt",
+            json.dumps(prompt_with_tools["prompt"], indent=2),
+        )
 
         llm_response = self.llm_api.chat_completion(
-            messages=prompt,
-            tools=tools,
+            messages=prompt_with_tools["prompt"],
+            tools=prompt_with_tools["tools"],
             tool_choice="auto",
             response_format=None,
             stream=False,
@@ -154,12 +168,17 @@ class CodeGeneratorPluginOnly(Role):
             post_proxy.update_message(llm_response["content"])
             return post_proxy.end()
         elif llm_response["role"] == "function":
-            post_proxy.update_attachment(llm_response["content"], AttachmentType.function)
+            post_proxy.update_attachment(
+                llm_response["content"],
+                AttachmentType.function,
+            )
             self.tracing.set_span_attribute("functions", llm_response["content"])
 
             if self.config.enable_auto_plugin_selection:
                 # here the code is in json format, not really code
-                self.selected_plugin_pool.filter_unused_plugins(code=llm_response["content"])
+                self.selected_plugin_pool.filter_unused_plugins(
+                    code=llm_response["content"],
+                )
             return post_proxy.end()
         else:
             self.tracing.set_span_status(
@@ -173,14 +192,21 @@ class CodeGeneratorPluginOnly(Role):
         system_instructions: str,
         rounds: List[Round],
         plugin_pool: List[PluginEntry],
-    ) -> Tuple[List[ChatMessageType], List[Dict[str, Any]]]:
+    ) -> PromptTypeWithTools:
         functions = [plugin.format_function_calling() for plugin in plugin_pool]
         prompt = [format_chat_message(role="system", message=system_instructions)]
         for _round in rounds:
             for post in _round.post_list:
                 if post.send_from == "Planner" and post.send_to == self.alias:
-                    prompt.append(format_chat_message(role="user", message=post.message))
+                    prompt.append(
+                        format_chat_message(role="user", message=post.message),
+                    )
                 elif post.send_from == self.alias and post.send_to == "Planner":
-                    prompt.append(format_chat_message(role="assistant", message=post.message))
+                    prompt.append(
+                        format_chat_message(role="assistant", message=post.message),
+                    )
 
-        return prompt, functions
+        return {
+            "prompt": prompt,
+            "tools": functions,
+        }

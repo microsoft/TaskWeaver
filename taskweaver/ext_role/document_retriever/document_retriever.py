@@ -65,7 +65,7 @@ class DocumentRetriever(Role):
 
         self.enc = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
-    def reply(self, memory: Memory, **kwargs) -> Post:
+    def reply(self, memory: Memory, **kwargs: ...) -> Post:
         if not self.vectorstore:
             self.initialize()
 

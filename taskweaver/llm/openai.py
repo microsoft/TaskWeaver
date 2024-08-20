@@ -336,7 +336,7 @@ class OpenAIService(CompletionService, EmbeddingService):
             f"{api_resource}/{api_scope}",
         ]
         app: Any = msal.PublicClientApplication(
-            "feb7b661-cac7-44a8-8dc1-163b63c23df2",  # default id in Azure Identity module
+            "04b07795-8ddb-461a-bbee-02f9e1bf7b46",  # default id in Azure Identity module
             authority=authority,
             token_cache=cache,
         )

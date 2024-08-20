@@ -55,7 +55,7 @@ class CodeInterpreterPluginOnly(Role, Interpreter):
 
     def get_intro(self) -> str:
         return self.intro.format(plugin_description=self.plugin_description)
-    
+
     def update_session_variables(self, session_variables: dict) -> None:
         self.executor.update_session_var(session_variables)
 
@@ -64,6 +64,7 @@ class CodeInterpreterPluginOnly(Role, Interpreter):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         self.generator.reply(

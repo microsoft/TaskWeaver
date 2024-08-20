@@ -313,13 +313,13 @@ class ExperienceGenerator:
     @staticmethod
     def format_experience_in_prompt(
         prompt_template: str,
-        selected_experiences: Optional[List[Experience]] = None,
+        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ):
         if selected_experiences is not None and len(selected_experiences) > 0:
             return prompt_template.format(
                 experiences="===================\n"
                 + "\n===================\n".join(
-                    [exp.experience_text for exp, sim in selected_experiences],
+                    [exp.experience_text for exp, _ in selected_experiences],
                 ),
             )
         else:
