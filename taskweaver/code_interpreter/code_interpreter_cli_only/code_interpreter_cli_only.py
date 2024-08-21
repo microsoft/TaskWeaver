@@ -50,6 +50,7 @@ class CodeInterpreterCLIOnly(Role, Interpreter):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         self.generator.reply(

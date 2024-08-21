@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Any, Generator, List, Optional
 
 from injector import inject
@@ -70,6 +69,8 @@ class QWenService(CompletionService, EmbeddingService):
             incremental_output=True,
         )
 
+        from http import HTTPStatus
+
         for msg_chunk in response:
             if msg_chunk.status_code == HTTPStatus.OK:
                 yield msg_chunk.output.choices[0]["message"]
@@ -85,6 +86,9 @@ class QWenService(CompletionService, EmbeddingService):
             input=strings,
         )
         embeddings = []
+
+        from http import HTTPStatus
+
         if resp.status_code == HTTPStatus.OK:
             for emb in resp["output"]["embeddings"]:
                 embeddings.append(emb["embedding"])

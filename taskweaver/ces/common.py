@@ -104,6 +104,9 @@ class Client(ABC):
         ...
 
 
+KernelModeType = Literal["local", "container"]
+
+
 class Manager(ABC):
     """
     Manager is the interface for the execution manager.
@@ -128,5 +131,5 @@ class Manager(ABC):
         ...
 
     @abstractmethod
-    def get_kernel_mode(self) -> Literal["local", "container"] | None:
+    def get_kernel_mode(self) -> KernelModeType:
         ...

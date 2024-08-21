@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from injector import Module, provider
 
 from taskweaver.config.module_config import ModuleConfig
+from taskweaver.llm.util import PromptToolType
 from taskweaver.misc.component_registry import ComponentDisabledException, ComponentRegistry
 from taskweaver.utils import read_yaml, validate_yaml
 
@@ -184,16 +185,26 @@ class PluginEntry:
     def from_yaml_file(path: str) -> Optional["PluginEntry"]:
         content = read_yaml(path)
         yaml_file_name = os.path.basename(path)
-        meta_file_path = os.path.join(os.path.dirname(path), ".meta", f"meta_{yaml_file_name}")
+        meta_file_path = os.path.join(
+            os.path.dirname(path),
+            ".meta",
+            f"meta_{yaml_file_name}",
+        )
         if os.path.exists(meta_file_path):
             meta_data = PluginMetaData.from_dict(read_yaml(meta_file_path))
             meta_data.path = meta_file_path
         else:
-            meta_data = PluginMetaData(name=os.path.splitext(yaml_file_name)[0], path=meta_file_path)
+            meta_data = PluginMetaData(
+                name=os.path.splitext(yaml_file_name)[0],
+                path=meta_file_path,
+            )
         return PluginEntry.from_yaml_content(content, meta_data)
 
     @staticmethod
-    def from_yaml_content(content: Dict, meta_data: Optional[PluginMetaData] = None) -> Optional["PluginEntry"]:
+    def from_yaml_content(
+        content: Dict[Any, Any],
+        meta_data: Optional[PluginMetaData] = None,
+    ) -> Optional["PluginEntry"]:
         do_validate = False
         valid_state = False
         if do_validate:
@@ -226,7 +237,7 @@ class PluginEntry:
             "plugin_only": self.plugin_only,
         }
 
-    def format_function_calling(self) -> Dict[str, Any]:
+    def format_function_calling(self) -> PromptToolType:
         assert self.plugin_only is True, "Only `plugin_only` plugins can be called in this way."
 
         def map_type(t: str) -> str:
@@ -242,19 +253,28 @@ class PluginEntry:
                 return "null"
             raise Exception(f"unknown type {t}")
 
-        function: Dict[str, Any] = {"type": "function", "function": {}}
+        param_dict: Dict[str, Any] = {}
         required_params: List[str] = []
-        function["function"]["name"] = self.name
-        function["function"]["description"] = self.spec.description
-        function["function"]["parameters"] = {"type": "object", "properties": {}}
         for arg in self.spec.args:
-            function["function"]["parameters"]["properties"][arg.name] = {
+            param_dict[arg.name] = {
                 "type": map_type(arg.type),
                 "description": arg.description,
             }
             if arg.required:
                 required_params.append(arg.name)
-        function["function"]["parameters"]["required"] = required_params
+
+        function: PromptToolType = {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.spec.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": param_dict,
+                    "required": required_params,
+                },
+            },
+        }
 
         return function
 

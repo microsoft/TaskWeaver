@@ -3,9 +3,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
 from injector import inject
-from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.llm import LLMApi, format_chat_message
@@ -266,6 +264,9 @@ class ExperienceGenerator:
 
     @tracing_decorator
     def retrieve_experience(self, user_query: str) -> List[Tuple[Experience, float]]:
+        import numpy as np
+        from sklearn.metrics.pairwise import cosine_similarity
+
         user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
 
         similarities = []
@@ -313,13 +314,13 @@ class ExperienceGenerator:
     @staticmethod
     def format_experience_in_prompt(
         prompt_template: str,
-        selected_experiences: Optional[List[Experience]] = None,
+        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ):
         if selected_experiences is not None and len(selected_experiences) > 0:
             return prompt_template.format(
                 experiences="===================\n"
                 + "\n===================\n".join(
-                    [exp.experience_text for exp, sim in selected_experiences],
+                    [exp.experience_text for exp, _ in selected_experiences],
                 ),
             )
         else:

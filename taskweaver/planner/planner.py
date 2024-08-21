@@ -3,7 +3,7 @@ import json
 import os
 import types
 from json import JSONDecodeError
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 from injector import inject
 
@@ -71,6 +71,7 @@ class Planner(Role):
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
         super().__init__(config, logger, tracing, event_emitter)
+        self.config = config
         self.alias = "Planner"
 
         self.llm_api = llm_api
@@ -100,6 +101,7 @@ class Planner(Role):
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
         if self.config.use_experience:
+            assert experience_generator is not None, "Experience generator is required when use_experience is True"
             self.experience_generator = experience_generator
             self.experience_generator.refresh()
             self.experience_generator.load_experience()
@@ -217,7 +219,7 @@ class Planner(Role):
     def compose_prompt(
         self,
         rounds: List[Round],
-        selected_experiences: Optional[List[Experience]] = None,
+        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ) -> List[ChatMessageType]:
         experiences = (
             self.experience_generator.format_experience_in_prompt(
@@ -266,6 +268,7 @@ class Planner(Role):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         rounds = memory.get_role_rounds(role=self.alias)
         assert len(rounds) != 0, "No chat rounds found for planner"
@@ -285,13 +288,13 @@ class Planner(Role):
         chat_history = self.compose_prompt(rounds, selected_experiences)
 
         def check_post_validity(post: Post):
-            missing_elements = []
-            validation_errors = []
-            if post.send_to is None or post.send_to == "Unknown":
+            missing_elements: List[str] = []
+            validation_errors: List[str] = []
+            if not post.send_to or post.send_to == "Unknown":
                 missing_elements.append("send_to")
             if post.send_to == self.alias:
                 validation_errors.append("The `send_to` field must not be `Planner` itself")
-            if post.message is None or post.message.strip() == "":
+            if not post.message or post.message.strip() == "":
                 missing_elements.append("message")
 
             attachment_types = [attachment.type for attachment in post.attachment_list]
@@ -352,11 +355,7 @@ class Planner(Role):
             )
 
             plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
-            bulletin_message = (
-                "\n====== Plan ======\n"
-                f"I have drawn up a plan:\n{plan}"
-                "\n==================\n"
-            )
+            bulletin_message = "\n====== Plan ======\n" f"I have drawn up a plan:\n{plan}" "\n==================\n"
             post_proxy.update_attachment(
                 message=bulletin_message,
                 type=AttachmentType.board,
@@ -386,7 +385,7 @@ class Planner(Role):
                 post_proxy.update_send_to(self.alias)
                 self.ask_self_cnt += 1
         if prompt_log_path is not None:
-            self.logger.dump_log_file(chat_history, prompt_log_path)
+            self.logger.dump_prompt_file(chat_history, prompt_log_path)
 
         reply_post = post_proxy.end()
         self.tracing.set_span_attribute("out.from", reply_post.send_from)

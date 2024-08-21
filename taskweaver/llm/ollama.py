@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import json
 from contextlib import contextmanager
-from typing import Any, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Generator, List, Optional
 
-import requests
 from injector import inject
+
+if TYPE_CHECKING:
+    from requests import Response
 
 from taskweaver.llm.base import CompletionService, EmbeddingService, LLMServiceConfig
 from taskweaver.llm.util import ChatMessageType, format_chat_message
@@ -173,7 +177,7 @@ class OllamaService(CompletionService, EmbeddingService):
     def get_embeddings(self, strings: List[str]) -> List[List[float]]:
         return [self._get_embedding(string) for string in strings]
 
-    def _stream_process(self, resp: requests.Response) -> Generator[Any, None, None]:
+    def _stream_process(self, resp: Response) -> Generator[Any, None, None]:
         for line in resp.iter_lines():
             line_str = line.decode("utf-8")
             if line_str and line_str.strip() != "":
@@ -191,6 +195,8 @@ class OllamaService(CompletionService, EmbeddingService):
 
     @contextmanager
     def _request_api(self, api_path: str, payload: Any, stream: bool = False):
+        import requests
+
         url = f"{self.config.api_base}{api_path}"
         with requests.Session() as session:
             with session.post(url, json=payload, stream=stream) as resp:

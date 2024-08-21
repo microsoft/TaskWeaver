@@ -1,5 +1,4 @@
 import os
-import shutil
 from typing import Any
 
 import click
@@ -70,6 +69,8 @@ def init(
             zip_ref.extractall(tpl_dir)
         copy_files(os.path.join(tpl_dir, "project"), project)
     try:
+        import shutil
+
         shutil.rmtree(tpl_dir)
     except Exception:
         click.secho("Failed to remove temporary directory", fg="yellow")
@@ -83,5 +84,8 @@ def copy_files(src_dir: str, dst_dir: str):
     # Check if the destination folder exists. If not, create it.
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)
+
+    import shutil
+
     # Copy the content of source_folder to destination_folder
     shutil.copytree(src_dir, dst_dir, dirs_exist_ok=True)

@@ -127,6 +127,7 @@ class CodeInterpreter(Role, Interpreter):
         self,
         memory: Memory,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
         post_proxy.update_status("generating code")

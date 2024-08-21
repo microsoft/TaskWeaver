@@ -1,6 +1,5 @@
 from typing import Any, Generator, List, Optional
 
-import requests
 from injector import inject
 
 from taskweaver.llm.base import CompletionService, LLMServiceConfig
@@ -75,6 +74,8 @@ class AzureMLService(CompletionService):
                 "parameters": params,
             },
         }
+        import requests
+
         with requests.Session() as session:
             with session.post(
                 endpoint,

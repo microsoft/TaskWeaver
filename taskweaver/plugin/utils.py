@@ -5,8 +5,6 @@ import json
 from typing import Any, Dict, Union
 from urllib.parse import urljoin
 
-import requests
-
 
 def make_api_call(
     host: Any = "",
@@ -18,6 +16,8 @@ def make_api_call(
     timeout_secs: int = 60,
 ) -> str:
     """Make an API call to a given host and endpoint"""
+    import requests
+
     response = {}
     if not (isinstance(host, str) and isinstance(endpoint, str) and isinstance(method, str)):
         raise ValueError("host, endpoint, method, and body must be a string")
