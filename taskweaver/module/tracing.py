@@ -1,7 +1,11 @@
-from typing import Any, Callable, Dict, Literal, Optional, ParamSpec, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Dict, Literal, Optional, ParamSpec, TypeVar
 
 from injector import inject
-from opentelemetry.util import types
+
+if TYPE_CHECKING:
+    from opentelemetry.util import types
 
 from taskweaver.config.module_config import ModuleConfig
 

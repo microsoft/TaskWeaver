@@ -9,7 +9,6 @@ class PromptFunctionType(TypedDict):
     name: str
     description: str
     parameters: Dict[str, Any]
-    required: Optional[List[str]]
 
 
 class PromptToolType(TypedDict):

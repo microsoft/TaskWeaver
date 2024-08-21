@@ -7,7 +7,7 @@ from typing import Optional
 import pytest
 from jupyter_client import BlockingKernelClient
 
-from taskweaver.ces import Environment, EnvMode
+from taskweaver.ces.environment import Environment, EnvMode
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 

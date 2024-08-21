@@ -268,8 +268,11 @@ class PluginEntry:
             "function": {
                 "name": self.name,
                 "description": self.spec.description,
-                "parameters": {"type": "object", "properties": param_dict},
-                "required": required_params,
+                "parameters": {
+                    "type": "object",
+                    "properties": param_dict,
+                    "required": required_params,
+                },
             },
         }
 
