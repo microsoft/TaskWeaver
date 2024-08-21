@@ -1,9 +1,7 @@
 import os
 from typing import Dict, List
 
-import numpy as np
 from injector import inject
-from sklearn.metrics.pairwise import cosine_similarity
 
 from taskweaver.llm import LLMApi
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
@@ -43,8 +41,8 @@ class SelectedPluginPool:
         """
         Merge two plugin pools and remove duplicates
         """
-        merged_list = pool1 + pool2
-        result = []
+        merged_list: List[PluginEntry] = pool1 + pool2
+        result: List[PluginEntry] = []
 
         for item in merged_list:
             is_duplicate = False
@@ -128,12 +126,14 @@ class PluginSelector:
             self.plugin_embedding_dict[p.name] = p.meta_data.embedding
 
     def plugin_select(self, user_query: str, top_k: int = 5) -> List[PluginEntry]:
-        user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
-
-        similarities = []
-
         if top_k >= len(self.available_plugins):
             return self.available_plugins
+
+        import numpy as np
+        from sklearn.metrics.pairwise import cosine_similarity
+
+        similarities = []
+        user_query_embedding = np.array(self.llm_api.get_embedding(user_query))
 
         for p in self.available_plugins:
             similarity = cosine_similarity(

@@ -1,6 +1,5 @@
 import json
 import os
-import platform
 from typing import List, Optional, cast
 
 from injector import inject
@@ -52,12 +51,15 @@ class CodeGeneratorCLIOnly(Role):
         llm_api: LLMApi,
     ):
         super().__init__(config, logger, tracing, event_emitter)
+        self.config = config
         self.llm_api = llm_api
 
-        self.role_name = self.config.role_name
+        self.role_name: str = self.config.role_name
 
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.instruction_template = self.prompt_data["content"]
+
+        import platform
 
         self.os_name = platform.system()
         self.cli_name = os.environ.get("SHELL") or os.environ.get("COMSPEC")

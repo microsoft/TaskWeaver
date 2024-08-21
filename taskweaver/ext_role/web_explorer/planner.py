@@ -1,8 +1,4 @@
-import base64
 import json
-from io import BytesIO
-
-import requests
 
 from taskweaver.ext_role.web_explorer.driver import SeleniumDriver
 from taskweaver.memory.attachment import AttachmentType
@@ -10,6 +6,9 @@ from taskweaver.module.event_emitter import PostEventProxy
 
 
 def encode_and_resize(image):
+    import base64
+    from io import BytesIO
+
     buffer = BytesIO()
     image.save(buffer, format="PNG")
     encoded_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
@@ -84,6 +83,8 @@ class VisionPlanner:
             )
 
         try:
+            import requests
+
             response = requests.post(self.gpt4v_endpoint, headers=self.headers, json=payload)
             response.raise_for_status()
             json_response = response.json()

@@ -1,17 +1,15 @@
 import click
 
-from ..app import TaskWeaverApp
 from .chat import chat
 from .init import init
 from .util import CliContext, get_ascii_banner
-from .web import web
 
 
 @click.group(
     name="taskweaver",
-    help=f"\b\n{get_ascii_banner()}\nTaskWeaver",
+    help=f"\b\n{get_ascii_banner(center=False)}\nTaskWeaver",
     invoke_without_command=True,
-    commands=[init, chat, web],
+    commands=[init, chat],
 )
 @click.pass_context
 @click.version_option(package_name="taskweaver")
@@ -28,7 +26,9 @@ from .web import web
     default=None,
 )
 def taskweaver(ctx: click.Context, project: str):
-    workspace_base, is_valid, is_empty = TaskWeaverApp.discover_app_dir(project)
+    from taskweaver.utils.app_utils import discover_app_dir
+
+    workspace_base, is_valid, is_empty = discover_app_dir(project)
 
     # subcommand_target = ctx.invoked_subcommand if ctx.invoked_subcommand is not None else "chat"
 
