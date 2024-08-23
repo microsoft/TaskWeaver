@@ -167,6 +167,7 @@ class CodeGenerator(Role):
         rounds: List[Round],
         plugins: List[PluginEntry],
         selected_experiences: Optional[List[Experience]] = None,
+        kernel_name_list: Optional[List[str]] = None,
     ) -> List[ChatMessageType]:
         experiences = (
             self.experience_generator.format_experience_in_prompt(
@@ -207,6 +208,7 @@ class CodeGenerator(Role):
                 add_requirements=True,
                 summary=summary,
                 plugins=plugins,
+                kernel_name_list=kernel_name_list,
             ),
         )
         return chat_history
@@ -223,6 +225,7 @@ class CodeGenerator(Role):
         plugins: List[PluginEntry],
         add_requirements: bool = False,
         summary: Optional[str] = None,
+        kernel_name_list: Optional[List[str]] = None,
     ) -> List[ChatMessageType]:
         chat_history: List[ChatMessageType] = []
         ignored_types = [
@@ -260,19 +263,22 @@ class CodeGenerator(Role):
                 if post.send_from == "Planner" and post.send_to == self.alias:
                     # to avoid planner imitating the below handcrafted format,
                     # we merge context information in the code generator here
+                    user_feedback = "None"
+                    if last_post is not None and last_post.send_from == self.alias:
+                        user_feedback = format_code_feedback(last_post)
+
                     enrichment = ""
                     if is_final_post:
+                        if kernel_name_list is not None and len(kernel_name_list) > 0:
+                            enrichment += f"Names in Jupyter kernel: {', '.join(kernel_name_list)}\n\n"
+
                         user_query = conversation_round.user_query
-                        enrichment = f"The user request is: {user_query}\n\n"
+                        enrichment += f"The user request is: {user_query}\n\n"
 
                         supplementary_info_dict = conversation_round.read_board()
                         supplementary_info = "\n\n".join([bulletin for bulletin in supplementary_info_dict.values()])
                         if supplementary_info != "":
-                            enrichment += f"Additional context:\n" f" {supplementary_info}\n\n"
-
-                    user_feedback = "None"
-                    if last_post is not None and last_post.send_from == self.alias:
-                        user_feedback = format_code_feedback(last_post)
+                            enrichment += f"Additional context: {supplementary_info}\n\n"
 
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=user_feedback,
@@ -380,7 +386,12 @@ class CodeGenerator(Role):
         else:
             selected_experiences = None
 
-        prompt = self.compose_prompt(rounds, self.plugin_pool, selected_experiences)
+        prompt = self.compose_prompt(
+            rounds,
+            self.plugin_pool,
+            selected_experiences,
+            kwargs.get("kernel_name_list", None),
+        )
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
         prompt_size = self.tracing.count_tokens(json.dumps(prompt))
         self.tracing.set_span_attribute("prompt_size", prompt_size)

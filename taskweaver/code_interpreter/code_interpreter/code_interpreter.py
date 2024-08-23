@@ -108,6 +108,7 @@ class CodeInterpreter(Role, Interpreter):
         self.tracing = tracing
         self.event_emitter = event_emitter
         self.retry_count = 0
+        self.kernel_name_list = []
 
         self.plugin_description = "    " + "\n    ".join(
             [f"{plugin.spec.plugin_description()}" for plugin in generator.plugin_pool],
@@ -135,6 +136,7 @@ class CodeInterpreter(Role, Interpreter):
             memory,
             post_proxy,
             prompt_log_path,
+            kernel_name_list=self.kernel_name_list,
         )
 
         if post_proxy.post.message is not None and post_proxy.post.message != "":  # type: ignore
@@ -296,6 +298,30 @@ class CodeInterpreter(Role, Interpreter):
             self.tracing.set_span_status("ERROR", "Code execution failed.")
 
         reply_post = post_proxy.end()
+
+        # list the kernel entries
+        list_entity_code = """
+        x__who_output = get_ipython().run_line_magic('who_ls', '')
+        x__who_output = [x__name for x__name in x__who_output if not x__name.startswith('x__')]
+        x__labeled_list = []
+        for x__name in x__who_output:
+            x__obj = eval(x__name)
+            if callable(x__obj):
+                x__labeled_list.append((x__name, "callable"))
+            else:
+                if isinstance(x__obj, pd.DataFrame):
+                    x__labeled_list.append(("var", x__name, "DataFrame", f"Shape: {x__obj.shape}"))
+                else:
+                    x__labeled_list.append(("var", x__name, type(x__obj).__name__))
+
+        for x__p in x__labeled_list:
+            print(f"{x__p[0]}: {x__p[1:]}")
+        """
+        summarize_result = self.executor.execute_code(
+            exec_id=post_proxy.post.id,
+            code=list_entity_code,
+        )
+        self.kernel_name_list = summarize_result.stdout[0].split("\n")
 
         self.tracing.set_span_attribute("out.from", reply_post.send_from)
         self.tracing.set_span_attribute("out.to", reply_post.send_to)
