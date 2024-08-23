@@ -44,7 +44,7 @@ def test_round_compressor():
         [round1],
         lambda x: x,
     )
-    assert summary == "None"
+    assert summary == ""
     assert len(retained) == 1
 
     round2 = Round.create(user_query="hello", id="round-2")
@@ -55,7 +55,7 @@ def test_round_compressor():
         [round1, round2],
         lambda x: x,
     )
-    assert summary == "None"
+    assert summary == ""
     assert len(retained) == 2
 
     round3 = Round.create(user_query="hello", id="round-3")
@@ -65,7 +65,7 @@ def test_round_compressor():
         [round1, round2, round3],
         lambda x: x,
     )
-    assert summary == "None"
+    assert summary == ""
     assert len(retained) == 3
 
     round4 = Round.create(user_query="hello", id="round-4")
@@ -75,5 +75,5 @@ def test_round_compressor():
         [round1, round2, round3, round4],
         lambda x: x,
     )
-    assert summary == "None"
+    assert summary == ""
     assert len(retained) == 4

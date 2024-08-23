@@ -142,7 +142,7 @@ class Planner(Role):
             conv_init_message = None
             if rnd_idx == 0:
                 conv_init_message = Planner.conversation_delimiter_message
-                if summary is not None:
+                if summary:
                     self.logger.debug(f"Summary: {summary}")
                     summary_message = (
                         f"\nThe context summary of the Planner's previous rounds" f" can refer to:\n{summary}\n\n"
@@ -352,11 +352,7 @@ class Planner(Role):
             )
 
             plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
-            bulletin_message = (
-                "\n====== Plan ======\n"
-                f"I have drawn up a plan:\n{plan}"
-                "\n==================\n"
-            )
+            bulletin_message = "\n====== Plan ======\n" f"I have drawn up a plan:\n{plan}" "\n==================\n"
             post_proxy.update_attachment(
                 message=bulletin_message,
                 type=AttachmentType.board,

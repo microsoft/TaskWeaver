@@ -241,10 +241,15 @@ class CodeGenerator(Role):
                 assistant_message = ""
                 is_final_post = round_index == len(rounds) - 1 and post_index == len(conversation_round.post_list) - 1
                 if is_first_post:
+                    summary_head = (
+                        "### Context Summary\n"
+                        "The context summary of previous rounds and the variables that can be referred to:\n"
+                    )
+                    plugins_head = "### Plugin Functions\n" "The functions can be directly called without importing:\n"
                     user_message = (
                         self.conversation_head_template.format(
-                            SUMMARY="None" if summary is None else summary,
-                            PLUGINS="None" if len(plugins) == 0 else self.format_plugins(plugins),
+                            SUMMARY="" if not summary else summary_head + summary,
+                            PLUGINS="" if len(plugins) == 0 else plugins_head + self.format_plugins(plugins),
                             ROLE_NAME=self.role_name,
                         )
                         + "\n"
@@ -262,10 +267,7 @@ class CodeGenerator(Role):
                         supplementary_info_dict = conversation_round.read_board()
                         supplementary_info = "\n\n".join([bulletin for bulletin in supplementary_info_dict.values()])
                         if supplementary_info != "":
-                            enrichment += (
-                                f"Additional context:\n"
-                                f" {supplementary_info}\n\n"
-                            )
+                            enrichment += f"Additional context:\n" f" {supplementary_info}\n\n"
 
                     user_feedback = "None"
                     if last_post is not None and last_post.send_from == self.alias:
