@@ -1,17 +1,19 @@
+from __future__ import annotations
+
 import atexit
 import shutil
 import threading
 import time
 from textwrap import TextWrapper, dedent
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import click
-from colorama import ansi
 
-from taskweaver.app.app import TaskWeaverApp
-from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase, SessionEventType
-from taskweaver.session.session import Session
+
+if TYPE_CHECKING:
+    from taskweaver.memory.attachment import AttachmentType
+    from taskweaver.session.session import Session
 
 
 def error_message(message: str) -> None:
@@ -272,6 +274,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             return "\n".join(result)
 
         def clear_line():
+            from colorama import ansi
+
             print(ansi.clear_line(), end="\r")
 
         def get_ani_frame(frame: int = 0):
@@ -405,6 +409,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
 class TaskWeaverChatApp(SessionEventHandlerBase):
     def __init__(self, app_dir: Optional[str] = None):
+        from taskweaver.app.app import TaskWeaverApp
+
         self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
         self.session = self.app.get_session()
         self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
@@ -436,7 +442,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             if lower_command == "reset":
                 self._reset_session()
                 return
-            if lower_command in ["load", "file"]:
+            if lower_command in ["load", "file", "img", "image"]:
                 file_to_load = msg[5:].strip()
                 self._load_file(file_to_load)
                 return

@@ -75,6 +75,7 @@ class CodeGenerator(Role):
         experience_generator: ExperienceGenerator,
     ):
         super().__init__(config, logger, tracing, event_emitter)
+        self.config = config
         self.llm_api = llm_api
 
         self.role_name = self.config.role_name
@@ -354,6 +355,7 @@ class CodeGenerator(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
@@ -427,7 +429,7 @@ class CodeGenerator(Role):
             self.selected_plugin_pool.filter_unused_plugins(code=generated_code)
 
         if prompt_log_path is not None:
-            self.logger.dump_log_file(prompt, prompt_log_path)
+            self.logger.dump_prompt_file(prompt, prompt_log_path)
 
         self.tracing.set_span_attribute("code", generated_code)
 

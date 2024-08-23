@@ -1,11 +1,12 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from injector import Module, provider
 
 from taskweaver.config.module_config import ModuleConfig
+from taskweaver.llm.util import ChatMessageType, PromptTypeSimple, PromptTypeWithTools, serialize_prompt
 
 # from .log_file import dump_log_file
 
@@ -27,12 +28,14 @@ class LoggingModuleConfig(ModuleConfig):
         self.log_folder = self._get_str("log_folder", "logs")
         self.log_file = self._get_str("log_file", "task_weaver.log")
         self.log_full_path = os.path.join(app_dir, self.log_folder, self.log_file)
+        self.log_format_prompt = self._get_bool("log_format_prompt", False)
 
 
 @dataclass
 class TelemetryLogger:
     is_remote: bool
     logger: logging.Logger
+    format_prompt: bool = False
 
     def telemetry_logging(
         self,
@@ -45,21 +48,38 @@ class TelemetryLogger:
         except Exception as e:
             self.logger.error(f"Error in telemetry: {str(e)}")
 
+    def dump_prompt_file(
+        self,
+        prompt: Union[PromptTypeSimple, PromptTypeWithTools],
+        file_path: str,
+    ):
+        if self.format_prompt:
+            file_path_ext = file_path + ".formatted"
+            prompt_str = serialize_prompt(prompt, pretty=True)
+            self.dump_log_file(prompt_str, file_path_ext)
+        return self.dump_log_file(prompt, file_path)
+
     def dump_log_file(self, obj: Any, file_path: str):
         if isinstance(obj, (list, dict)):
             dumped_obj: Any = obj
         elif hasattr(obj, "to_dict"):
             dumped_obj = obj.to_dict()
+        elif isinstance(obj, str):
+            dumped_obj = obj
         else:
             raise Exception(
                 f"Object {obj} does not have to_dict method and also not a list or dict",
             )
 
         if not self.is_remote:
-            import json
+            if isinstance(dumped_obj, str):
+                with open(file_path, "w", encoding="utf-8") as log_file:
+                    log_file.write(dumped_obj)
+            else:
+                import json
 
-            with open(file_path, "w", encoding="utf-8") as log_file:
-                json.dump(dumped_obj, log_file)
+                with open(file_path, "w", encoding="utf-8") as log_file:
+                    json.dump(dumped_obj, log_file)
         else:
             self.telemetry_logging(
                 telemetry_log_message=file_path,
@@ -109,7 +129,7 @@ class LoggingModule(Module):
         app_logger: logging.Logger,
     ) -> TelemetryLogger:
         if config.remote is not True:
-            return TelemetryLogger(logger=app_logger, is_remote=False)
+            return TelemetryLogger(logger=app_logger, is_remote=False, format_prompt=config.log_format_prompt)
         telemetry_logger = logging.getLogger(__name__ + "_telemetry")
 
         from opencensus.ext.azure.log_exporter import AzureLogHandler  # type: ignore
@@ -122,4 +142,4 @@ class LoggingModule(Module):
         telemetry_logger.addHandler(
             AzureLogHandler(connection_string=az_appinsights_connection_string),
         )
-        return TelemetryLogger(logger=telemetry_logger, is_remote=True)
+        return TelemetryLogger(logger=telemetry_logger, is_remote=True, format_prompt=config.log_format_prompt)

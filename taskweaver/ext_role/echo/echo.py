@@ -25,7 +25,7 @@ class Echo(Role):
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
 
-    def reply(self, memory: Memory, **kwargs) -> Post:
+    def reply(self, memory: Memory, **kwargs: ...) -> Post:
         rounds = memory.get_role_rounds(
             role=self.alias,
             include_failure_rounds=False,

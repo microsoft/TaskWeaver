@@ -360,7 +360,7 @@ def test_compose_prompt_with_plugin_only():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
-    messages, functions = code_generator._compose_prompt(
+    prompt_with_tools = code_generator._compose_prompt(
         system_instructions=code_generator.instruction_template.format(
             ROLE_NAME=code_generator.role_name,
         ),
@@ -368,6 +368,9 @@ def test_compose_prompt_with_plugin_only():
         plugin_pool=code_generator.plugin_pool,
     )
 
+    messages = prompt_with_tools["prompt"]
+    functions = prompt_with_tools["tools"]
+    assert functions
     assert len(functions) == 1
     assert functions[0]["function"]["name"] == "klarna_search"
     assert messages[1]["role"] == "user"

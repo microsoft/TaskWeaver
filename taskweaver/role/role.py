@@ -81,8 +81,8 @@ class Role:
                 f"and parent dir name {parent_dir_name} should be the same"
             )
 
-        self.alias = self.role_entry.alias if self.role_entry else None
-        self.intro = self.role_entry.intro if self.role_entry else None
+        self.alias: str = self.role_entry.alias if self.role_entry else ""
+        self.intro: str = self.role_entry.intro if self.role_entry else ""
 
     def get_intro(self) -> str:
         return self.intro
@@ -93,8 +93,8 @@ class Role:
     def set_alias(self, alias: str) -> None:
         self.alias = alias
 
-    def reply(self, memory: Memory, **kwargs) -> Post:
-        pass
+    def reply(self, memory: Memory, **kwargs: ...) -> Post:
+        raise NotImplementedError()
 
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
@@ -130,8 +130,7 @@ class RoleRegistry(ComponentRegistry[RoleEntry]):
 
     def _load_component(self, path: str) -> Tuple[str, RoleEntry]:
         entry: Optional[RoleEntry] = RoleEntry.from_yaml_file(file_path=path)
-        if entry is None:
-            raise Exception(f"failed to loading role from {path}")
+        assert entry, f"failed to loading role from {path}"
         return entry.name, entry
 
     def get_role_name_list(self):
@@ -146,7 +145,7 @@ class RoleModule(Module):
     ) -> RoleRegistry:
         import os
 
-        glob_strings = []
+        glob_strings: List[str] = []
         for sub_dir in os.listdir(config.ext_role_base_path):
             sub_dir_path = os.path.join(config.ext_role_base_path, sub_dir)
             if os.path.isdir(sub_dir_path):

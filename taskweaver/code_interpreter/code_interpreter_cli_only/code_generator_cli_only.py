@@ -1,12 +1,11 @@
 import json
 import os
-import platform
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from injector import inject
 
 from taskweaver.llm import LLMApi, format_chat_message
-from taskweaver.llm.util import ChatMessageType
+from taskweaver.llm.util import ChatMessageType, PromptTypeWithTools
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
@@ -52,12 +51,15 @@ class CodeGeneratorCLIOnly(Role):
         llm_api: LLMApi,
     ):
         super().__init__(config, logger, tracing, event_emitter)
+        self.config = config
         self.llm_api = llm_api
 
-        self.role_name = self.config.role_name
+        self.role_name: str = self.config.role_name
 
         self.prompt_data = read_yaml(self.config.prompt_file_path)
         self.instruction_template = self.prompt_data["content"]
+
+        import platform
 
         self.os_name = platform.system()
         self.cli_name = os.environ.get("SHELL") or os.environ.get("COMSPEC")
@@ -68,6 +70,7 @@ class CodeGeneratorCLIOnly(Role):
         memory: Memory,
         post_proxy: Optional[PostEventProxy] = None,
         prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
@@ -87,7 +90,10 @@ class CodeGeneratorCLIOnly(Role):
         post_proxy.update_send_to("Planner")
 
         if prompt_log_path is not None:
-            self.logger.dump_log_file({"prompt": prompt}, prompt_log_path)
+            self.logger.dump_prompt_file(
+                cast(PromptTypeWithTools, {"prompt": prompt}),
+                prompt_log_path,
+            )
 
         prompt_size = self.tracing.count_tokens(json.dumps(prompt))
         self.tracing.set_span_attribute("prompt_size", prompt_size)
@@ -135,7 +141,10 @@ class CodeGeneratorCLIOnly(Role):
         ):
             llm_response["code"] = f"powershell -Command {llm_response['code']}"
 
-        post_proxy.update_attachment(llm_response["description"], AttachmentType.thought)
+        post_proxy.update_attachment(
+            llm_response["description"],
+            AttachmentType.thought,
+        )
         post_proxy.update_attachment("python", AttachmentType.reply_type)
         post_proxy.update_attachment(llm_response["code"], AttachmentType.reply_content)
 
@@ -153,8 +162,12 @@ class CodeGeneratorCLIOnly(Role):
         for _round in rounds:
             for post in _round.post_list:
                 if post.send_to == self.alias:
-                    prompt.append(format_chat_message(role="user", message=post.message))
+                    prompt.append(
+                        format_chat_message(role="user", message=post.message),
+                    )
                 elif post.send_from == self.alias:
-                    prompt.append(format_chat_message(role="assistant", message=post.message))
+                    prompt.append(
+                        format_chat_message(role="assistant", message=post.message),
+                    )
 
         return prompt

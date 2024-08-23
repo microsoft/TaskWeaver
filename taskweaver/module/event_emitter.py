@@ -4,11 +4,12 @@ import abc
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from taskweaver.memory.attachment import Attachment, AttachmentType
-from taskweaver.memory.post import Post
-from taskweaver.memory.type_vars import RoleName
+if TYPE_CHECKING:
+    from taskweaver.memory.attachment import Attachment, AttachmentType
+    from taskweaver.memory.post import Post
+    from taskweaver.memory.type_vars import RoleName
 
 
 class EventScope(Enum):
@@ -170,6 +171,8 @@ class PostEventProxy:
         id: Optional[str] = None,
         is_end: bool = True,
     ) -> Attachment:
+        from taskweaver.memory.attachment import Attachment
+
         if id is not None:
             attachment = self.post.attachment_list[-1]
             assert id == attachment.id
@@ -248,6 +251,8 @@ class SessionEventEmitter:
 
     def create_post_proxy(self, send_from: RoleName) -> PostEventProxy:
         assert self.current_round_id is not None, "Cannot create post proxy without a round in active"
+        from taskweaver.memory.post import Post
+
         return PostEventProxy(
             self,
             self.current_round_id,

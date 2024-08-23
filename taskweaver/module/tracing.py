@@ -1,6 +1,11 @@
-from typing import Any, Dict, Literal, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Dict, Literal, Optional, ParamSpec, TypeVar
 
 from injector import inject
+
+if TYPE_CHECKING:
+    from opentelemetry.util import types
 
 from taskweaver.config.module_config import ModuleConfig
 
@@ -88,7 +93,10 @@ class Tracing:
         _StatusCode = StatusCode
 
         metric_reader = PeriodicExportingMetricReader(metrics_exporter)
-        meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+        meter_provider = MeterProvider(
+            resource=resource,
+            metric_readers=[metric_reader],
+        )
         metrics.set_meter_provider(meter_provider)
 
         _meter = metrics.get_meter(__name__)
@@ -115,7 +123,7 @@ class Tracing:
         span.set_status(status_code, status_message)
 
     @staticmethod
-    def set_span_attribute(key, value):
+    def set_span_attribute(key: str, value: types.AttributeValue):
         if _trace is None:
             return
 
@@ -123,7 +131,7 @@ class Tracing:
         span.set_attribute(key, value)
 
     @staticmethod
-    def set_span_exception(exception):
+    def set_span_exception(exception: Exception):
         if _trace is None:
             return
 
@@ -168,27 +176,48 @@ class DummyTracer:
         pass
 
 
-def tracing_decorator_non_class(func):
-    def wrapper(*args, **kwargs):
-        if _tracer is None:
-            return func(*args, **kwargs)
+TracingResultVar = TypeVar("TracingResultVar")
 
-        with _tracer.start_as_current_span(func.__name__):
-            result = func(*args, **kwargs)
-        return result
+
+def _tracing_decorator_inner(
+    func: Callable[[], TracingResultVar],
+    span_name: str,
+) -> TracingResultVar:
+    if _tracer is None:
+        return func()
+    with _tracer.start_as_current_span(span_name):
+        return func()
+
+
+TracingDecParam = ParamSpec("TracingDecParam")
+TracingDecRetType = TypeVar("TracingDecRetType")
+
+
+def tracing_decorator_non_class(
+    func: Callable[TracingDecParam, TracingDecRetType],
+) -> Callable[TracingDecParam, TracingDecRetType]:
+    def wrapper(
+        *args: TracingDecParam.args,
+        **kwargs: TracingDecParam.kwargs,
+    ) -> TracingDecRetType:
+        span_name = func.__name__
+        return _tracing_decorator_inner(lambda: func(*args, **kwargs), span_name)
 
     return wrapper
 
 
-def tracing_decorator(func):
-    def wrapper(self, *args, **kwargs):
-        if _tracer is None:
-            return func(self, *args, **kwargs)
-
-        span_name = f"{self.__class__.__name__}.{func.__name__}"
-        with _tracer.start_as_current_span(span_name):
-            result = func(self, *args, **kwargs)
-        return result
+def tracing_decorator(
+    func: Callable[TracingDecParam, TracingDecRetType],
+) -> Callable[TracingDecParam, TracingDecRetType]:
+    def wrapper(
+        *args: TracingDecParam.args,
+        **kwargs: TracingDecParam.kwargs,
+    ) -> TracingDecRetType:
+        class_name = ""
+        if len(args) > 0 and hasattr(args[0], "__class__"):
+            class_name = args[0].__class__.__name__
+        span_name = f"{class_name}.{func.__name__}"
+        return _tracing_decorator_inner(lambda: func(*args, **kwargs), span_name)
 
     return wrapper
 

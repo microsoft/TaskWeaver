@@ -45,7 +45,7 @@ class RoundCompressor:
     def compress_rounds(
         self,
         rounds: List[Round],
-        rounds_formatter: Callable,
+        rounds_formatter: Callable[[List[Round]], str],
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> Tuple[str, List[Round]]:
         remaining_rounds = len(rounds)
@@ -77,14 +77,14 @@ class RoundCompressor:
     def _summarize(
         self,
         rounds: List[Round],
-        rounds_formatter: Callable,
+        rounds_formatter: Callable[[List[Round]], str],
         prompt_template: str = "{PREVIOUS_SUMMARY}, please compress the following rounds",
     ) -> str:
         assert "{PREVIOUS_SUMMARY}" in prompt_template, "Prompt template must contain {PREVIOUS_SUMMARY}"
         try:
             chat_history_str = rounds_formatter(rounds)
             system_instruction = prompt_template.format(
-                PREVIOUS_SUMMARY=self.previous_summary if self.previous_summary else "Empty",
+                PREVIOUS_SUMMARY=self.previous_summary if len(self.previous_summary) > 0 else "Empty",
             )
             prompt = [
                 format_chat_message("system", system_instruction),
