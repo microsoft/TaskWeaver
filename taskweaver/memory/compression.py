@@ -84,7 +84,7 @@ class RoundCompressor:
         try:
             chat_history_str = rounds_formatter(rounds)
             system_instruction = prompt_template.format(
-                PREVIOUS_SUMMARY=self.previous_summary,
+                PREVIOUS_SUMMARY=self.previous_summary if self.previous_summary else "Empty",
             )
             prompt = [
                 format_chat_message("system", system_instruction),
