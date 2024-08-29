@@ -67,16 +67,14 @@ class CodeExecutor:
 
     @tracing_decorator
     def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        if not self.client_started:
-            with get_tracer().start_as_current_span("start"):
-                self.start()
-                self.client_started = True
+        with get_tracer().start_as_current_span("start"):
+            self.start()
 
         if not self.plugin_loaded:
             with get_tracer().start_as_current_span("load_plugin"):
                 self.load_plugin()
                 self.plugin_loaded = True
-        
+
         # update session variables
         self.exec_client.update_session_var(self.session_variables)
 
@@ -111,7 +109,7 @@ class CodeExecutor:
         )
 
         return result
-    
+
     def update_session_var(self, session_var_dict: dict) -> None:
         self.session_variables.update(session_var_dict)
 
@@ -146,7 +144,9 @@ class CodeExecutor:
                 print(f"Plugin {p.name} failed to load: {str(e)}")
 
     def start(self):
-        self.exec_client.start()
+        if not self.client_started:
+            self.exec_client.start()
+            self.client_started = True
 
     def stop(self):
         self.exec_client.stop()
