@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import TYPE_CHECKING, Any, Generator, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Generator, List, Optional
 
 from injector import inject
 
@@ -50,7 +50,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         self.response_format = self.llm_module_config.response_format
 
         # openai specific config
-        self.api_version = self._get_str("api_version", "2023-12-01-preview")
+        self.api_version = self._get_str("api_version", "2024-06-01")
         self.api_auth_type = self._get_enum(
             "api_auth_type",
             ["openai", "azure", "azure_ad"],
@@ -59,7 +59,7 @@ class OpenAIServiceConfig(LLMServiceConfig):
         is_azure_ad_login = self.api_type == "azure_ad"
         self.aad_auth_mode = self._get_enum(
             "aad_auth_mode",
-            ["device_login", "aad_app"],
+            ["device_login", "aad_app", "default_azure_credential"],
             None if is_azure_ad_login else "device_login",
         )
 
@@ -147,7 +147,7 @@ class OpenAIService(CompletionService, EmbeddingService):
             client = AzureOpenAI(
                 api_version=self.config.api_version,
                 azure_endpoint=self.config.api_base,
-                azure_ad_token_provider=lambda: self._get_aad_token(),
+                azure_ad_token_provider=self._get_aad_token_provider(),
             )
         else:
             raise Exception(f"Invalid API type: {self.api_type}")
@@ -297,7 +297,25 @@ class OpenAIService(CompletionService, EmbeddingService):
         ).data
         return [r.embedding for r in embedding_results]
 
-    def _get_aad_token(self) -> str:
+    def _get_aad_token_provider(self) -> Callable[[], str]:
+        if self.config.aad_auth_mode == "default_azure_credential":
+            return self._get_aad_token_provider_azure_identity()
+        return lambda: self._get_aad_token_msal()
+
+    def _get_aad_token_provider_azure_identity(self) -> Callable[[], str]:
+        try:
+            from azure.identity import DefaultAzureCredential, get_bearer_token_provider  # type: ignore
+        except ImportError:
+            raise Exception(
+                "AAD authentication requires azure-identity module to be installed, "
+                "please run `pip install azure-identity`",
+            )
+        credential = DefaultAzureCredential(exclude_interactive_browser_credential=False)
+        print("Using DefaultAzureCredential for AAD authentication")
+        scope = f"{self.config.aad_api_resource}/{self.config.aad_api_scope}"
+        return get_bearer_token_provider(credential, scope)
+
+    def _get_aad_token_msal(self) -> str:
         try:
             import msal  # type: ignore
         except ImportError:
