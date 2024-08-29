@@ -30,9 +30,7 @@ def deferred_var(
 
     def task() -> None:
         nonlocal result
-        print(f"Initializing {name}...")
         result = (init(),)
-        print(f"{name} initialized")
         loaded_event.set()
 
     def async_result() -> TaskResult:
