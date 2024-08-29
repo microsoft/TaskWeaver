@@ -32,9 +32,13 @@ However, both agents provide the correct answer to the question.
 But if the evaluation method takes the agent as a function, it may not be able to handle the different behaviors of the agents 
 and consider Agent 2 as incorrect (as the first response does not match the ground truth, e.g., "sunny").
 
+
 ## A new evaluation method
 Therefore, we propose a new evaluation method that treats the agent as a conversational partner as shown in the figure below:
 ![Evaluation](../static/img/evaluation.png)
+
+<!-- truncate -->
+
 We introduce two new roles during the evaluation process: the **Examiner** and the **Judge**.
 For each test case, the task description is first given to the Examiner.
 The Examiner then asks questions to the agent and supervises the conversation.

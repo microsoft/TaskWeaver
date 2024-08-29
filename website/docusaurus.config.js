@@ -4,7 +4,7 @@
 // There are various equivalent ways to declare your Docusaurus config.
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
-import {themes as prismThemes} from 'prism-react-renderer';
+import { themes as prismThemes } from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -147,30 +147,30 @@ const config = {
         additionalLanguages: ['bash', 'json', 'yaml'],
       },
     }),
-    themes: [
-      [
-        require.resolve("@easyops-cn/docusaurus-search-local"),
-        /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
-        ({
-          hashed: true,
-          docsRouteBasePath: "docs",
-          blogRouteBasePath: "blog",
-          docsDir: "docs", 
-          blogDir: "blog",
-          searchContextByPaths: [
-            {
-              label: "Documents",
-              path: "docs",
-            },
-            {
-              label: "Blog",
-              path: "blog",
-            },
-          ],
-          hideSearchBarWithNoSearchContext: true,
-        }),
-      ],
-      '@docusaurus/theme-mermaid'
+  themes: [
+    [
+      require.resolve("@easyops-cn/docusaurus-search-local"),
+      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      {
+        hashed: true,
+        docsRouteBasePath: "docs",
+        blogRouteBasePath: "blog",
+        docsDir: "docs",
+        blogDir: "blog",
+        searchContextByPaths: [
+          {
+            label: "Documents",
+            path: "docs",
+          },
+          {
+            label: "Blog",
+            path: "blog",
+          },
+        ],
+        hideSearchBarWithNoSearchContext: true,
+      },
     ],
-};   
+    '@docusaurus/theme-mermaid'
+  ],
+};
 export default config;

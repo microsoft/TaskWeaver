@@ -4,7 +4,7 @@
 The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver
 if you have customized the examples for the planner and code interpreter. 
 The issue is easy to fix by changing the examples to the new schema.
-Please refer to the [How we implemented the constrained generation in TaskWeaver](#how-we-implemented-the-constrained-generation-in-taskweaver) section for more details.
+Please refer to the [How we implemented the constrained generation in TaskWeaver](/blog/local_llm#how-we-implemented-the-constrained-generation-in-taskweaver) section for more details.
 :::
 
 ## Motivation
@@ -20,6 +20,8 @@ which however did not work well, especially for these relatively small models. A
 was to ask the model to re-generate the response if it does not follow the format. 
 We include the format error in the prompt to help the model understand the error and
 correct it. However, this approach also did not work well. 
+
+<!-- truncate -->
 
 ## Constrained Generation
 
