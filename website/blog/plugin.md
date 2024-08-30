@@ -50,6 +50,8 @@ We did not check the discrepancy between the function signature in the Python im
 So, it is important to keep them consistent.
 The `examples` field is used to provide examples of how to use the plugin for the LLM.
 
+<!-- truncate -->
+
 ## Configurations and States
 
 Although the plugin is used as a function in the code snippets, it is more than a normal Python function.

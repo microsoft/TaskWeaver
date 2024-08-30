@@ -29,6 +29,8 @@ flowchart TD
     B --response--> A
 ```
 
+<!-- truncate -->
+
 However, we do find challenges for other tasks that are not naturally represented in code snippets.
 Let's consider another example: _the agent is asked to read a manual and follow the instructions to process the data_.
 We first assume there is a plugin that can read the manual and extract the instructions, called `read_manual`.
