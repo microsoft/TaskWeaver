@@ -122,6 +122,7 @@ class Environment:
         self.id = get_id(prefix="env") if env_id is None else env_id
         self.env_dir = env_dir if env_dir is not None else os.getcwd()
         self.mode = env_mode
+        self._client: Optional[BlockingKernelClient] = None
 
         if self.mode == EnvMode.Local:
             self.multi_kernel_manager = TaskWeaverMultiKernelManager(
@@ -384,6 +385,7 @@ class Environment:
         session.session_var.update(session_var)
 
     def stop_session(self, session_id: str) -> None:
+        self._clean_client()
         session = self._get_session(session_id)
         if session is None:
             # session not exist
@@ -477,6 +479,8 @@ class Environment:
         self,
         session_id: str,
     ) -> BlockingKernelClient:
+        if self._client is not None:
+            return self._client
         session = self._get_session(session_id)
         connection_file = self._get_connection_file(session_id, session.kernel_id)
         client = BlockingKernelClient(connection_file=connection_file)
@@ -490,7 +494,15 @@ class Environment:
             client.hb_port = ports["hb_port"]
             client.control_port = ports["control_port"]
             client.iopub_port = ports["iopub_port"]
+        client.wait_for_ready(timeout=30)
+        client.start_channels()
+        self._client = client
         return client
+
+    def _clean_client(self):
+        if self._client is not None:
+            self._client.stop_channels()
+            self._client = None
 
     def _execute_code_on_kernel(
         self,
@@ -503,8 +515,6 @@ class Environment:
     ) -> EnvExecution:
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         kc = self._get_client(session_id)
-        kc.wait_for_ready(timeout=30)
-        kc.start_channels()
         result_msg_id = kc.execute(
             code=code,
             silent=silent,
@@ -515,11 +525,16 @@ class Environment:
         try:
             # TODO: interrupt kernel if it takes too long
             while True:
-                message = kc.get_iopub_msg(timeout=180)
+                from taskweaver.utils.time_usage import time_usage
 
+                with time_usage() as time_msg:
+                    message = kc.get_iopub_msg(timeout=180)
+                logger.debug((f"Time: {time_msg.total:.2f} \t MsgType: {message['msg_type']} \t Code: {code}"))
                 logger.debug(json.dumps(message, indent=2, default=str))
 
-                assert message["parent_header"]["msg_id"] == result_msg_id
+                if message["parent_header"]["msg_id"] != result_msg_id:
+                    # skip messages not related to the current execution
+                    continue
                 msg_type = message["msg_type"]
                 if msg_type == "status":
                     if message["content"]["execution_state"] == "idle":
@@ -565,7 +580,7 @@ class Environment:
                 else:
                     pass
         finally:
-            kc.stop_channels()
+            pass
         return exec_result
 
     def _update_session_var(self, session: EnvSession) -> None:
