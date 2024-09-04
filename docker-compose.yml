@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  taskweaver:
+    image: taskweavercontainers/taskweaver-all-in-one:latest
+    restart: always
+    environment:
+      - LLM_API_KEY=YOUR_API_KEY
+      - LLM_MODEL=gpt-4-0125-preview
+    ports:
+      - 8000:8000
+    command: /bin/sh -c "cd playground/UI/ && python -m chainlit run --host 0.0.0.0 --port 8000 app.py"
