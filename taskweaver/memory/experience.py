@@ -1,7 +1,8 @@
 import json
 import os
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Set
 
 from injector import inject
 
@@ -83,6 +84,11 @@ class ExperienceGenerator:
             "run `python -m experience_mgt --refresh` to refresh the experience."
         )
 
+        self.sub_dir = None
+
+    def set_sub_dir(self, sub_dir: str):
+        self.sub_dir = sub_dir
+
     @staticmethod
     def _preprocess_conversation_data(
         conv_data: dict,
@@ -109,7 +115,9 @@ class ExperienceGenerator:
         exp_id: str,
         prompt: Optional[str] = None,
     ):
-        raw_exp_file_path = os.path.join(self.config.experience_dir, f"raw_exp_{exp_id}.yaml")
+        exp_dir = self.get_experience_dir()
+
+        raw_exp_file_path = os.path.join(exp_dir, f"raw_exp_{exp_id}.yaml")
         conversation = read_yaml(raw_exp_file_path)
 
         conversation = self._preprocess_conversation_data(conversation)
@@ -145,10 +153,12 @@ class ExperienceGenerator:
         self,
         prompt: Optional[str] = None,
     ):
-        if not os.path.exists(self.config.experience_dir):
-            raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
+        exp_dir = self.get_experience_dir()
 
-        exp_files = os.listdir(self.config.experience_dir)
+        if not os.path.exists(exp_dir):
+            raise ValueError(f"Experience directory {exp_dir} does not exist.")
+
+        exp_files = os.listdir(exp_dir)
 
         raw_exp_ids = [
             os.path.splitext(os.path.basename(exp_file))[0].split("_")[2]
@@ -176,10 +186,10 @@ class ExperienceGenerator:
         for idx, exp_id in enumerate(exp_ids):
             rebuild_flag = False
             exp_file_name = f"exp_{exp_id}.yaml"
-            if exp_file_name not in os.listdir(self.config.experience_dir):
+            if exp_file_name not in os.listdir(exp_dir):
                 rebuild_flag = True
             else:
-                exp_file_path = os.path.join(self.config.experience_dir, exp_file_name)
+                exp_file_path = os.path.join(exp_dir, exp_file_name)
                 experience = read_yaml(exp_file_path)
                 if (
                     experience["embedding_model"] != self.llm_api.embedding_service.config.embedding_model
@@ -194,13 +204,13 @@ class ExperienceGenerator:
                         experience_text=summarized_experience,
                         exp_id=exp_id,
                         raw_experience_path=os.path.join(
-                            self.config.experience_dir,
+                            exp_dir,
                             f"raw_exp_{exp_id}.yaml",
                         ),
                     )
                 elif exp_id in handcrafted_exp_ids:
                     handcrafted_exp_file_path = os.path.join(
-                        self.config.experience_dir,
+                        exp_dir,
                         f"handcrafted_exp_{exp_id}.yaml",
                     )
                     experience_obj = Experience.from_dict(read_yaml(handcrafted_exp_file_path))
@@ -218,21 +228,21 @@ class ExperienceGenerator:
             for i, exp in enumerate(to_be_embedded):
                 exp.embedding = exp_embeddings[i]
                 exp.embedding_model = self.llm_api.embedding_service.config.embedding_model
-                experience_file_path = os.path.join(self.config.experience_dir, f"exp_{exp.exp_id}.yaml")
+                experience_file_path = os.path.join(exp_dir, f"exp_{exp.exp_id}.yaml")
                 write_yaml(experience_file_path, exp.to_dict())
 
             self.logger.info("Experience obj saved.")
 
     @tracing_decorator
-    def load_experience(
-        self,
-    ):
-        if not os.path.exists(self.config.experience_dir):
-            raise ValueError(f"Experience directory {self.config.experience_dir} does not exist.")
+    def load_experience(self):
+        exp_dir = self.get_experience_dir()
+
+        if not os.path.exists(exp_dir):
+            raise ValueError(f"Experience directory {exp_dir} does not exist.")
 
         original_exp_files = [
             exp_file
-            for exp_file in os.listdir(self.config.experience_dir)
+            for exp_file in os.listdir(exp_dir)
             if exp_file.startswith("raw_exp_") or exp_file.startswith("handcrafted_exp_")
         ]
         exp_ids = [os.path.splitext(os.path.basename(exp_file))[0].split("_")[2] for exp_file in original_exp_files]
@@ -245,8 +255,12 @@ class ExperienceGenerator:
             return
 
         for exp_id in exp_ids:
+            exp_id_exists = exp_id in [exp.exp_id for exp in self.experience_list]
+            if exp_id_exists:
+                continue
+
             exp_file = f"exp_{exp_id}.yaml"
-            exp_file_path = os.path.join(self.config.experience_dir, exp_file)
+            exp_file_path = os.path.join(exp_dir, exp_file)
             assert os.path.exists(exp_file_path), (
                 f"Experience {exp_file} not found. " + self.exception_message_for_refresh
             )
@@ -293,11 +307,17 @@ class ExperienceGenerator:
         return selected_experiences
 
     def _delete_exp_file(self, exp_file_name: str):
-        if exp_file_name in os.listdir(self.config.experience_dir):
-            os.remove(os.path.join(self.config.experience_dir, exp_file_name))
+        exp_dir = self.get_experience_dir()
+
+        if exp_file_name in os.listdir(exp_dir):
+            os.remove(os.path.join(exp_dir, exp_file_name))
             self.logger.info(f"Experience {exp_file_name} deleted.")
         else:
             self.logger.info(f"Experience {exp_file_name} not found.")
+
+    def get_experience_dir(self):
+        return os.path.join(self.config.experience_dir, self.sub_dir) \
+            if self.sub_dir else self.config.experience_dir
 
     def delete_experience(self, exp_id: str):
         exp_file_name = f"exp_{exp_id}.yaml"

@@ -50,6 +50,7 @@ class PlannerConfig(RoleConfig):
         )
 
         self.use_experience = self._get_bool("use_experience", False)
+        self.dynamic_experience_filter = self._get_bool("dynamic_experience_filter", False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -100,17 +101,31 @@ class Planner(Role):
         self.round_compressor = round_compressor
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        if self.config.use_experience:
-            assert experience_generator is not None, "Experience generator is required when use_experience is True"
-            self.experience_generator = experience_generator
-            self.experience_generator.refresh()
-            self.experience_generator.load_experience()
-            self.logger.info(
-                "Experience loaded successfully, "
-                "there are {} experiences".format(len(self.experience_generator.experience_list)),
-            )
+        self.experience_generator = experience_generator
+        self.exp_loaded = False
+        if self.config.dynamic_experience_filter:
+            self.exp_filter_str = None
+        else:
+            # use the experience folder
+            self.exp_filter_str = ""
 
         self.logger.info("Planner initialized successfully")
+
+    def load_experience(self):
+        if self.exp_filter_str is None or self.exp_loaded:
+            return
+        self.experience_generator.set_sub_dir(self.exp_filter_str)
+        self.experience_generator.refresh()
+        self.experience_generator.load_experience()
+        self.logger.info(
+            "Experience loaded successfully, "
+            "there are {} experiences with filter [{}]".format(
+                len(self.experience_generator.experience_list),
+                self.exp_filter_str,
+            )
+        )
+
+        self.exp_loaded = True
 
     def compose_sys_prompt(self, context: str):
         worker_description = ""
@@ -274,10 +289,18 @@ class Planner(Role):
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
+
+        exp_filter = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_filter)
+        if exp_filter:
+            self.exp_filter_str = exp_filter[0]
+            self.tracing.set_span_attribute("exp_filter", self.exp_filter_str)
+
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
+        self.tracing.set_span_attribute("exp_filter", self.exp_filter_str)
 
         if self.config.use_experience:
+            self.load_experience()
             selected_experiences = self.experience_generator.retrieve_experience(user_query)
         else:
             selected_experiences = None

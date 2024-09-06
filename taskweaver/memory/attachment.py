@@ -45,6 +45,10 @@ class AttachmentType(Enum):
     # board info
     board = "board"
 
+    # signal
+    signal = "signal"
+    exp_filter = "exp_filter"
+
 
 @dataclass
 class Attachment:
