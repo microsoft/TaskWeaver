@@ -124,7 +124,10 @@ const sidebars = {
         label: 'Experience',
         collapsible: true,
         collapsed: true,
-        items: ['customization/experience'],
+        items: [
+            'customization/experience/experience',
+            'customization/experience/handcrafted_experience'
+        ],
       },
     ],
     },

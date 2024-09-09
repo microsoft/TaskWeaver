@@ -49,17 +49,6 @@ class PlannerConfig(RoleConfig):
             ),
         )
 
-        # experience related
-        self.use_experience = self._get_bool("use_experience", False)
-        self.experience_dir = self._get_path(
-            "experience_dir",
-            os.path.join(
-                app_dir,
-                "experience",
-            ),
-        )
-        self.dynamic_experience_sub_path = self._get_bool("dynamic_experience_sub_path", False)
-
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
 
@@ -113,23 +102,6 @@ class Planner(Role):
         self.experience_loaded_from = None
 
         self.logger.info("Planner initialized successfully")
-
-    def load_experience(self, sub_path: str = ""):
-        load_from = os.path.join(self.config.experience_dir, sub_path)
-        if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
-            self.experience_loaded_from = load_from
-            self.experience_generator.set_experience_dir(self.config.experience_dir)
-            self.experience_generator.set_sub_path(sub_path)
-            self.experience_generator.refresh()
-            self.experience_generator.load_experience()
-            self.logger.info(
-                "Experience loaded successfully, there are {} experiences with filter [{}]".format(
-                    len(self.experience_generator.experience_list),
-                    sub_path,
-                ),
-            )
-        else:
-            self.logger.info(f"Experience already loaded from {load_from}.")
 
     def compose_sys_prompt(self, context: str):
         worker_description = ""
@@ -240,13 +212,9 @@ class Planner(Role):
         rounds: List[Round],
         selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ) -> List[ChatMessageType]:
-        experiences = (
-            self.experience_generator.format_experience_in_prompt(
-                self.prompt_data["experience_instruction"],
-                selected_experiences,
-            )
-            if self.config.use_experience
-            else ""
+        experiences = self.format_experience(
+            template=self.prompt_data["experience_instruction"],
+            experiences=selected_experiences,
         )
 
         chat_history = [
@@ -297,18 +265,13 @@ class Planner(Role):
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        if self.config.use_experience:
-            if not self.config.dynamic_experience_sub_path:
-                self.load_experience()
-            else:
-                exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_sub_path)
-                if exp_sub_path:
-                    self.load_experience(exp_sub_path[0])
-                    self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
-
-            selected_experiences = self.experience_generator.retrieve_experience(user_query)
+        exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType._signal_exp_sub_path)
+        if exp_sub_path:
+            self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
+            exp_sub_path = exp_sub_path[0]
         else:
-            selected_experiences = None
+            exp_sub_path = ""
+        selected_experiences = self.load_experience(query=user_query, sub_path=exp_sub_path)
 
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 

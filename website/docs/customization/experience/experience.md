@@ -15,20 +15,36 @@ to guide its planning and code generation.
 An experience tip is about what should do or should not do when seeing a request like this.
 We will add the retrieved experiences to the prompt when received a similar request afterward.
 
-![Save User Experience](../../static/img/experience.png)
+![Save User Experience](../../../static/img/experience.png)
 
 
 
-## How to use experience memory
+## Quick start
 
-1. To enable the experience feature, you only need to set the `planner.use_experience` and `code_generator.use_experience` parameter in the configuration file to `true`.
-2. Start a new conversation with TaskWeaver. You will find `experience` directory is created in your project directory. Note that there is no experience now because we have not saved any chat history yet.
-3. If you think the current chat history is worth saving, you can save it by typing command `/save` and you will find a new file named `raw_exp_{session_id}.yaml` is created in the `experience` directory. 
-4. Restart TaskWeaver and start a new conversation. In the initialization stage, TaskWeaver will read the `raw_exp_{session_id}.yaml` file and make a summarization in a new file named `All_exp_{session_id}.yaml`. This process may take a while. `All_` denotes that this experience will be loaded for Planner and CodeInterpreter.
-5. When user send a similar query to TaskWeaver, it will retrieve the relevant experience and load it into the system prompt (for Planner and CodeInterpreter). In this way, the experience can be used to guide the future conversation.
+In this quick start tutorial, we are going to show you how to enable the experience feature and save the chat history to the experience pool.
 
+1. To enable the experience feature, you need to set the `planner.use_experience` and `code_generator.use_experience` parameter in the configuration file to `true`.
+So, both the Planner and CodeInterpreter can use the experience to guide the planning and code generation.
 
-## A walk-through example
+2. Start a new conversation with TaskWeaver. You will find `experience` directory is created in your project directory. 
+Note that it is empty now because we have not saved any chat history yet.
+
+3. If you think the current chat history is worth saving, you can save it by typing command `/save` in the console chat interface.
+And you will find a new file named `raw_exp_{session_id}.yaml` created in the `experience` directory. 
+
+4. Restart TaskWeaver and start a new conversation. In the initialization stage, TaskWeaver will read the `raw_exp_{session_id}.yaml` file 
+and make a summarization in a new file named `exp_{session_id}.yaml`. 
+This process may take a while because TaskWeaver needs to call the LLM model to extract the experience tips from the chat history.
+
+5. Next time, when user send a similar query to TaskWeaver, it will retrieve the relevant experience and load it into the system prompt (for Planner and CodeInterpreter). In this way, the experience can be used to guide the future conversation.
+
+:::info
+The `experience` folder is created in the project directory.
+You can change the location of the `experience` folder by setting the `session.experience_dir` parameter 
+in the configuration file.
+:::
+
+### A walk-through example
 
 1. Start a new conversation with TaskWeaver. Send a request "calculate the mean value of ./project/sample_data/data_demo.csv" to TaskWeaver.
 2. You will find TaskWeaver made a mistake, calculating the mean value of the non-numerical column. 

@@ -97,6 +97,6 @@ requirements: |-
 
 experience_instruction: |-
     ## Experience And Lessons
-    Before generating Python code, please refer to the experiences and lessons learned from the previous tasks:
+    Before generating code, please learn from the following past experiences and lessons:
     {experiences}
-    You must use the experiences and lessons learned to generate the Python code.
+    You must apply them in code generation.

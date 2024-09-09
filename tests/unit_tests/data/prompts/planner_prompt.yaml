@@ -107,9 +107,10 @@ instruction_template: |-
 
 experience_instruction: |-
   # Experience And Lessons
-  Before starting planning, please refer to the following experiences and lessons learned from the previous tasks and include them in your plan.
+  Before planning, please learn from the following past experiences:
   {experiences}
-  You need to borrow the experience and lessons learned from the previous tasks in your current plan.
+  You must apply them in planning.
+  
 
 response_json_schema: |-
   {
