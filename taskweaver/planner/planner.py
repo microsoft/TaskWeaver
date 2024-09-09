@@ -49,8 +49,16 @@ class PlannerConfig(RoleConfig):
             ),
         )
 
+        # experience related
         self.use_experience = self._get_bool("use_experience", False)
-        self.dynamic_experience_filter = self._get_bool("dynamic_experience_filter", False)
+        self.experience_dir = self._get_path(
+            "experience_dir",
+            os.path.join(
+                app_dir,
+                "experience",
+            ),
+        )
+        self.dynamic_experience_sub_path = self._get_bool("dynamic_experience_sub_path", False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -102,30 +110,26 @@ class Planner(Role):
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
         self.experience_generator = experience_generator
-        self.exp_loaded = False
-        if self.config.dynamic_experience_filter:
-            self.exp_filter_str = None
-        else:
-            # use the experience folder
-            self.exp_filter_str = ""
+        self.experience_loaded_from = None
 
         self.logger.info("Planner initialized successfully")
 
-    def load_experience(self):
-        if self.exp_filter_str is None or self.exp_loaded:
-            return
-        self.experience_generator.set_sub_dir(self.exp_filter_str)
-        self.experience_generator.refresh()
-        self.experience_generator.load_experience()
-        self.logger.info(
-            "Experience loaded successfully, "
-            "there are {} experiences with filter [{}]".format(
-                len(self.experience_generator.experience_list),
-                self.exp_filter_str,
+    def load_experience(self, sub_path: str = ""):
+        load_from = os.path.join(self.config.experience_dir, sub_path)
+        if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
+            self.experience_loaded_from = load_from
+            self.experience_generator.set_experience_dir(self.config.experience_dir)
+            self.experience_generator.set_sub_path(sub_path)
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
+            self.logger.info(
+                "Experience loaded successfully, there are {} experiences with filter [{}]".format(
+                    len(self.experience_generator.experience_list),
+                    sub_path,
+                ),
             )
-        )
-
-        self.exp_loaded = True
+        else:
+            self.logger.info(f"Experience already loaded from {load_from}.")
 
     def compose_sys_prompt(self, context: str):
         worker_description = ""
@@ -290,17 +294,18 @@ class Planner(Role):
 
         user_query = rounds[-1].user_query
 
-        exp_filter = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_filter)
-        if exp_filter:
-            self.exp_filter_str = exp_filter[0]
-            self.tracing.set_span_attribute("exp_filter", self.exp_filter_str)
-
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
-        self.tracing.set_span_attribute("exp_filter", self.exp_filter_str)
 
         if self.config.use_experience:
-            self.load_experience()
+            if not self.config.dynamic_experience_sub_path:
+                self.load_experience()
+            else:
+                exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_sub_path)
+                if exp_sub_path:
+                    self.load_experience(exp_sub_path[0])
+                    self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
+
             selected_experiences = self.experience_generator.retrieve_experience(user_query)
         else:
             selected_experiences = None

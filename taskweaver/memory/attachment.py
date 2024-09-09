@@ -47,7 +47,7 @@ class AttachmentType(Enum):
 
     # signal
     signal = "signal"
-    exp_filter = "exp_filter"
+    exp_sub_path = "exp_sub_path"
 
 
 @dataclass

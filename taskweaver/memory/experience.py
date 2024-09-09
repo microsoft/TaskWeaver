@@ -1,8 +1,7 @@
 import json
 import os
-from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Tuple
 
 from injector import inject
 
@@ -45,10 +44,6 @@ class ExperienceConfig(ModuleConfig):
     def _configure(self) -> None:
         self._set_name("experience")
 
-        self.experience_dir = self._get_path(
-            "experience_dir",
-            os.path.join(self.src.app_base_path, "experience"),
-        )
         self.default_exp_prompt_path = self._get_path(
             "default_exp_prompt_path",
             os.path.join(
@@ -84,10 +79,14 @@ class ExperienceGenerator:
             "run `python -m experience_mgt --refresh` to refresh the experience."
         )
 
-        self.sub_dir = None
+        self.experience_dir = None
+        self.sub_path = None
 
-    def set_sub_dir(self, sub_dir: str):
-        self.sub_dir = sub_dir
+    def set_experience_dir(self, experience_dir: str):
+        self.experience_dir = experience_dir
+
+    def set_sub_path(self, sub_path: str):
+        self.sub_path = sub_path
 
     @staticmethod
     def _preprocess_conversation_data(
@@ -316,8 +315,8 @@ class ExperienceGenerator:
             self.logger.info(f"Experience {exp_file_name} not found.")
 
     def get_experience_dir(self):
-        return os.path.join(self.config.experience_dir, self.sub_dir) \
-            if self.sub_dir else self.config.experience_dir
+        assert self.experience_dir is not None, "Experience directory is not set. Call set_experience_dir() first."
+        return os.path.join(self.experience_dir, self.sub_path) if self.sub_path else self.experience_dir
 
     def delete_experience(self, exp_id: str):
         exp_file_name = f"exp_{exp_id}.yaml"

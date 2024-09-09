@@ -56,7 +56,14 @@ class CodeGeneratorConfig(RoleConfig):
         self.auto_plugin_selection_topk = self._get_int("auto_plugin_selection_topk", 3)
 
         self.use_experience = self._get_bool("use_experience", False)
-        self.dynamic_experience_filter = self._get_bool("dynamic_experience_filter", False)
+        self.experience_dir = self._get_path(
+            "experience_dir",
+            os.path.join(
+                self.src.app_base_path,
+                "experience",
+            ),
+        )
+        self.dynamic_experience_sub_path = self._get_bool("dynamic_experience_sub_path", False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -106,29 +113,26 @@ class CodeGenerator(Role):
             self.selected_plugin_pool = SelectedPluginPool()
 
         self.experience_generator = experience_generator
-        self.exp_loaded = False
-        if self.config.dynamic_experience_filter:
-            self.exp_filter_str = None
-        else:
-            # use the experience folder
-            self.exp_filter_str = ""
+        self.experience_loaded_from = None
 
         self.logger.info("CodeGenerator initialized successfully")
 
-    def load_experience(self):
-        if self.exp_filter_str is None or self.exp_loaded:
-            return
-        self.experience_generator.set_sub_dir(self.exp_filter_str)
-        self.experience_generator.refresh()
-        self.experience_generator.load_experience()
-        self.logger.info(
-            "Experience loaded successfully, "
-            "there are {} experiences with filter [{}]".format(
-                len(self.experience_generator.experience_list),
-                self.exp_filter_str,
+    def load_experience(self, sub_path: str = ""):
+        load_from = os.path.join(self.config.experience_dir, sub_path)
+        if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
+            self.experience_loaded_from = load_from
+            self.experience_generator.set_experience_dir(self.config.experience_dir)
+            self.experience_generator.set_sub_path(sub_path)
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
+            self.logger.info(
+                "Experience loaded successfully, there are {} experiences with filter [{}]".format(
+                    len(self.experience_generator.experience_list),
+                    sub_path,
+                ),
             )
-        )
-        self.exp_loaded = True
+        else:
+            self.logger.info(f"Experience already loaded from {load_from}.")
 
     def configure_verification(
         self,
@@ -378,11 +382,6 @@ class CodeGenerator(Role):
         # obtain the query from the last round
         query = rounds[-1].post_list[-1].message
 
-        exp_filter = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_filter)
-        if exp_filter:
-            self.exp_filter_str = exp_filter[0].content
-            self.tracing.set_span_attribute("exp_filter", self.exp_filter_str)
-
         self.tracing.set_span_attribute("query", query)
         self.tracing.set_span_attribute("enable_auto_plugin_selection", self.config.enable_auto_plugin_selection)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
@@ -391,7 +390,14 @@ class CodeGenerator(Role):
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
         if self.config.use_experience:
-            self.load_experience()
+            if not self.config.dynamic_experience_sub_path:
+                self.load_experience()
+            else:
+                exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType.exp_sub_path)
+                if exp_sub_path:
+                    self.load_experience(exp_sub_path[0])
+                    self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
+
             selected_experiences = self.experience_generator.retrieve_experience(query)
         else:
             selected_experiences = None

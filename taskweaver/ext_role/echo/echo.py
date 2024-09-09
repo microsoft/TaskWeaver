@@ -44,7 +44,7 @@ class Echo(Role):
 
         post_proxy.update_attachment(
             type=AttachmentType.signal,
-            message="exp_filter:sub_exp",
+            message="exp_sub_path:sub_exp",
         )
 
         return post_proxy.end()
