@@ -212,7 +212,7 @@ class CodeGenerator(Role):
         return chat_history
 
     def format_attachment(self, attachment: Attachment):
-        if attachment.type == AttachmentType.thought:
+        if attachment.type == AttachmentType.thought and "{ROLE_NAME}" in attachment.content:
             return attachment.content.format(ROLE_NAME=self.role_name)
         else:
             return attachment.content
