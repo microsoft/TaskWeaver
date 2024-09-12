@@ -41,6 +41,7 @@ class AttachmentType(Enum):
 
     # Misc
     invalid_response = "invalid_response"
+    text = "text"
 
     # shared memory entry
     shared_memory_entry = "shared_memory_entry"
