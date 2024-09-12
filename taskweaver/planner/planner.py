@@ -13,6 +13,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
+from taskweaver.memory.memory import SharedMemoryEntry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
@@ -265,10 +266,15 @@ class Planner(Role):
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType._signal_exp_sub_path)
-        if exp_sub_path:
-            self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
-            exp_sub_path = exp_sub_path[0]
+        exp_sub_paths = memory.get_shared_memory_entry(
+            entry_type="experience_sub_path",
+            entry_scopes=["conversation"],
+            entry_scope_ids=[memory.conversation.id],
+        )
+
+        if exp_sub_paths:
+            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
+            exp_sub_path = exp_sub_paths[0].content
         else:
             exp_sub_path = ""
         selected_experiences = self.load_experience(query=user_query, sub_path=exp_sub_path)
@@ -346,10 +352,18 @@ class Planner(Role):
             )
 
             plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
-            bulletin_message = "\n====== Plan ======\n" f"I have drawn up a plan:\n{plan}" "\n==================\n"
+            bulletin_message = f"\n====== Plan ======\nI have drawn up a plan:\n{plan}\n==================\n"
             post_proxy.update_attachment(
-                message=bulletin_message,
-                type=AttachmentType.board,
+                type=AttachmentType.shared_memory_entry,
+                message="Add the plan to the shared memory",
+                extra=SharedMemoryEntry.create(
+                    type="plan",
+                    by=self.alias,
+                    scope="round",
+                    scope_id=rounds[-1].id,
+                    content=bulletin_message,
+                    aggregation_keys=("by", "type", "scope_id"),
+                ),
             )
 
         except (JSONDecodeError, AssertionError) as e:

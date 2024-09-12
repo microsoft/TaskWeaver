@@ -101,34 +101,6 @@ In other words, they talk to each other by sending messages in natural language.
 What if a role needs to send some data to another role? If this is the case, we would recommend to implement a new plugin
 instead of a new role. Otherwise, you may need to store the data in an external storage like a database and let the other role to access it.
 
-There is a challenge in implementing multiple roles that is missing information.
-Consider the case in our previous example where the agent is asked to read a manual and follow the instructions to process the data.
-When the Planner obtains the instructions from a role called `manual_reader`, it needs to pass the instructions to the CodeInterpreter role to execute the instructions.
-Sometimes, the Planner may miss critical information that is needed by the CodeInterpreter role.
-Even though we can emphasize the importance of the Planner to pass all the necessary information to the roles in the prompt, 
-it is still possible that the Planner misses some information.
-
-To address this challenge, we introduce the concept of `board` in TaskWeaver. 
-The `board` is a shared memory space that can be accessed by all roles, which is associated with the current [Round](/docs/concepts/round).
-The `board` is a dictionary-like object that can store any information that is needed by the roles.
-Each role can decide to write or read any information from the `board`.
-
-```python
- def write_board(self, role_alias: str, bulletin: str) -> None:
-    """Add a bulletin to the round."""
-    self.board[role_alias] = bulletin
-
-def read_board(self, role_alias: Optional[str] = None) -> Union[Dict[str, str], str]:
-    """Read the bulletin of the round."""
-    if role_alias is None:
-        return self.board
-    return self.board.get(role_alias, None)
-```
-
-One concrete example of using the `board` is to pass the user's request to the CodeInterpreter role.
-When the Planner receives the user's request, it can write the request and its step-wise plan to the `board`.
-The CodeInterpreter role can then read the request and the plan from the `board` to execute the plan.
-
 In summary, the concept of roles in TaskWeaver is to provide a way to extend the agent's capability by implementing new roles.
 This is especially useful when the task is not naturally represented in code snippets such as acquire text information
 from a knowledge base or the internet. Implementing a new role is straightforward by inheriting the `Role` class and implementing the `reply` method.

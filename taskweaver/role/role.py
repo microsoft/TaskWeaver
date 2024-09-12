@@ -103,8 +103,8 @@ class Role:
         self.alias: str = self.role_entry.alias if self.role_entry else ""
         self.intro: str = self.role_entry.intro if self.role_entry else ""
 
-        self.experience_loaded_from: Optional[str] = None
         self.experience_generator: Optional[ExperienceGenerator] = None
+        self.experience_loaded_from: Optional[str] = None
 
     def get_intro(self) -> str:
         return self.intro
@@ -121,7 +121,11 @@ class Role:
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
 
-    def load_experience(self, query: str, sub_path: str = "") -> List[Tuple[Experience, float]]:
+    def load_experience(
+        self,
+        query: str,
+        sub_path: str = "",
+    ) -> List[Tuple[Experience, float]]:
         if self.experience_generator is None:
             raise ValueError("Experience generator is not initialized.")
 
@@ -132,7 +136,7 @@ class Role:
                 self._load_experience(sub_path=sub_path)
             else:
                 # if sub_path is empty, experience should not have been loaded
-                assert self.experience_loaded_from is None, "Experience loaded from is not None"
+                assert self.experience_loaded_from is None, "sub_path is empty when dynamic_experience_sub_path is True"
 
             return self.experience_generator.retrieve_experience(query)
         else:
@@ -156,7 +160,11 @@ class Role:
         else:
             self.logger.info(f"Experience already loaded from {load_from}.")
 
-    def format_experience(self, template: str, experiences: Optional[List[Tuple[Experience, float]]]) -> str:
+    def format_experience(
+        self,
+        template: str,
+        experiences: Optional[List[Tuple[Experience, float]]],
+    ) -> str:
         experiences_str = (
             self.experience_generator.format_experience_in_prompt(
                 template,

@@ -1,5 +1,8 @@
-version: 0.1
+version: 0.2
 content: |-
+    ## On current environment context:
+    {ENVIRONMENT_CONTEXT}
+    
     ## On conversations:
     - Each conversation starts with "==============================\n## Conversation Start"
     - Each conversation has multiple rounds, each round starts with "-----------------------------"
@@ -23,9 +26,6 @@ content: |-
     ## On {ROLE_NAME}'s response format:
     - The response is a JSON object with the following format:
     {RESPONSE_JSON_SCHEMA}
-    - The value of "thought" is a string that contains the thought of {ROLE_NAME} before generating the code.
-    - The value of "reply_type" is a string that indicates the type of the reply, which can be "python" or "text". Select "text" if the response is not a executable code snippet.
-    - The value of "reply_content" is a string that contains the actual content and {ROLE_NAME} must be very careful about escaping the special characters (e.g., '\', '/', and '"') in the string for JSON format.
 
 response_json_schema: |-
     {
@@ -35,21 +35,35 @@ response_json_schema: |-
                 "type": "object",
                 "properties": {
                     "thought": {
-                        "type": "string"
+                        "type": "string",
+                        "maxLength": 1000,
+                        "description": "The thoughts before generating the code."
                     },
                     "reply_type": {
                         "type": "string",
-                        "enum": ["python", "text"]
+                        "enum": [
+                            "python",
+                            "text"
+                        ],
+                        "description": "The type of the reply, which can be 'python' or 'text'. Select 'text' if the response is not a executable code snippet."
                     },
                     "reply_content": {
-                        "type": "string"
-                    }   
+                        "type": "string",
+                        "minLength": 10,
+                        "description": "The actual content of the response. If the reply_type is 'python', the content should be a valid python code snippet. Make sure escaping the special characters (e.g., '\\', '/', and '\"') in the strings for JSON format."
+                    }
                 },
-                "required": ["thought", "reply_type", "reply_content"]
+                "required": [
+                    "thought",
+                    "reply_type",
+                    "reply_content"
+                ]
             }
         },
-        "required": ["response"]
-    } 
+        "required": [
+            "response"
+        ]
+    }
 
 
 conversation_head: |-
@@ -66,10 +80,10 @@ conversation_head: |-
 
 user_message_head: |-
     -----------------------------
-    # Feedback of the code in the last round (None if no feedback):
+    ### Feedback of the code in the last round (None if no feedback):
     {FEEDBACK}
     
-    # Additional information from the User in this round:
+    ### Request from the User in this round:
     {MESSAGE}
 
 requirements: |-
@@ -82,7 +96,7 @@ requirements: |-
     {CODE_GENERATION_REQUIREMENTS}
 
 experience_instruction: |-
-    ## Experience And Lessons
-    Before generating Python code, please refer to the experiences and lessons learned from the previous tasks:
+    ### Experience And Lessons
+    Before generating code, please learn from the following past experiences and lessons:
     {experiences}
-    You must use the experiences and lessons learned to generate the Python code.
+    You must apply them in code generation.

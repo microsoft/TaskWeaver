@@ -23,16 +23,18 @@ def test_experience_retrieval():
         config={
             "llm.embedding_api_type": "sentence_transformers",
             "llm.embedding_model": "all-mpnet-base-v2",
-            "experience.experience_dir": os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "data/experience",
-            ),
             "experience.refresh_experience": False,
             "experience.retrieve_threshold": 0.0,
         },
     )
     app_injector.binder.bind(AppConfigSource, to=app_config)
     experience_manager = app_injector.create_object(ExperienceGenerator)
+    experience_manager.set_experience_dir(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "data/experience",
+        ),
+    )
 
     user_query = "show top 10 data in ./data.csv"
 

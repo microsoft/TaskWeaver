@@ -4,6 +4,8 @@ We have introduced the motivation of the `experience` module in [Experience](/do
 and how to create a handcrafted experience in [Handcrafted Experience](/docs/customization/experience/handcrafted_experience).
 In this blog post, we discuss more advanced topics about the experience module on experience selection.
 
+
+
 ## Static experience selection
 
 Every role in TaskWeaver can configure its own experience directory, which can be configured 
@@ -30,6 +32,8 @@ to enable the experience selection for the `Planner` role.
   "planner.experience_dir": "planner_exp_dir"
 }
 ```
+
+<!-- truncate -->
 
 ## Dynamic experience selection
 

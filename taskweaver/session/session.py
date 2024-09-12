@@ -4,12 +4,10 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
-from scipy.stats import logser
 
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Memory, Post, Round, Attachment
-from taskweaver.memory.attachment import AttachmentType
+from taskweaver.memory import Memory, Post, Round
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
@@ -89,7 +87,6 @@ class Session:
         self.memory = Memory(session_id=self.session_id)
 
         self.session_var: Dict[str, str] = {}
-        self.session_signal: Dict[AttachmentType, str] = {}
 
         self.event_emitter = self.session_injector.get(SessionEventEmitter)
         self.session_injector.binder.bind(SessionEventEmitter, self.event_emitter)
@@ -105,8 +102,8 @@ class Session:
             role_instance = self.session_injector.create_object(
                 role_entry.module,
                 {
-                    "role_entry": role_entry
-                }
+                    "role_entry": role_entry,
+                },
             )
             self.worker_instances[role_instance.get_alias()] = role_instance
 
@@ -114,8 +111,8 @@ class Session:
             self.planner = self.session_injector.create_object(
                 Planner,
                 {
-                    "workers": self.worker_instances
-                }
+                    "workers": self.worker_instances,
+                },
             )
             self.session_injector.binder.bind(Planner, self.planner)
 
@@ -175,16 +172,6 @@ class Session:
 
         @tracing_decorator_non_class
         def _send_message(recipient: str, post: Post) -> Post:
-            # add session signal to the post
-            if self.session_signal:
-                for signal_type in self.session_signal:
-                    post.add_attachment(
-                        Attachment.create(
-                            type=signal_type,
-                            content=self.session_signal[signal_type],
-                        )
-                    )
-
             self.tracing.set_span_attribute("in.from", post.send_from)
             self.tracing.set_span_attribute("in.recipient", recipient)
             self.tracing.set_span_attribute("in.message", post.message)
@@ -210,20 +197,6 @@ class Session:
                 )
             else:
                 raise Exception(f"Unknown recipient {recipient}")
-
-            board_attachment = reply_post.get_attachment(AttachmentType.board)
-            if len(board_attachment) > 0:
-                chat_round.write_board(
-                    reply_post.send_from,
-                    reply_post.get_attachment(AttachmentType.board)[0]
-                )
-
-            signal_attachments = reply_post.get_attachment(AttachmentType.signal)
-            for signal in signal_attachments:
-                signal_type, signal_value = signal.split(":")
-                self.logger.info(f"Session signal: {signal_type}={signal_value}")
-                # signal_type must be in AttachmentType
-                self.session_signal[AttachmentType(signal_type)] = signal_value
 
             return reply_post
 

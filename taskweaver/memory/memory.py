@@ -4,6 +4,7 @@ import copy
 import os
 from typing import List
 
+from taskweaver.memory import SharedMemoryEntry
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
@@ -44,7 +45,6 @@ class Memory:
                 user_query=round.user_query,
                 id=round.id,
                 state=round.state,
-                board=copy.deepcopy(round.board),
             )
             for post in round.post_list:
                 if post.send_from == role or post.send_to == role:
@@ -75,6 +75,32 @@ class Memory:
             write_yaml(raw_exp_path, conversation.to_dict())
         else:
             write_yaml(raw_exp_path, self.conversation.to_dict())
+
+    def get_shared_memory_entry(
+        self,
+        entry_type: str,
+        entry_scopes: List[str],
+        entry_scope_ids: List[str],
+    ) -> List[SharedMemoryEntry]:
+        entry_dict = {}
+        order_at = 0
+        for round in self.conversation.rounds:
+            for post in round.post_list:
+                for attachment in post.attachment_list:
+                    if attachment.type == AttachmentType.shared_memory_entry:
+                        entry = attachment.extra
+                        if (
+                            entry.type == entry_type
+                            and entry.scope in entry_scopes
+                            and entry.scope_id in entry_scope_ids
+                        ):
+                            entry_dict[entry.get_aggregation_key()] = (entry, order_at)
+                            order_at += 1
+
+        # Sort the entries by the order_at
+        entries = list(entry_dict.values())
+        entries.sort(key=lambda x: x[1])
+        return [entry[0] for entry in entries]
 
     def from_yaml(self, session_id: str, path: str) -> Memory:
         """Load the memory from a yaml file."""

@@ -42,12 +42,8 @@ class AttachmentType(Enum):
     # Misc
     invalid_response = "invalid_response"
 
-    # board info
-    board = "board"
-
-    # signal
-    signal = "signal"
-    _signal_exp_sub_path = "_signal_exp_sub_path"
+    # shared memory entry
+    shared_memory_entry = "shared_memory_entry"
 
 
 @dataclass
@@ -98,11 +94,15 @@ class Attachment:
         return self.__repr__()
 
     def to_dict(self) -> AttachmentDict:
+        if self.extra is not None and hasattr(self.extra, "to_dict"):
+            extra_dict = self.extra.to_dict()
+        else:
+            extra_dict = self.extra
         return {
             "id": self.id,
             "type": self.type.value,
             "content": self.content,
-            "extra": self.extra,
+            "extra": extra_dict,
         }
 
     @staticmethod

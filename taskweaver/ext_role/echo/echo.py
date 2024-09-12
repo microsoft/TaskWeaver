@@ -2,7 +2,6 @@ from injector import inject
 
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
-from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
@@ -40,11 +39,6 @@ class Echo(Role):
         post_proxy.update_send_to(last_post.send_from)
         post_proxy.update_message(
             self.config.decorator + last_post.message + self.config.decorator,
-        )
-
-        post_proxy.update_attachment(
-            type=AttachmentType.signal,
-            message="exp_sub_path:sub_exp",
         )
 
         return post_proxy.end()

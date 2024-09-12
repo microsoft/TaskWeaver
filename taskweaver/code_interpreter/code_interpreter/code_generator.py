@@ -158,6 +158,7 @@ class CodeGenerator(Role):
         rounds: List[Round],
         plugins: List[PluginEntry],
         selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
+        planning_enrichments: Optional[List[str]] = None,
     ) -> List[ChatMessageType]:
         experiences = self.format_experience(
             template=self.prompt_data["experience_instruction"],
@@ -194,6 +195,7 @@ class CodeGenerator(Role):
                 add_requirements=True,
                 summary=summary,
                 plugins=plugins,
+                planning_enrichments=planning_enrichments,
             ),
         )
         return chat_history
@@ -210,6 +212,7 @@ class CodeGenerator(Role):
         plugins: List[PluginEntry],
         add_requirements: bool = False,
         summary: Optional[str] = None,
+        planning_enrichments: Optional[List[str]] = None,
     ) -> List[ChatMessageType]:
         chat_history: List[ChatMessageType] = []
         ignored_types = [
@@ -247,10 +250,8 @@ class CodeGenerator(Role):
                         user_query = conversation_round.user_query
                         enrichment = f"The user request is: {user_query}\n\n"
 
-                        supplementary_info_dict = conversation_round.read_board()
-                        supplementary_info = "\n\n".join([bulletin for bulletin in supplementary_info_dict.values()])
-                        if supplementary_info != "":
-                            enrichment += f"Additional context:\n" f" {supplementary_info}\n\n"
+                        if planning_enrichments:
+                            enrichment += "Additional context:\n" + "\n".join(planning_enrichments) + "\n\n"
 
                     user_feedback = "None"
                     if last_post is not None and last_post.send_from == self.alias:
@@ -258,7 +259,7 @@ class CodeGenerator(Role):
 
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=user_feedback,
-                        MESSAGE=f"{enrichment}{post.message}",
+                        MESSAGE=f"{enrichment}The task for this specific step is: {post.message}",
                     )
                 elif post.send_from == post.send_to == self.alias:
                     # for code correction
@@ -357,15 +358,32 @@ class CodeGenerator(Role):
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
-        exp_sub_path = rounds[-1].post_list[-1].get_attachment(AttachmentType._signal_exp_sub_path)
-        if exp_sub_path:
-            self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
-            exp_sub_path = exp_sub_path[0]
+        exp_sub_paths = memory.get_shared_memory_entry(
+            entry_type="experience_sub_path",
+            entry_scopes=["conversation"],
+            entry_scope_ids=[memory.conversation.id],
+        )
+
+        if exp_sub_paths:
+            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
+            exp_sub_path = exp_sub_paths[0].content
         else:
             exp_sub_path = ""
         selected_experiences = self.load_experience(query=query, sub_path=exp_sub_path)
 
-        prompt = self.compose_prompt(rounds, self.plugin_pool, selected_experiences)
+        planning_enrichments = memory.get_shared_memory_entry(
+            entry_type="plan",
+            entry_scopes=["conversation", "round"],
+            entry_scope_ids=[memory.conversation.id, rounds[-1].id],
+        )
+
+        prompt = self.compose_prompt(
+            rounds,
+            self.plugin_pool,
+            selected_experiences,
+            planning_enrichments=[pe.content for pe in planning_enrichments],
+        )
+
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))
         prompt_size = self.tracing.count_tokens(json.dumps(prompt))
         self.tracing.set_span_attribute("prompt_size", prompt_size)

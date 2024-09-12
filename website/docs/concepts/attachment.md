@@ -21,8 +21,6 @@ class Attachment:
 
 
 `AttachmentType` is an Enum class that contains the types of the attachment, which can be "thought", "code", "markdown", or "execution_result".
-Among the types, "board" is used to store the information in the board of the round.
-When the type is set to "board", the `content` will be updated to the key of the board.
 `content` is the content of the response element, which can be the code snippet, the markdown text, or the execution result.
 
 
