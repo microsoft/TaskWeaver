@@ -74,11 +74,6 @@ class ExperienceGenerator:
 
         self.experience_list: List[Experience] = []
 
-        self.exception_message_for_refresh = (
-            "Please cd to the `script` directory and "
-            "run `python -m experience_mgt --refresh` to refresh the experience."
-        )
-
         self.experience_dir = None
         self.sub_path = None
 
@@ -248,8 +243,6 @@ class ExperienceGenerator:
         if len(exp_ids) == 0:
             self.logger.warning(
                 "No experience found."
-                "Please type /save in the chat window to save raw experience or write handcrafted experience."
-                + self.exception_message_for_refresh,
             )
             return
 
@@ -261,16 +254,16 @@ class ExperienceGenerator:
             exp_file = f"exp_{exp_id}.yaml"
             exp_file_path = os.path.join(exp_dir, exp_file)
             assert os.path.exists(exp_file_path), (
-                f"Experience {exp_file} not found. " + self.exception_message_for_refresh
+                f"Experience {exp_file} not found. "
             )
 
             experience = read_yaml(exp_file_path)
 
             assert len(experience["embedding"]) > 0, (
-                f"Experience {exp_file} has no embedding." + self.exception_message_for_refresh
+                f"Experience {exp_file} has no embedding."
             )
             assert experience["embedding_model"] == self.llm_api.embedding_service.config.embedding_model, (
-                f"Experience {exp_file} has different embedding model. " + self.exception_message_for_refresh
+                f"Experience {exp_file} has different embedding model."
             )
 
             self.experience_list.append(Experience(**experience))

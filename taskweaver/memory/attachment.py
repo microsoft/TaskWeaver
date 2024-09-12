@@ -96,14 +96,14 @@ class Attachment:
 
     def to_dict(self) -> AttachmentDict:
         if self.extra is not None and hasattr(self.extra, "to_dict"):
-            extra_dict = self.extra.to_dict()
+            extra_content = self.extra.to_dict()
         else:
-            extra_dict = self.extra
+            extra_content = self.extra
         return {
             "id": self.id,
             "type": self.type.value,
             "content": self.content,
-            "extra": extra_dict,
+            "extra": extra_content,
         }
 
     @staticmethod
