@@ -4,8 +4,6 @@ We have introduced the motivation of the `experience` module in [Experience](/do
 and how to create a handcrafted experience in [Handcrafted Experience](/docs/customization/experience/handcrafted_experience).
 In this blog post, we discuss more advanced topics about the experience module on experience selection.
 
-
-
 ## Static experience selection
 
 Every role in TaskWeaver can configure its own experience directory, which can be configured 
@@ -17,7 +15,7 @@ The default experience directory is `experience` in the project directory.
 
 
 :::info
-The role name is by default the name of the implementation file of the role unless
+The role name is by default the name of the implementation file (without the extension) of the role unless
 you have specified the role name by calling `_set_name` in the implementation file.
 :::
 
@@ -71,6 +69,10 @@ planner_experience
 When we can identify the task type based on the task ID, we can set the experience subdirectory.
 This looks straightforward, but how can we set the experience subdirectory in TaskWeaver?
 As we need to do this in a dynamic way, the only way is to set the experience subdirectory in a [role](/docs/concepts/role).
+
+TaskWeaver recently introduced the concept of shared memory as discussed in [Shared Memory](/docs/memory).
+Shared memory allows a role to share information with other roles, and in this case, we can use shared memory to set the experience subdirectory.
+
 We can add a new role called `TaskTypeIdentifier` to identify the task type based on the task ID.
 The key part of the `reply` function in `TaskTypeIdentifier` is shown below:
 
@@ -79,49 +81,45 @@ def reply(self, memory: Memory, **kwargs: ...) -> Post:
     # ...
     # get the task type from the last post message
     task_type = get_task_type(last_post.message)
-    # issue a signal to set the experience subdirectory
+    # create an attachment 
     post_proxy.update_attachment(
-        type=AttachmentType.signal,
-        message=f"_signal_exp_sub_path:{task_type}",
+        type=AttachmentType.shared_memory_entry,
+        message="Add experience sub path",
+        extra=SharedMemoryEntry.create(
+            type="experience_sub_path",
+            by=self.alias,
+            scope="conversation",
+            scope_id=memory.conversation.id,
+            content="task_type_1",
+            aggregation_keys=("type", ),
+        ),
     )
 
     return post_proxy.end()
 ```
 
-In the `reply` method, we first obtain the query from the last round.
-Then we identify the task type based on the query content.
-The interesting part is that we set the experience subdirectory in the attachment of the response.
-We set the attachment type to `signal` and the message to `_signal_exp_sub_path:{task_type}`.
-
-The `signal` attachment type is a special type in TaskWeaver, which is used to send signals to other roles.
-Its content is a string with format `key:value`, where `key` is an attachment type and `value` is the content of the attachment.
-In this case, we send a signal to all roles to set the experience subdirectory to the value of `task_type`.
-This is done by broadcasting an attachment with type `_signal_exp_sub_path` and its value, which is the task type, 
-to all the roles in TaskWeaver. Every role can decide whether to use the signal or not.
-
-A role responds to the signal by setting the experience subdirectory to the value in the signal.
-The key part of the `Planner` role implementation is shown below:
+In a role that needs to set the experience subdirectory, we can get the experience subdirectory from the shared memory.
 
 ```python
-# obtain the experience subdirectory from the attachment of the last post
-exp_sub_path = last_post.get_attachment(AttachmentType._signal_exp_sub_path)
-if exp_sub_path:
-    self.tracing.set_span_attribute("exp_sub_path", exp_sub_path[0])
-    exp_sub_path = exp_sub_path[0]
+exp_sub_paths = memory.get_shared_memory_entry(
+    entry_type="experience_sub_path",
+    entry_scopes=["conversation"],
+    entry_scope_ids=[memory.conversation.id],
+)
+
+if exp_sub_paths:
+    exp_sub_path = exp_sub_paths[0].content
 else:
     exp_sub_path = ""
 selected_experiences = self.load_experience(query=query, sub_path=exp_sub_path)
 ```
-Other roles that are not responsible for setting the experience subdirectory can ignore the attachment.
-In this way, we can set the experience subdirectory dynamically based on the task type.
 
-The signal is maintained at the session level, which means that the signal is valid for the current session.
-The value of the signal can be changed by sending another signal with the same attachment type.
-Note that after the signal is set, all roles will keep receiving the signal until the session ends.
-So, it is each role's responsibility to implement the logic to handle duplicate signals.
+:::tip
+This is the current experimental feature in TaskWeaver which is subject to change.
+:::
 
 ## Conclusion
 
 In this blog post, we have discussed how to select experiences in TaskWeaver.
 We have static experience selection by configuring the experience directory for each role.
-To enable dynamic experience selection, we have introduced the concept of experience subdirectory and signal attachment.
+To enable dynamic experience selection, we have introduced the concept of shared memory to set the experience subdirectory.

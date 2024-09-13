@@ -22,6 +22,7 @@ const sidebars = {
     'overview',
     'quickstart',
     'code_execution',
+    'memory',
     'FAQ',
     {
       type: 'category',
