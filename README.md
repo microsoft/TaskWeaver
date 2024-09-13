@@ -23,6 +23,8 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 
 ## 🆕 News
+- 📅2024-09-13: We introduce the shared memory to store information that is shared between the roles in TaskWeaver. Please check the [memory](https://microsoft.github.io/TaskWeaver/docs/memory) for more details.🧠
+- 📅2024-09-13: We have enhanced the experience feature by allowing static and dynamic experience selection. Please check the [experience](https://microsoft.github.io/TaskWeaver/blog/experience) for more details.📚 
 - 📅2024-07-02: We have optimized TaskWeaver to support not-that-large language models served locally. Please check this [post](https://microsoft.github.io/TaskWeaver/blog/local_llm) for more details.🔗
 - 📅2024-05-07: We have added two blog posts on [Evaluating a LLM agent](https://microsoft.github.io/TaskWeaver/blog/evaluation) and [Adding new roles to TaskWeaver](https://microsoft.github.io/TaskWeaver/blog/role) in the documentation.📝
 - 📅2024-03-28: TaskWeaver now offers all-in-one Docker image, providing a convenient one-stop experience for users. Please check the [docker](https://microsoft.github.io/TaskWeaver/docs/usage/docker) for more details.🐳
@@ -30,7 +32,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗
 - 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳
 - 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/advanced/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟
-- 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚
+<!-- - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚 -->
 <!-- - 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 --> 
 <!-- - 📅2024-01-23: TaskWeaver can now be personalized by transforming your chat histories into enduring [experiences](https://microsoft.github.io/TaskWeaver/docs/customization/experience) 🎉 -->
 <!-- - 📅2024-01-17: TaskWeaver now has a plugin [vision_web_explorer](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#vision_web_explorer) that can open a web browser and explore websites.🌐 -->
