@@ -20,16 +20,20 @@
     "@easyops-cn/docusaurus-search-local": "^0.44.5",
     "@mdx-js/react": "^3.0.1",
     "clsx": "^2.1.1",
-    "path-to-regexp": "^0.1.10",
-    "prism-react-renderer": "^2.3.1",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
+    "prism-react-renderer": "^2.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "shell-quote": "^1.8.1",
     "trim-newlines": "^5.0.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.5.2",
     "@docusaurus/types": "^3.5.2"
+  },
+  "overrides": {
+    "serve-handler": {
+      "path-to-regexp": "3.3.0"
+    }
   },
   "browserslist": {
     "production": [
