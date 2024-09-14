@@ -105,6 +105,7 @@ class Session:
                     "role_entry": role_entry,
                 },
             )
+            self.session_injector.binder.bind(role_entry.module, role_instance)
             self.worker_instances[role_instance.get_alias()] = role_instance
 
         if "planner" in self.config.roles:
