@@ -20,6 +20,7 @@
     "@easyops-cn/docusaurus-search-local": "^0.44.5",
     "@mdx-js/react": "^3.0.1",
     "clsx": "^2.1.1",
+    "path-to-regexp": "^0.1.10",
     "prism-react-renderer": "^2.3.1",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
