@@ -6,6 +6,7 @@ from taskweaver.code_interpreter import CodeInterpreter
 from taskweaver.code_interpreter.code_executor import CodeExecutor
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
+from taskweaver.memory import SharedMemoryEntry
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.module.event_emitter import SessionEventEmitter
@@ -87,8 +88,16 @@ def test_compose_prompt():
         send_to="CodeInterpreter",
         attachment_list=[
             Attachment.create(
-                AttachmentType.board,
-                "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n",
+                AttachmentType.shared_memory_entry,
+                content="add shared memory entry",
+                extra=SharedMemoryEntry.create(
+                    type="plan",
+                    scope="round",
+                    content=(
+                        "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n"
+                        "3. report the result to the user <wide depend on 2>"
+                    ),
+                ),
             ),
         ],
     )

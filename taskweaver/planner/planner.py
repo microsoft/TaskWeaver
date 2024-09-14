@@ -13,6 +13,7 @@ from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import Experience, ExperienceGenerator
+from taskweaver.memory.memory import SharedMemoryEntry
 from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
@@ -48,8 +49,6 @@ class PlannerConfig(RoleConfig):
                 "compression_prompt.yaml",
             ),
         )
-
-        self.use_experience = self._get_bool("use_experience", False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -100,15 +99,8 @@ class Planner(Role):
         self.round_compressor = round_compressor
         self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
 
-        if self.config.use_experience:
-            assert experience_generator is not None, "Experience generator is required when use_experience is True"
-            self.experience_generator = experience_generator
-            self.experience_generator.refresh()
-            self.experience_generator.load_experience()
-            self.logger.info(
-                "Experience loaded successfully, "
-                "there are {} experiences".format(len(self.experience_generator.experience_list)),
-            )
+        self.experience_generator = experience_generator
+        self.experience_loaded_from = None
 
         self.logger.info("Planner initialized successfully")
 
@@ -221,13 +213,9 @@ class Planner(Role):
         rounds: List[Round],
         selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ) -> List[ChatMessageType]:
-        experiences = (
-            self.experience_generator.format_experience_in_prompt(
-                self.prompt_data["experience_instruction"],
-                selected_experiences,
-            )
-            if self.config.use_experience
-            else ""
+        experiences = self.format_experience(
+            template=self.prompt_data["experience_instruction"],
+            experiences=selected_experiences,
         )
 
         chat_history = [
@@ -274,13 +262,18 @@ class Planner(Role):
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
+
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        if self.config.use_experience:
-            selected_experiences = self.experience_generator.retrieve_experience(user_query)
+        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
+
+        if exp_sub_paths:
+            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
+            exp_sub_path = exp_sub_paths[0].content
         else:
-            selected_experiences = None
+            exp_sub_path = ""
+        selected_experiences = self.load_experience(query=user_query, sub_path=exp_sub_path)
 
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
@@ -355,10 +348,15 @@ class Planner(Role):
             )
 
             plan = post_proxy.post.get_attachment(type=AttachmentType.plan)[0]
-            bulletin_message = "\n====== Plan ======\n" f"I have drawn up a plan:\n{plan}" "\n==================\n"
+            bulletin_message = f"\n====== Plan ======\nI have drawn up a plan:\n{plan}\n==================\n"
             post_proxy.update_attachment(
-                message=bulletin_message,
-                type=AttachmentType.board,
+                type=AttachmentType.shared_memory_entry,
+                message="Add the plan to the shared memory",
+                extra=SharedMemoryEntry.create(
+                    type="plan",
+                    scope="round",
+                    content=bulletin_message,
+                ),
             )
 
         except (JSONDecodeError, AssertionError) as e:

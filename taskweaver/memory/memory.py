@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import copy
 import os
-from typing import List
+from typing import Dict, List, Tuple
 
+from taskweaver.memory import SharedMemoryEntry
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
-from taskweaver.memory.type_vars import RoleName
+from taskweaver.memory.type_vars import RoleName, SharedMemoryEntryType
 from taskweaver.module.prompt_util import PromptUtil
 from taskweaver.utils import write_yaml
 
@@ -44,7 +45,6 @@ class Memory:
                 user_query=round.user_query,
                 id=round.id,
                 state=round.state,
-                board=copy.deepcopy(round.board),
             )
             for post in round.post_list:
                 if post.send_from == role or post.send_to == role:
@@ -75,6 +75,35 @@ class Memory:
             write_yaml(raw_exp_path, conversation.to_dict())
         else:
             write_yaml(raw_exp_path, self.conversation.to_dict())
+
+    def get_shared_memory_entries(
+        self,
+        entry_type: SharedMemoryEntryType,
+    ) -> List[SharedMemoryEntry]:
+        """Get the shared memory entries of the given type and scope.
+        entry_scope: "round" or "conversation"
+        """
+        entry_dict: Dict[str, Tuple[SharedMemoryEntry, int]] = {}
+        order_at = 0
+
+        for round in self.conversation.rounds:
+            # Check if the round is the last round
+            is_last_round = round.id == self.conversation.rounds[-1].id
+            for post in round.post_list:
+                for attachment in post.attachment_list:
+                    if attachment.type == AttachmentType.shared_memory_entry:
+                        assert attachment.extra is not None
+                        entry: SharedMemoryEntry = attachment.extra
+                        if entry.type == entry_type:
+                            if entry.scope == "conversation" or is_last_round:
+                                # if multiple entries with the same role, only keep the last one
+                                entry_dict[post.send_from] = (entry, order_at)
+                                order_at += 1
+
+        # Sort the entries by the order_at
+        entries_with_order = list(entry_dict.values())
+        entries_with_order.sort(key=lambda x: x[1])
+        return [e[0] for e in entries_with_order]
 
     def from_yaml(self, session_id: str, path: str) -> Memory:
         """Load the memory from a yaml file."""

@@ -8,7 +8,6 @@ from injector import Injector, inject
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
-from taskweaver.memory.attachment import AttachmentType
 from taskweaver.module.event_emitter import SessionEventEmitter, SessionEventHandler
 from taskweaver.module.tracing import Tracing, tracing_decorator, tracing_decorator_non_class
 from taskweaver.planner.planner import Planner
@@ -100,11 +99,22 @@ class Session:
             if role_name not in role_registry.get_role_name_list():
                 raise ValueError(f"Unknown role {role_name}")
             role_entry = self.role_registry.get(role_name)
-            role_instance = self.session_injector.create_object(role_entry.module, {"role_entry": role_entry})
+            role_instance = self.session_injector.create_object(
+                role_entry.module,
+                {
+                    "role_entry": role_entry,
+                },
+            )
+            self.session_injector.binder.bind(role_entry.module, role_instance)
             self.worker_instances[role_instance.get_alias()] = role_instance
 
         if "planner" in self.config.roles:
-            self.planner = self.session_injector.create_object(Planner, {"workers": self.worker_instances})
+            self.planner = self.session_injector.create_object(
+                Planner,
+                {
+                    "workers": self.worker_instances,
+                },
+            )
             self.session_injector.binder.bind(Planner, self.planner)
 
         self.max_internal_chat_round_num = self.config.max_internal_chat_round_num
@@ -188,10 +198,6 @@ class Session:
                 )
             else:
                 raise Exception(f"Unknown recipient {recipient}")
-
-            board_attachment = reply_post.get_attachment(AttachmentType.board)
-            if len(board_attachment) > 0:
-                chat_round.write_board(reply_post.send_from, reply_post.get_attachment(AttachmentType.board)[0])
 
             return reply_post
 

@@ -80,10 +80,10 @@ conversation_head: |-
 
 user_message_head: |-
     -----------------------------
-    # Feedback of the code in the last round (None if no feedback):
+    ### Feedback of the code in the last round (None if no feedback):
     {FEEDBACK}
     
-    # Additional information from the User in this round:
+    ### Request from the User in this round:
     {MESSAGE}
 
 requirements: |-
@@ -96,7 +96,7 @@ requirements: |-
     {CODE_GENERATION_REQUIREMENTS}
 
 experience_instruction: |-
-    ## Experience And Lessons
-    Before generating Python code, please refer to the experiences and lessons learned from the previous tasks:
+    ### Experience And Lessons
+    Before generating code, please learn from the following past experiences and lessons:
     {experiences}
-    You must use the experiences and lessons learned to generate the Python code.
+    You must apply them in code generation.

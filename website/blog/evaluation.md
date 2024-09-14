@@ -13,6 +13,8 @@ For example, if the answer is a date or a number, the evaluation method may not 
 Moreover, the evaluation method should be able to act more like a human, who can understand the context and the meaning of the output.
 For example, when different agents are asked to perform the same task, they may behave differently, but still produce correct outputs.
 
+<!-- truncate -->
+
 The below example illustrates this point:
 
 ```

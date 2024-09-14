@@ -43,8 +43,8 @@ class AttachmentType(Enum):
     invalid_response = "invalid_response"
     text = "text"
 
-    # board info
-    board = "board"
+    # shared memory entry
+    shared_memory_entry = "shared_memory_entry"
 
 
 @dataclass
@@ -95,11 +95,15 @@ class Attachment:
         return self.__repr__()
 
     def to_dict(self) -> AttachmentDict:
+        if self.extra is not None and hasattr(self.extra, "to_dict"):
+            extra_content = self.extra.to_dict()
+        else:
+            extra_content = self.extra
         return {
             "id": self.id,
             "type": self.type.value,
             "content": self.content,
-            "extra": self.extra,
+            "extra": extra_content,
         }
 
     @staticmethod

@@ -1,7 +1,12 @@
 # All-in-One Docker Image
 
 In this document, we will show you how to run TaskWeaver using the All-in-One Docker Image.
-Please note that the All-in-One Docker Image is for development and testing purposes only.
+
+:::danger
+Please note that the All-in-One Docker Image is for development and testing purposes only. It is running in 
+the [local](../code_execution.md) mode, which means that the execution of the code snippets is done in the same container.
+Malicious code can be executed in the container, so please be cautious when running the All-in-One Docker Image.
+:::
 
 ## Prerequisites
 You need to have Docker installed on your machine. 

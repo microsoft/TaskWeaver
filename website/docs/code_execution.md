@@ -20,6 +20,10 @@ As a result, in the `local` mode, if the user has malicious intent, the user cou
 instruct TaskWeaver to execute harmful code on the host machine. In addition, the LLM could also generate
 harmful code, leading to potential security risks.
 
+:::danger
+Please be cautious when using the `local` mode, especially when the usage of the agent is open to untrusted users.
+:::
+
 
 
 ## How to Configure the Code Execution Mode

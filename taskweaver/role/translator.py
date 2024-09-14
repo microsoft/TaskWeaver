@@ -144,7 +144,7 @@ class PostTranslator:
         """
         if ignored_types is None:
             ignored_types = []
-        ignored_types.append(AttachmentType.board)
+        ignored_types.append(AttachmentType.shared_memory_entry)
 
         structured_llm: Dict[str, str] = {}
         for attachment in post.attachment_list:

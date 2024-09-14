@@ -10,6 +10,7 @@ from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post
+from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.misc.component_registry import ComponentRegistry
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
@@ -41,8 +42,26 @@ class RoleEntry:
 class RoleConfig(ModuleConfig):
     @inject
     def __init__(self, src: AppConfigSource) -> None:
+        super().__init__(src)
         self.src: AppConfigSource = src
         self._set_role_name()
+
+        self.use_experience = self._get_bool(
+            "use_experience",
+            False,
+        )
+        self.experience_dir = self._get_path(
+            "experience_dir",
+            os.path.join(
+                self.src.app_base_path,
+                "experience",
+            ),
+        )
+        self.dynamic_experience_sub_path = self._get_bool(
+            "dynamic_experience_sub_path",
+            False,
+        )
+
         self._configure()
 
     def _set_role_name(self):
@@ -56,7 +75,7 @@ class Role:
     @inject
     def __init__(
         self,
-        config: ModuleConfig,
+        config: RoleConfig,
         logger: TelemetryLogger,
         tracing: Tracing,
         event_emitter: SessionEventEmitter,
@@ -84,6 +103,9 @@ class Role:
         self.alias: str = self.role_entry.alias if self.role_entry else ""
         self.intro: str = self.role_entry.intro if self.role_entry else ""
 
+        self.experience_generator: Optional[ExperienceGenerator] = None
+        self.experience_loaded_from: Optional[str] = None
+
     def get_intro(self) -> str:
         return self.intro
 
@@ -98,6 +120,61 @@ class Role:
 
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
+
+    def load_experience(
+        self,
+        query: str,
+        sub_path: str = "",
+    ) -> List[Tuple[Experience, float]]:
+        if self.experience_generator is None:
+            raise ValueError("Experience generator is not initialized.")
+
+        if self.config.use_experience:
+            if not self.config.dynamic_experience_sub_path:
+                self._load_experience()
+            elif sub_path:
+                self._load_experience(sub_path=sub_path)
+            else:
+                # if sub_path is empty, experience should not have been loaded
+                assert self.experience_loaded_from is None, "sub_path is empty when dynamic_experience_sub_path is True"
+
+            return self.experience_generator.retrieve_experience(query)
+        else:
+            return []
+
+    def _load_experience(self, sub_path: str = "") -> None:
+        load_from = os.path.join(self.config.experience_dir, sub_path)
+        if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
+            self.experience_loaded_from = load_from
+            self.experience_generator.set_experience_dir(self.config.experience_dir)
+            self.experience_generator.set_sub_path(sub_path)
+            self.experience_generator.refresh()
+            self.experience_generator.load_experience()
+            self.logger.info(
+                "Experience loaded successfully for {}, there are {} experiences with filter [{}]".format(
+                    self.alias,
+                    len(self.experience_generator.experience_list),
+                    sub_path,
+                ),
+            )
+        else:
+            self.logger.info(f"Experience already loaded from {load_from}.")
+
+    def format_experience(
+        self,
+        template: str,
+        experiences: Optional[List[Tuple[Experience, float]]],
+    ) -> str:
+        experiences_str = (
+            self.experience_generator.format_experience_in_prompt(
+                template,
+                experiences,
+            )
+            if self.config.use_experience
+            else ""
+        )
+
+        return experiences_str
 
 
 class RoleModuleConfig(ModuleConfig):

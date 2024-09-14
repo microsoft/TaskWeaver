@@ -22,6 +22,7 @@ const sidebars = {
     'overview',
     'quickstart',
     'code_execution',
+    'memory',
     'FAQ',
     {
       type: 'category',
@@ -124,7 +125,10 @@ const sidebars = {
         label: 'Experience',
         collapsible: true,
         collapsed: true,
-        items: ['customization/experience'],
+        items: [
+            'customization/experience/experience',
+            'customization/experience/handcrafted_experience'
+        ],
       },
     ],
     },

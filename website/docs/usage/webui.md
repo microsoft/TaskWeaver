@@ -1,6 +1,11 @@
 # Web UI
 
-Please note that this Web UI is for development and testing purposes only.
+:::warning
+Please note that this Web UI is a playground for development and testing purposes only.
+Be cautious when running the Web UI, as anyone can access it if the port is open to the public.
+If you want to deploy a Web UI for production, you need to address security concerns, such as authentication and authorization,
+making sure the server is secure. 
+:::
 
 Follow the instruction in [Quick Start](../quickstart.md) to clone the repository and fill in the necessary configurations.
 

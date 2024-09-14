@@ -1,10 +1,11 @@
 from typing import Any, List, Optional
 
-from injector import inject
+from injector import inject, singleton
 
 from taskweaver.config.config_mgt import AppConfigSource
 
 
+@singleton
 class ModuleConfig(object):
     @inject
     def __init__(self, src: AppConfigSource) -> None:

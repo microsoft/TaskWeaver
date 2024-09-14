@@ -129,4 +129,10 @@ Then, pass the `config` to the plugin constructor. As yaml is type sensitive, yo
 
 A: We use a Jupyter Kernel to execute the code in TaskWeaver. The Jupyter Kernel uses an event loop to manage the execution of the code.
 If you see the error message "RuntimeError: This event loop is already running.", it typically means that the event loop is already running.
-This is typically caused by the enviroment where TaskWeaver is running. For example, if you are running TaskWeaver in a Jupyter Notebook.
+This is typically caused by the environment where TaskWeaver is running. For example, if you are running TaskWeaver in a Jupyter Notebook.
+
+### Q: Why I see the error message "Permissions assignment failed for secure file: Got '0o677' instead of '0o0600'." when running TaskWeaver?
+
+A: This error message typically happens when TaskWeaver is running in the container mode on a Windows machine with WSL.
+One can refer to this [issue](https://github.com/jupyter/notebook/issues/5428) for more details.
+The fix is to set `JUPYTER_ALLOW_INSECURE_WRITES=true` for the container.
