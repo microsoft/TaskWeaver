@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://docusaurus.io/TaskWeaver/blog</id>
     <title>TaskWeaver Blog</title>
-    <updated>2024-09-11T03:22:47.000Z</updated>
+    <updated>2024-09-14T08:42:48.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://docusaurus.io/TaskWeaver/blog"/>
     <subtitle>TaskWeaver Blog</subtitle>
@@ -11,7 +11,7 @@
         <title type="html"><![CDATA[How to evaluate a LLM agent?]]></title>
         <id>https://docusaurus.io/TaskWeaver/blog/evaluation</id>
         <link href="https://docusaurus.io/TaskWeaver/blog/evaluation"/>
-        <updated>2024-09-11T03:22:47.000Z</updated>
+        <updated>2024-09-14T08:42:48.000Z</updated>
         <summary type="html"><![CDATA[The challenges]]></summary>
         <content type="html"><![CDATA[<h2 class="anchor anchorWithStickyNavbar_LWe7" id="the-challenges">The challenges<a href="https://docusaurus.io/TaskWeaver/blog/evaluation#the-challenges" class="hash-link" aria-label="Direct link to The challenges" title="Direct link to The challenges">​</a></h2>
 <p>It is nontrivial to evaluate the performance of a LLM agent.
@@ -78,7 +78,7 @@ as we did for TaskWeaver in <code>auto_eval/taskweaver_eval.py</code>:</p>
         <title type="html"><![CDATA[Run TaskWeaver with Locally Deployed Not-that-Large Language Models]]></title>
         <id>https://docusaurus.io/TaskWeaver/blog/local_llm</id>
         <link href="https://docusaurus.io/TaskWeaver/blog/local_llm"/>
-        <updated>2024-09-11T03:22:47.000Z</updated>
+        <updated>2024-09-14T08:42:48.000Z</updated>
         <summary type="html"><![CDATA[The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver]]></summary>
         <content type="html"><![CDATA[<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver
 if you have customized the examples for the planner and code interpreter.
@@ -158,7 +158,7 @@ If you have any questions or suggestions, please feel free to contact us.</p>]]>
         <title type="html"><![CDATA[Plugins In-Depth]]></title>
         <id>https://docusaurus.io/TaskWeaver/blog/plugin</id>
         <link href="https://docusaurus.io/TaskWeaver/blog/plugin"/>
-        <updated>2024-09-11T03:22:47.000Z</updated>
+        <updated>2024-09-14T08:42:48.000Z</updated>
         <summary type="html"><![CDATA[**Pre-requisites**: Please refer to the Introduction and the Plugin Development]]></summary>
         <content type="html"><![CDATA[<p><em><strong>Pre-requisites</strong>: Please refer to the <a href="https://docusaurus.io/TaskWeaver/docs/plugin/plugin_intro">Introduction</a> and the <a href="https://docusaurus.io/TaskWeaver/docs/plugin/how_to_develop_a_new_plugin">Plugin Development</a>
 pages for a better understanding of the plugin concept and its development process.</em></p>
@@ -225,7 +225,7 @@ The plugin is a powerful component in TaskWeaver to extend the functionality of 
         <title type="html"><![CDATA[Roles in TaskWeaver]]></title>
         <id>https://docusaurus.io/TaskWeaver/blog/role</id>
         <link href="https://docusaurus.io/TaskWeaver/blog/role"/>
-        <updated>2024-09-11T03:22:47.000Z</updated>
+        <updated>2024-09-14T08:42:48.000Z</updated>
         <summary type="html"><![CDATA[We frame TaskWeaver as a code-first agent framework. The term "code-first" means that the agent is designed to]]></summary>
         <content type="html"><![CDATA[<p>We frame TaskWeaver as a <strong>code-first</strong> agent framework. The term "code-first" means that the agent is designed to
 convert the user's request into one or multiple runnable code snippets and then execute them to generate the response.
