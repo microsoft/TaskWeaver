@@ -1,24 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Dict, Optional
 
 from taskweaver.utils import create_id
+
+from .type_vars import SharedMemoryEntryScope, SharedMemoryEntryType
 
 
 @dataclass
 class SharedMemoryEntry:
-    type: Literal["plan", "experience_sub_path"]
+    type: SharedMemoryEntryType
     content: str
-    scope: Literal["round", "conversation"]
+    scope: SharedMemoryEntryScope
     id: str
 
     @staticmethod
     def create(
-        type: Literal["plan", "experience_sub_path"],
+        type: SharedMemoryEntryType,
         content: str,
-        scope: Literal["round", "conversation"],
-        id: str = None,
+        scope: SharedMemoryEntryScope,
+        id: Optional[str] = None,
     ) -> SharedMemoryEntry:
         if id is None:
             id = "sme-" + create_id()
@@ -35,7 +37,7 @@ class SharedMemoryEntry:
     def __str__(self):
         return self.__repr__()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, str]:
         return {
             "type": self.type,
             "content": self.content,

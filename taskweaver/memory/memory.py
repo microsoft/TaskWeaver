@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import copy
 import os
-from typing import List
+from typing import Dict, List, Tuple
 
 from taskweaver.memory import SharedMemoryEntry
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
-from taskweaver.memory.type_vars import RoleName
+from taskweaver.memory.type_vars import RoleName, SharedMemoryEntryType
 from taskweaver.module.prompt_util import PromptUtil
 from taskweaver.utils import write_yaml
 
@@ -78,12 +78,12 @@ class Memory:
 
     def get_shared_memory_entries(
         self,
-        entry_type: str,
+        entry_type: SharedMemoryEntryType,
     ) -> List[SharedMemoryEntry]:
         """Get the shared memory entries of the given type and scope.
         entry_scope: "round" or "conversation"
         """
-        entry_dict = {}
+        entry_dict: Dict[str, Tuple[SharedMemoryEntry, int]] = {}
         order_at = 0
 
         for round in self.conversation.rounds:
@@ -92,6 +92,7 @@ class Memory:
             for post in round.post_list:
                 for attachment in post.attachment_list:
                     if attachment.type == AttachmentType.shared_memory_entry:
+                        assert attachment.extra is not None
                         entry: SharedMemoryEntry = attachment.extra
                         if entry.type == entry_type:
                             if entry.scope == "conversation" or is_last_round:
