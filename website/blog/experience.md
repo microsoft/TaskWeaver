@@ -1,6 +1,6 @@
 # Experience selection
 
-We have introduced the motivation of the `experience` module in [Experience](/docs/customization/experience/experience) 
+We have introduced the motivation of the `experience` module in [Experience](/docs/customization/experience) 
 and how to create a handcrafted experience in [Handcrafted Experience](/docs/customization/experience/handcrafted_experience).
 In this blog post, we discuss more advanced topics about the experience module on experience selection.
 
