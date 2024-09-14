@@ -93,8 +93,6 @@ def test_compose_prompt():
                 extra=SharedMemoryEntry.create(
                     type="plan",
                     scope="round",
-                    scope_id="round-1",
-                    by="Planner",
                     content=(
                         "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n"
                         "3. report the result to the user <wide depend on 2>"

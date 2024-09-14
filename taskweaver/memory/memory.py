@@ -76,31 +76,33 @@ class Memory:
         else:
             write_yaml(raw_exp_path, self.conversation.to_dict())
 
-    def get_shared_memory_entry(
+    def get_shared_memory_entries(
         self,
         entry_type: str,
-        entry_scopes: List[str],
-        entry_scope_ids: List[str],
     ) -> List[SharedMemoryEntry]:
+        """Get the shared memory entries of the given type and scope.
+        entry_scope: "round" or "conversation"
+        """
         entry_dict = {}
         order_at = 0
+
         for round in self.conversation.rounds:
+            # Check if the round is the last round
+            is_last_round = round.id == self.conversation.rounds[-1].id
             for post in round.post_list:
                 for attachment in post.attachment_list:
                     if attachment.type == AttachmentType.shared_memory_entry:
-                        entry = attachment.extra
-                        if (
-                            entry.type == entry_type
-                            and entry.scope in entry_scopes
-                            and entry.scope_id in entry_scope_ids
-                        ):
-                            entry_dict[entry.get_aggregation_key()] = (entry, order_at)
-                            order_at += 1
+                        entry: SharedMemoryEntry = attachment.extra
+                        if entry.type == entry_type:
+                            if entry.scope == "conversation" or is_last_round:
+                                # if multiple entries with the same role, only keep the last one
+                                entry_dict[post.send_from] = (entry, order_at)
+                                order_at += 1
 
         # Sort the entries by the order_at
-        entries = list(entry_dict.values())
-        entries.sort(key=lambda x: x[1])
-        return [entry[0] for entry in entries]
+        entries_with_order = list(entry_dict.values())
+        entries_with_order.sort(key=lambda x: x[1])
+        return [e[0] for e in entries_with_order]
 
     def from_yaml(self, session_id: str, path: str) -> Memory:
         """Load the memory from a yaml file."""

@@ -358,11 +358,7 @@ class CodeGenerator(Role):
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
-        exp_sub_paths = memory.get_shared_memory_entry(
-            entry_type="experience_sub_path",
-            entry_scopes=["conversation"],
-            entry_scope_ids=[memory.conversation.id],
-        )
+        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
 
         if exp_sub_paths:
             self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
@@ -371,11 +367,7 @@ class CodeGenerator(Role):
             exp_sub_path = ""
         selected_experiences = self.load_experience(query=query, sub_path=exp_sub_path)
 
-        planning_enrichments = memory.get_shared_memory_entry(
-            entry_type="plan",
-            entry_scopes=["conversation", "round"],
-            entry_scope_ids=[memory.conversation.id, rounds[-1].id],
-        )
+        planning_enrichments = memory.get_shared_memory_entries(entry_type="plan")
 
         prompt = self.compose_prompt(
             rounds,

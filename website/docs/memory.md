@@ -87,28 +87,23 @@ The attachment has a instance of SharedMemoryEntry in the `extra` field. The Sha
 ```python
 class SharedMemoryEntry:
     type: Literal[...] # The type of the shared memory entry
-    by: str # The role that shared the information
     content: str # The content of the shared information
     scope: Literal["round", "conversation"] # The scope of the shared information
-    scope_id: str # The id of the scope, such as round_id or conversation_id
-    aggregation_keys: Tuple[Literal["by", "type", "scope", "scope_id", "id"], ...] # The keys to aggregate the shared memory entries
     id: str # The id of the shared memory entry
 ```
 
+Understanding the `scope` field is crucial to understand the Shared Memory. The `scope` field determines the scope of the shared information.
+If the `scope` is `round`, the shared information is only effective for the current round. 
+Otherwise, if the `scope` is `conversation`, the shared information is effective for the whole conversation.
+
 One question may be why we do not store the shared information in a separate data structure, instead of the Attachment in Posts.
-The reason is that, if a Round fails, we may need to remove the shared information within that Round as well. By storing the shared information in the Attachment,
-as a part of the Post, we can easily filter out the shared information based on the Round status. 
+The reason is that, if a Round fails, we need to remove the shared information within that Round as well. 
+By storing the shared information in the Attachment, as a part of the Post, we can easily filter out the shared information based on the Round status. 
 This is similar with designing the logging system of database operations in a transaction.
 
-The consumer of the shared information can use `type`, `scope`, and `scope_id` to filter out the shared information that is relevant to it.
-The `by` field is not suggested to be used for filtering, as it requires the consumer to know the role that shared the information.
-The two fields `scope` and `scope_id` are used to determine the scope of the shared information. The `scope` can be either `round` or `conversation`.
-For example, if one piece of information is only effective for the current round, the `scope` is `round` and the `scope_id` is the current `round_id`.
-Similarly, if one piece of information is effective for the whole conversation, the `scope` is `conversation` and the `scope_id` is the `conversation_id`.
+The consumer of the shared information can use `type` to retrieve the shared memory entries that is effective for the current chat round,
+including the conversational ones. However, if one role has multiple shared memory entries with the same `type`, 
+only the latest one is effective. In other words, later shared memory entries overwrite the previous ones with the same `type` from the same role.
 
-The `aggregation_keys` field is used to aggregate the shared information when there are multiple shared information entries with the same `type`, `scope`, and `scope_id`.
-If more than one shared information entries have the same aggregation key, only the latest one along the conversation history is kept.
-We allow the generator role to define the aggregation keys. We include a unique `id` field in the SharedMemoryEntry to distinguish the shared information entries.
-So, if the `aggregation_keys = ("id",)`, the shared information entries are not aggregated.
-
-A reference implementation of the Shared Memory is provided in the `taskweaver/planner/planner.py`, where the Planner role shares the details of the plan with other roles.
+A reference implementation of the Shared Memory is provided in the `taskweaver/planner/planner.py`, 
+where the Planner role shares the details of the plan with other roles.

@@ -99,9 +99,6 @@ def test_memory_get_shared1():
                     type="plan",
                     content="This is my plan: create a dataframe",
                     scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("type",),
-                    by="Planner",
                 ),
             ),
         ],
@@ -134,9 +131,6 @@ def test_memory_get_shared1():
                     type="plan",
                     content="This is my plan: what is the data range",
                     scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("type",),
-                    by="Planner",
                 ),
             ),
         ],
@@ -165,9 +159,6 @@ def test_memory_get_shared1():
                     type="plan",
                     content="This is my plan: what is the max value?",
                     scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("type",),
-                    by="Planner",
                 ),
             ),
         ],
@@ -185,10 +176,8 @@ def test_memory_get_shared1():
     memory.conversation.add_round(round2)
     memory.conversation.add_round(round3)
 
-    shared_plan = memory.get_shared_memory_entry(
+    shared_plan = memory.get_shared_memory_entries(
         entry_type="plan",
-        entry_scopes=["conversation"],
-        entry_scope_ids=[memory.conversation.id],
     )
 
     assert len(shared_plan) == 1
@@ -211,9 +200,6 @@ def test_memory_get_shared2():
                     type="plan",
                     content="This is my plan: create a dataframe",
                     scope="round",
-                    scope_id="round-1",
-                    aggregation_keys=("by", "type", "scope_id"),
-                    by="Planner",
                 ),
             ),
         ],
@@ -246,9 +232,6 @@ def test_memory_get_shared2():
                     type="plan",
                     content="This is my plan: what is the data range",
                     scope="round",
-                    scope_id="round-2",
-                    aggregation_keys=("by", "type", "scope_id"),
-                    by="Planner",
                 ),
             ),
         ],
@@ -277,9 +260,6 @@ def test_memory_get_shared2():
                     type="plan",
                     content="This is my plan: what is the max value?",
                     scope="round",
-                    scope_id="round-3",
-                    aggregation_keys=("by", "type", "scope_id"),
-                    by="Planner",
                 ),
             ),
         ],
@@ -298,10 +278,8 @@ def test_memory_get_shared2():
     memory.conversation.add_round(round2)
     memory.conversation.add_round(round3)
 
-    shared_plan = memory.get_shared_memory_entry(
+    shared_plan = memory.get_shared_memory_entries(
         entry_type="plan",
-        entry_scopes=["round"],
-        entry_scope_ids=["round-3"],
     )
 
     assert len(shared_plan) == 1
@@ -324,9 +302,6 @@ def test_memory_get_shared3():
                     type="plan",
                     content="This is my plan: create a dataframe",
                     scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("id",),
-                    by="Planner",
                 ),
             ),
         ],
@@ -358,10 +333,7 @@ def test_memory_get_shared3():
                 extra=SharedMemoryEntry.create(
                     type="plan",
                     content="This is my plan: what is the data range",
-                    scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("id",),
-                    by="Planner",
+                    scope="round",
                 ),
             ),
         ],
@@ -380,7 +352,7 @@ def test_memory_get_shared3():
     round3 = Round.create(user_query="hello again", id="round-3")
     post5 = Post.create(
         message="what is the max value?",
-        send_from="Planner",
+        send_from="Dummy",
         send_to="CodeInterpreter",
         attachment_list=[
             Attachment.create(
@@ -389,10 +361,7 @@ def test_memory_get_shared3():
                 extra=SharedMemoryEntry.create(
                     type="plan",
                     content="This is my plan: what is the max value?",
-                    scope="conversation",
-                    scope_id=memory.conversation.id,
-                    aggregation_keys=("id",),
-                    by="Planner",
+                    scope="round",
                 ),
             ),
         ],
@@ -410,10 +379,8 @@ def test_memory_get_shared3():
     memory.conversation.add_round(round2)
     memory.conversation.add_round(round3)
 
-    shared_plan = memory.get_shared_memory_entry(
+    shared_plan = memory.get_shared_memory_entries(
         entry_type="plan",
-        entry_scopes=["conversation"],
-        entry_scope_ids=[memory.conversation.id],
     )
 
-    assert len(shared_plan) == 3
+    assert len(shared_plan) == 2

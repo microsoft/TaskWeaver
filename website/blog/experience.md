@@ -87,11 +87,8 @@ def reply(self, memory: Memory, **kwargs: ...) -> Post:
         message="Add experience sub path",
         extra=SharedMemoryEntry.create(
             type="experience_sub_path",
-            by=self.alias,
-            scope="conversation",
-            scope_id=memory.conversation.id,
+            scope="conversation", # define the effective scope of the shared memory entry to be the whole conversation
             content="task_type_1",
-            aggregation_keys=("type", ),
         ),
     )
 
@@ -101,10 +98,8 @@ def reply(self, memory: Memory, **kwargs: ...) -> Post:
 In a role that needs to set the experience subdirectory, we can get the experience subdirectory from the shared memory.
 
 ```python
-exp_sub_paths = memory.get_shared_memory_entry(
+exp_sub_paths = memory.get_shared_memory_entries(
     entry_type="experience_sub_path",
-    entry_scopes=["conversation"],
-    entry_scope_ids=[memory.conversation.id],
 )
 
 if exp_sub_paths:

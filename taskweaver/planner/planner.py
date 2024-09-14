@@ -266,11 +266,7 @@ class Planner(Role):
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        exp_sub_paths = memory.get_shared_memory_entry(
-            entry_type="experience_sub_path",
-            entry_scopes=["conversation"],
-            entry_scope_ids=[memory.conversation.id],
-        )
+        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
 
         if exp_sub_paths:
             self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
@@ -358,11 +354,8 @@ class Planner(Role):
                 message="Add the plan to the shared memory",
                 extra=SharedMemoryEntry.create(
                     type="plan",
-                    by=self.alias,
                     scope="round",
-                    scope_id=rounds[-1].id,
                     content=bulletin_message,
-                    aggregation_keys=("by", "type", "scope_id"),
                 ),
             )
 
