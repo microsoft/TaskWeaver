@@ -406,7 +406,7 @@ def test_compose_prompt_with_not_plugin_only():
             ),
             "code_generator.example_base_path": os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "data/examples/codeinterpreter_examples",
+                "data/examples/code_generator_examples",
             ),
         },
     )

@@ -242,7 +242,7 @@ class ExperienceGenerator:
         exp_ids = [os.path.splitext(os.path.basename(exp_file))[0].split("_")[2] for exp_file in original_exp_files]
         if len(exp_ids) == 0:
             self.logger.warning(
-                "No experience found."
+                "No experience found.",
             )
             return
 
@@ -253,18 +253,14 @@ class ExperienceGenerator:
 
             exp_file = f"exp_{exp_id}.yaml"
             exp_file_path = os.path.join(exp_dir, exp_file)
-            assert os.path.exists(exp_file_path), (
-                f"Experience {exp_file} not found. "
-            )
+            assert os.path.exists(exp_file_path), f"Experience {exp_file} not found. "
 
             experience = read_yaml(exp_file_path)
 
-            assert len(experience["embedding"]) > 0, (
-                f"Experience {exp_file} has no embedding."
-            )
-            assert experience["embedding_model"] == self.llm_api.embedding_service.config.embedding_model, (
-                f"Experience {exp_file} has different embedding model."
-            )
+            assert len(experience["embedding"]) > 0, f"Experience {exp_file} has no embedding."
+            assert (
+                experience["embedding_model"] == self.llm_api.embedding_service.config.embedding_model
+            ), f"Experience {exp_file} has different embedding model."
 
             self.experience_list.append(Experience(**experience))
 
@@ -326,13 +322,13 @@ class ExperienceGenerator:
     @staticmethod
     def format_experience_in_prompt(
         prompt_template: str,
-        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
+        selected_experiences: Optional[List[Experience,]] = None,
     ):
         if selected_experiences is not None and len(selected_experiences) > 0:
             return prompt_template.format(
                 experiences="===================\n"
                 + "\n===================\n".join(
-                    [exp.experience_text for exp, _ in selected_experiences],
+                    [exp.experience_text for exp in selected_experiences],
                 ),
             )
         else:
