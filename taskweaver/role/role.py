@@ -220,7 +220,7 @@ class Role:
                 example_sub_path = example_sub_paths[0].content
             else:
                 self.logger.info("No example sub path found in memory.")
-                self.experiences = []
+                self.examples = []
                 return
 
         load_from = os.path.join(self.config.example_base_path, example_sub_path)
