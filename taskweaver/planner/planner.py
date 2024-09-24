@@ -210,12 +210,11 @@ class Planner(Role):
             ),
         ]
 
-        if self.config.use_example and len(self.examples) != 0:
-            for conv_example in self.examples:
-                conv_example_in_prompt = self.compose_conversation_for_prompt(
-                    conv_example.rounds,
-                )
-                chat_history += conv_example_in_prompt
+        for conv_example in self.examples:
+            conv_example_in_prompt = self.compose_conversation_for_prompt(
+                conv_example.rounds,
+            )
+            chat_history += conv_example_in_prompt
 
         summary = None
         if self.config.prompt_compression and self.round_compressor is not None:
@@ -251,8 +250,8 @@ class Planner(Role):
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        self.load_experience(query=user_query, memory=memory)
-        self.load_example(role_set=set(self.recipient_alias_set) | {self.alias, "User"}, memory=memory)
+        self.role_load_experience(query=user_query, memory=memory)
+        self.role_load_example(role_set=set(self.recipient_alias_set) | {self.alias, "User"}, memory=memory)
 
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 

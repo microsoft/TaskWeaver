@@ -344,8 +344,8 @@ class CodeGenerator(Role):
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
-        self.load_experience(query=query, memory=memory)
-        self.load_example(memory=memory, role_set={self.alias, "Planner"})
+        self.role_load_experience(query=query, memory=memory)
+        self.role_load_example(memory=memory, role_set={self.alias, "Planner"})
 
         planning_enrichments = memory.get_shared_memory_entries(entry_type="plan")
 

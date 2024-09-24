@@ -124,8 +124,8 @@ class Role:
         self.experience_generator: Optional[ExperienceGenerator] = None
         self.experience_loaded_from: Optional[str] = None
 
-        self.example_loaded_from: Optional[str] = None
         self.examples: List[Conversation] = []
+        self.example_loaded_from: Optional[str] = None
 
     def get_intro(self) -> str:
         return self.intro
@@ -142,7 +142,7 @@ class Role:
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
 
-    def load_experience(
+    def role_load_experience(
         self,
         query: str,
         memory: Memory,
@@ -152,7 +152,9 @@ class Role:
             return
 
         if self.experience_generator is None:
-            raise ValueError("Experience generator is not initialized.")
+            raise ValueError(
+                "Experience generator is not initialized. " "Each role instance should have its own generator.",
+            )
 
         exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
 
@@ -179,24 +181,21 @@ class Role:
         else:
             self.logger.info(f"Experience already loaded from {load_from}.")
 
-        self.experiences = [exp for exp, _ in self.experience_generator.retrieve_experience(query)]
+        experiences = self.experience_generator.retrieve_experience(query)
+        self.logger.info(f"Retrieved {len(experiences)} experiences for query [{query}]")
+        self.experiences = [exp for exp, _ in experiences]
 
     def format_experience(
         self,
         template: str,
     ) -> str:
-        experiences_str = (
-            self.experience_generator.format_experience_in_prompt(
-                template,
-                self.experiences,
-            )
+        return (
+            self.experience_generator.format_experience_in_prompt(template, self.experiences)
             if self.config.use_experience
             else ""
         )
 
-        return experiences_str
-
-    def load_example(self, role_set: Set[str], memory: Memory) -> None:
+    def role_load_example(self, role_set: Set[str], memory: Memory) -> None:
         if not self.config.use_example:
             self.examples = []
             return

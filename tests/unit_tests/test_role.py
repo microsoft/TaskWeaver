@@ -34,7 +34,7 @@ def test_role_load_experience():
 
     role.experience_generator = app_injector.create_object(ExperienceGenerator)
 
-    role.load_experience("test")
+    role.role_load_experience("test")
     assert len(role.experience_generator.experience_list) == 1
 
 
@@ -61,13 +61,13 @@ def test_role_load_experience_sub_path():
 
     role.experience_generator = app_injector.create_object(ExperienceGenerator)
 
-    role.load_experience("test")
+    role.role_load_experience("test")
     assert len(role.experience_generator.experience_list) == 0
 
-    role.load_experience("test", "sub_path")
+    role.role_load_experience("test", "sub_path")
     assert len(role.experience_generator.experience_list) == 1
 
     try:
-        role.load_experience("test")
+        role.role_load_experience("test")
     except AssertionError as e:
         assert str(e) == "sub_path is empty when dynamic_experience_sub_path is True"
