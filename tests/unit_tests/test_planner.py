@@ -276,6 +276,8 @@ def test_compose_example_for_prompt():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
+    planner.role_load_example({"Planner", "CodeInterpreter", "User"}, memory)
+
     messages = planner.compose_prompt(rounds=memory.conversation.rounds)
 
     assert messages[0]["role"] == "system"

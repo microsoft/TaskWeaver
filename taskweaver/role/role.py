@@ -142,10 +142,20 @@ class Role:
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
 
+    def format_experience(
+        self,
+        template: str,
+    ) -> str:
+        return (
+            self.experience_generator.format_experience_in_prompt(template, self.experiences)
+            if self.config.use_experience
+            else ""
+        )
+
     def role_load_experience(
         self,
         query: str,
-        memory: Memory,
+        memory: Optional[Memory] = None,
     ) -> None:
         if not self.config.use_experience:
             self.experiences = []
@@ -153,16 +163,21 @@ class Role:
 
         if self.experience_generator is None:
             raise ValueError(
-                "Experience generator is not initialized. " "Each role instance should have its own generator.",
+                "Experience generator is not initialized. Each role instance should have its own generator.",
             )
 
-        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
-
-        if exp_sub_paths:
-            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
-            exp_sub_path = exp_sub_paths[0].content
-        else:
-            exp_sub_path = ""
+        exp_sub_path = ""
+        if self.config.dynamic_experience_sub_path:
+            assert memory is not None, "Memory should be provided when dynamic_experience_sub_path is True"
+            exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
+            if exp_sub_paths:
+                self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
+                # todo: handle multiple experience sub paths
+                exp_sub_path = exp_sub_paths[0].content
+            else:
+                self.logger.info("No experience sub path found in memory.")
+                self.experiences = []
+                return
 
         load_from = os.path.join(self.config.experience_dir, exp_sub_path)
         if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
@@ -185,27 +200,28 @@ class Role:
         self.logger.info(f"Retrieved {len(experiences)} experiences for query [{query}]")
         self.experiences = [exp for exp, _ in experiences]
 
-    def format_experience(
+    # todo: `role_load_example` is similar to `role_load_experience`, consider refactoring
+    def role_load_example(
         self,
-        template: str,
-    ) -> str:
-        return (
-            self.experience_generator.format_experience_in_prompt(template, self.experiences)
-            if self.config.use_experience
-            else ""
-        )
-
-    def role_load_example(self, role_set: Set[str], memory: Memory) -> None:
+        role_set: Set[str],
+        memory: Optional[Memory] = None,
+    ) -> None:
         if not self.config.use_example:
             self.examples = []
             return
 
-        example_sub_paths = memory.get_shared_memory_entries(entry_type="example_sub_path")
-        if example_sub_paths:
-            self.tracing.set_span_attribute("example_sub_path", str(example_sub_paths))
-            example_sub_path = example_sub_paths[0].content
-        else:
-            example_sub_path = ""
+        example_sub_path = ""
+        if self.config.dynamic_example_sub_path:
+            assert memory is not None, "Memory should be provided when dynamic_example_sub_path is True"
+            example_sub_paths = memory.get_shared_memory_entries(entry_type="example_sub_path")
+            if example_sub_paths:
+                self.tracing.set_span_attribute("example_sub_path", str(example_sub_paths))
+                # todo: handle multiple sub paths
+                example_sub_path = example_sub_paths[0].content
+            else:
+                self.logger.info("No example sub path found in memory.")
+                self.experiences = []
+                return
 
         load_from = os.path.join(self.config.example_base_path, example_sub_path)
         if self.example_loaded_from is None or self.example_loaded_from != load_from:
