@@ -166,31 +166,31 @@ class Role:
                 "Experience generator is not initialized. Each role instance should have its own generator.",
             )
 
-        exp_sub_path = ""
+        experience_sub_path = ""
         if self.config.dynamic_experience_sub_path:
             assert memory is not None, "Memory should be provided when dynamic_experience_sub_path is True"
-            exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
-            if exp_sub_paths:
-                self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
+            experience_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
+            if experience_sub_paths:
+                self.tracing.set_span_attribute("experience_sub_path", str(experience_sub_paths))
                 # todo: handle multiple experience sub paths
-                exp_sub_path = exp_sub_paths[0].content
+                experience_sub_path = experience_sub_paths[0].content
             else:
                 self.logger.info("No experience sub path found in memory.")
                 self.experiences = []
                 return
 
-        load_from = os.path.join(self.config.experience_dir, exp_sub_path)
+        load_from = os.path.join(self.config.experience_dir, experience_sub_path)
         if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
             self.experience_loaded_from = load_from
             self.experience_generator.set_experience_dir(self.config.experience_dir)
-            self.experience_generator.set_sub_path(exp_sub_path)
+            self.experience_generator.set_sub_path(experience_sub_path)
             self.experience_generator.refresh()
             self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully for {}, there are {} experiences with filter [{}]".format(
                     self.alias,
                     len(self.experience_generator.experience_list),
-                    exp_sub_path,
+                    experience_sub_path,
                 ),
             )
         else:
