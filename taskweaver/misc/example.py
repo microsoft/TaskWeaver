@@ -21,11 +21,7 @@ def load_examples(
     if sub_path:
         folder = path.join(folder, sub_path)
     if not path.exists(folder):
-        raise FileNotFoundError(
-            f"Folder {folder} does not exist. The default example folder of CodeInterpreter "
-            f"has been changed from `codeinterpreter_examples` to `code_generator_examples`. "
-            f"If this is the cause, please either rename the folder or change the config.",
-        )
+        raise FileNotFoundError(f"Folder {folder} does not exist.")
 
     example_file_list: List[str] = glob.glob(path.join(folder, "*.yaml"))
     example_conv_pool: List[Conversation] = []

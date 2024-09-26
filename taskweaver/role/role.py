@@ -71,6 +71,7 @@ class RoleConfig(ModuleConfig):
             "example_base_path",
             os.path.join(
                 self.src.app_base_path,
+                "examples",
                 f"{self.name}_examples",
             ),
         )
@@ -209,6 +210,13 @@ class Role:
         if not self.config.use_example:
             self.examples = []
             return
+
+        if not os.path.exists(self.config.example_base_path):
+            raise FileNotFoundError(
+                f"The default example base path {self.config.example_base_path} does not exist."
+                "The original example base paths have been changed to `examples` folder."
+                "Please migrate the examples to the new base path.",
+            )
 
         example_sub_path = ""
         if self.config.dynamic_example_sub_path:
