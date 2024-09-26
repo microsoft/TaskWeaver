@@ -9,7 +9,7 @@ In this blog post, we discuss more advanced topics about the experience module o
 Every role in TaskWeaver can configure its own experience directory, which can be configured 
 by setting the `role_name.experience_dir` field in the project configuration file.
 For the `Planner` and `CodeInterpreter` roles, you can configure the experience directory
-by setting the `planner.experience_dir` and `code_interpreter.experience_dir` fields respectively.
+by setting the `planner.experience_dir` and `code_generator.experience_dir` fields respectively.
 The default experience directory is `experience` in the project directory.
 
 
@@ -106,7 +106,7 @@ if exp_sub_paths:
     exp_sub_path = exp_sub_paths[0].content
 else:
     exp_sub_path = ""
-selected_experiences = self.load_experience(query=query, sub_path=exp_sub_path)
+selected_experiences = self.role_load_experience(query=query, sub_path=exp_sub_path)
 ```
 
 :::tip

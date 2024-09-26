@@ -1,0 +1,43 @@
+enabled: True
+rounds:
+  - user_query: count the rows of /home/data.csv
+    state: created
+    post_list:
+      - message: count the rows of /home/data.csv
+        send_from: User
+        send_to: Planner
+        attachment_list:
+      - message: Please load the data file /home/data.csv and count the rows of the loaded data
+        send_from: Planner
+        send_to: CodeInterpreter
+        attachment_list:
+        - type: init_plan
+          content: |-
+                1. load the data file
+                2. count the rows of the loaded data <narrow depend on 1>
+                3. report the result to the user <wide depend on 2>
+        - type: plan
+          content: |-
+            1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
+            2. report the result to the user
+        - type: current_plan_step
+          content: 1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
+      - message: Load the data file /home/data.csv successfully and there are 100 rows in the data file
+        send_from: CodeInterpreter
+        send_to: Planner
+        attachment_list:
+      - message: The data file /home/data.csv is loaded and there are 100 rows in the data file
+        send_from: Planner
+        send_to: User
+        attachment_list:
+          - type: init_plan
+            content: |-
+                1. load the data file
+                2. count the rows of the loaded data <narrow depend on 1>
+                3. report the result to the user <wide depend on 2>
+          - type: plan
+            content: |-
+                1. instruct CodeInterpreter to load the data file and count the rows of the loaded data
+                2. report the result to the user
+          - type: current_plan_step
+            content: 2. report the result to the user

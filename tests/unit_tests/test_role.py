@@ -5,6 +5,8 @@ from injector import Injector
 
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.logging import LoggingModule
+from taskweaver.memory import Attachment, Memory, Post, Round, SharedMemoryEntry
+from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import ExperienceGenerator
 from taskweaver.memory.plugin import PluginModule
 from taskweaver.role import Role
@@ -34,7 +36,7 @@ def test_role_load_experience():
 
     role.experience_generator = app_injector.create_object(ExperienceGenerator)
 
-    role.load_experience("test")
+    role.role_load_experience("test")
     assert len(role.experience_generator.experience_list) == 1
 
 
@@ -61,13 +63,35 @@ def test_role_load_experience_sub_path():
 
     role.experience_generator = app_injector.create_object(ExperienceGenerator)
 
-    role.load_experience("test")
+    memory = Memory(session_id="session-1")
+
+    role.role_load_experience("test", memory=memory)
     assert len(role.experience_generator.experience_list) == 0
 
-    role.load_experience("test", "sub_path")
+    post1 = Post.create(
+        message="create a dataframe",
+        send_from="Planner",
+        send_to="CodeInterpreter",
+        attachment_list=[
+            Attachment.create(
+                type=AttachmentType.shared_memory_entry,
+                content="",
+                extra=SharedMemoryEntry.create(
+                    type="experience_sub_path",
+                    content="sub_path",
+                    scope="conversation",
+                ),
+            ),
+        ],
+    )
+    round1 = Round.create(user_query="hello", id="round-1")
+    round1.add_post(post1)
+    memory.conversation.add_round(round1)
+
+    role.role_load_experience("test", memory=memory)
     assert len(role.experience_generator.experience_list) == 1
 
     try:
-        role.load_experience("test")
+        role.role_load_experience("test")
     except AssertionError as e:
-        assert str(e) == "sub_path is empty when dynamic_experience_sub_path is True"
+        assert str(e) == "Memory should be provided when dynamic_experience_sub_path is True"

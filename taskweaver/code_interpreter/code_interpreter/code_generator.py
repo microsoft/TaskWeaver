@@ -1,7 +1,7 @@
 import datetime
 import json
 import os
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from injector import inject
 
@@ -9,11 +9,10 @@ from taskweaver.code_interpreter.plugin_selection import PluginSelector, Selecte
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Attachment, Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.memory.experience import Experience, ExperienceGenerator
+from taskweaver.memory.experience import ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
-from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import PostEventProxy, SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
@@ -26,19 +25,11 @@ class CodeGeneratorConfig(RoleConfig):
         self._set_name("code_generator")
         self.role_name = self._get_str("role_name", "ProgramApe")
         self.load_plugin = self._get_bool("load_plugin", True)
-        self.load_example = self._get_bool("load_example", True)
         self.prompt_file_path = self._get_path(
             "prompt_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "code_generator_prompt.yaml",
-            ),
-        )
-        self.example_base_path = self._get_path(
-            "example_base_path",
-            os.path.join(
-                self.src.app_base_path,
-                "codeinterpreter_examples",
             ),
         )
         self.prompt_compression = self._get_bool("prompt_compression", False)
@@ -89,7 +80,6 @@ class CodeGenerator(Role):
         self.query_requirements_template = self.prompt_data["requirements"]
         self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
-        self.examples = None
         self.code_verification_on: bool = False
         self.allowed_modules: List[str] = []
 
@@ -157,12 +147,10 @@ class CodeGenerator(Role):
         self,
         rounds: List[Round],
         plugins: List[PluginEntry],
-        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
         planning_enrichments: Optional[List[str]] = None,
     ) -> List[ChatMessageType]:
         experiences = self.format_experience(
             template=self.prompt_data["experience_instruction"],
-            experiences=selected_experiences,
         )
 
         chat_history = [
@@ -172,8 +160,6 @@ class CodeGenerator(Role):
             ),
         ]
 
-        if self.examples is None:
-            self.examples = self.load_examples()
         for i, example in enumerate(self.examples):
             chat_history.extend(
                 self.compose_conversation(example.rounds, example.plugins, add_requirements=False),
@@ -358,21 +344,14 @@ class CodeGenerator(Role):
         if self.config.enable_auto_plugin_selection:
             self.plugin_pool = self.select_plugins_for_prompt(query)
 
-        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
-
-        if exp_sub_paths:
-            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
-            exp_sub_path = exp_sub_paths[0].content
-        else:
-            exp_sub_path = ""
-        selected_experiences = self.load_experience(query=query, sub_path=exp_sub_path)
+        self.role_load_experience(query=query, memory=memory)
+        self.role_load_example(memory=memory, role_set={self.alias, "Planner"})
 
         planning_enrichments = memory.get_shared_memory_entries(entry_type="plan")
 
         prompt = self.compose_prompt(
             rounds,
             self.plugin_pool,
-            selected_experiences,
             planning_enrichments=[pe.content for pe in planning_enrichments],
         )
 
@@ -439,16 +418,6 @@ class CodeGenerator(Role):
                 [plugin.format_prompt() for plugin in plugin_list],
             )
         return ""
-
-    def load_examples(
-        self,
-    ) -> List[Conversation]:
-        if self.config.load_example:
-            return load_examples(
-                folder=self.config.example_base_path,
-                role_set={self.alias, "Planner"},
-            )
-        return []
 
     def get_plugin_pool(self) -> List[PluginEntry]:
         return self.plugin_pool

@@ -2,16 +2,17 @@ import inspect
 import os.path
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Set, Tuple, Union
 
 from injector import Module, inject, provider
 
 from taskweaver.config.config_mgt import AppConfigSource
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Memory, Post
+from taskweaver.memory import Conversation, Memory, Post
 from taskweaver.memory.experience import Experience, ExperienceGenerator
 from taskweaver.misc.component_registry import ComponentRegistry
+from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
 from taskweaver.utils import import_module, read_yaml
@@ -62,6 +63,23 @@ class RoleConfig(ModuleConfig):
             False,
         )
 
+        self.use_example = self._get_bool(
+            "use_example",
+            True,
+        )
+        self.example_base_path = self._get_path(
+            "example_base_path",
+            os.path.join(
+                self.src.app_base_path,
+                "examples",
+                f"{self.name}_examples",
+            ),
+        )
+        self.dynamic_example_sub_path = self._get_bool(
+            "dynamic_example_sub_path",
+            False,
+        )
+
         self._configure()
 
     def _set_role_name(self):
@@ -103,8 +121,12 @@ class Role:
         self.alias: str = self.role_entry.alias if self.role_entry else ""
         self.intro: str = self.role_entry.intro if self.role_entry else ""
 
+        self.experiences: List[Experience] = []
         self.experience_generator: Optional[ExperienceGenerator] = None
         self.experience_loaded_from: Optional[str] = None
+
+        self.examples: List[Conversation] = []
+        self.example_loaded_from: Optional[str] = None
 
     def get_intro(self) -> str:
         return self.intro
@@ -121,60 +143,111 @@ class Role:
     def close(self) -> None:
         self.logger.info(f"{self.alias} closed successfully")
 
-    def load_experience(
+    def format_experience(
+        self,
+        template: str,
+    ) -> str:
+        return (
+            self.experience_generator.format_experience_in_prompt(template, self.experiences)
+            if self.config.use_experience
+            else ""
+        )
+
+    def role_load_experience(
         self,
         query: str,
-        sub_path: str = "",
-    ) -> List[Tuple[Experience, float]]:
+        memory: Optional[Memory] = None,
+    ) -> None:
+        if not self.config.use_experience:
+            self.experiences = []
+            return
+
         if self.experience_generator is None:
-            raise ValueError("Experience generator is not initialized.")
+            raise ValueError(
+                "Experience generator is not initialized. Each role instance should have its own generator.",
+            )
 
-        if self.config.use_experience:
-            if not self.config.dynamic_experience_sub_path:
-                self._load_experience()
-            elif sub_path:
-                self._load_experience(sub_path=sub_path)
+        experience_sub_path = ""
+        if self.config.dynamic_experience_sub_path:
+            assert memory is not None, "Memory should be provided when dynamic_experience_sub_path is True"
+            experience_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
+            if experience_sub_paths:
+                self.tracing.set_span_attribute("experience_sub_path", str(experience_sub_paths))
+                # todo: handle multiple experience sub paths
+                experience_sub_path = experience_sub_paths[0].content
             else:
-                # if sub_path is empty, experience should not have been loaded
-                assert self.experience_loaded_from is None, "sub_path is empty when dynamic_experience_sub_path is True"
+                self.logger.info("No experience sub path found in memory.")
+                self.experiences = []
+                return
 
-            return self.experience_generator.retrieve_experience(query)
-        else:
-            return []
-
-    def _load_experience(self, sub_path: str = "") -> None:
-        load_from = os.path.join(self.config.experience_dir, sub_path)
+        load_from = os.path.join(self.config.experience_dir, experience_sub_path)
         if self.experience_loaded_from is None or self.experience_loaded_from != load_from:
             self.experience_loaded_from = load_from
             self.experience_generator.set_experience_dir(self.config.experience_dir)
-            self.experience_generator.set_sub_path(sub_path)
+            self.experience_generator.set_sub_path(experience_sub_path)
             self.experience_generator.refresh()
             self.experience_generator.load_experience()
             self.logger.info(
                 "Experience loaded successfully for {}, there are {} experiences with filter [{}]".format(
                     self.alias,
                     len(self.experience_generator.experience_list),
-                    sub_path,
+                    experience_sub_path,
                 ),
             )
         else:
             self.logger.info(f"Experience already loaded from {load_from}.")
 
-    def format_experience(
-        self,
-        template: str,
-        experiences: Optional[List[Tuple[Experience, float]]],
-    ) -> str:
-        experiences_str = (
-            self.experience_generator.format_experience_in_prompt(
-                template,
-                experiences,
-            )
-            if self.config.use_experience
-            else ""
-        )
+        experiences = self.experience_generator.retrieve_experience(query)
+        self.logger.info(f"Retrieved {len(experiences)} experiences for query [{query}]")
+        self.experiences = [exp for exp, _ in experiences]
 
-        return experiences_str
+    # todo: `role_load_example` is similar to `role_load_experience`, consider refactoring
+    def role_load_example(
+        self,
+        role_set: Set[str],
+        memory: Optional[Memory] = None,
+    ) -> None:
+        if not self.config.use_example:
+            self.examples = []
+            return
+
+        if not os.path.exists(self.config.example_base_path):
+            raise FileNotFoundError(
+                f"The default example base path {self.config.example_base_path} does not exist."
+                "The original example base paths have been changed to `examples` folder."
+                "Please migrate the examples to the new base path.",
+            )
+
+        example_sub_path = ""
+        if self.config.dynamic_example_sub_path:
+            assert memory is not None, "Memory should be provided when dynamic_example_sub_path is True"
+            example_sub_paths = memory.get_shared_memory_entries(entry_type="example_sub_path")
+            if example_sub_paths:
+                self.tracing.set_span_attribute("example_sub_path", str(example_sub_paths))
+                # todo: handle multiple sub paths
+                example_sub_path = example_sub_paths[0].content
+            else:
+                self.logger.info("No example sub path found in memory.")
+                self.examples = []
+                return
+
+        load_from = os.path.join(self.config.example_base_path, example_sub_path)
+        if self.example_loaded_from is None or self.example_loaded_from != load_from:
+            self.example_loaded_from = load_from
+            self.examples = load_examples(
+                folder=self.config.example_base_path,
+                sub_path=example_sub_path,
+                role_set=role_set,
+            )
+            self.logger.info(
+                "Example loaded successfully for {}, there are {} examples with filter [{}]".format(
+                    self.alias,
+                    len(self.examples),
+                    example_sub_path,
+                ),
+            )
+        else:
+            self.logger.info(f"Example already loaded from {load_from}.")
 
 
 class RoleModuleConfig(ModuleConfig):

@@ -3,18 +3,17 @@ import json
 import os
 import types
 from json import JSONDecodeError
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional
 
 from injector import inject
 
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Conversation, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
-from taskweaver.memory.experience import Experience, ExperienceGenerator
+from taskweaver.memory.experience import ExperienceGenerator
 from taskweaver.memory.memory import SharedMemoryEntry
-from taskweaver.misc.example import load_examples
 from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing, tracing_decorator
 from taskweaver.role import PostTranslator, Role
@@ -25,20 +24,11 @@ from taskweaver.utils import read_yaml
 class PlannerConfig(RoleConfig):
     def _configure(self) -> None:
         self._set_name("planner")
-        app_dir = self.src.app_base_path
-        self.use_example = self._get_bool("use_example", True)
         self.prompt_file_path = self._get_path(
             "prompt_file_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "planner_prompt.yaml",
-            ),
-        )
-        self.example_base_path = self._get_path(
-            "example_base_path",
-            os.path.join(
-                app_dir,
-                "planner_examples",
             ),
         )
         self.prompt_compression = self._get_bool("prompt_compression", False)
@@ -81,9 +71,6 @@ class Planner(Role):
         self.planner_post_translator = post_translator
 
         self.prompt_data = read_yaml(self.config.prompt_file_path)
-
-        if self.config.use_example:
-            self.examples = self.get_examples()
 
         self.instruction_template = self.prompt_data["instruction_template"]
 
@@ -211,11 +198,9 @@ class Planner(Role):
     def compose_prompt(
         self,
         rounds: List[Round],
-        selected_experiences: Optional[List[Tuple[Experience, float]]] = None,
     ) -> List[ChatMessageType]:
         experiences = self.format_experience(
             template=self.prompt_data["experience_instruction"],
-            experiences=selected_experiences,
         )
 
         chat_history = [
@@ -225,12 +210,11 @@ class Planner(Role):
             ),
         ]
 
-        if self.config.use_example and len(self.examples) != 0:
-            for conv_example in self.examples:
-                conv_example_in_prompt = self.compose_conversation_for_prompt(
-                    conv_example.rounds,
-                )
-                chat_history += conv_example_in_prompt
+        for conv_example in self.examples:
+            conv_example_in_prompt = self.compose_conversation_for_prompt(
+                conv_example.rounds,
+            )
+            chat_history += conv_example_in_prompt
 
         summary = None
         if self.config.prompt_compression and self.round_compressor is not None:
@@ -266,19 +250,13 @@ class Planner(Role):
         self.tracing.set_span_attribute("user_query", user_query)
         self.tracing.set_span_attribute("use_experience", self.config.use_experience)
 
-        exp_sub_paths = memory.get_shared_memory_entries(entry_type="experience_sub_path")
-
-        if exp_sub_paths:
-            self.tracing.set_span_attribute("experience_sub_path", str(exp_sub_paths))
-            exp_sub_path = exp_sub_paths[0].content
-        else:
-            exp_sub_path = ""
-        selected_experiences = self.load_experience(query=user_query, sub_path=exp_sub_path)
+        self.role_load_experience(query=user_query, memory=memory)
+        self.role_load_example(role_set=set(self.recipient_alias_set) | {self.alias, "User"}, memory=memory)
 
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
         post_proxy.update_status("composing prompt")
-        chat_history = self.compose_prompt(rounds, selected_experiences)
+        chat_history = self.compose_prompt(rounds)
 
         def check_post_validity(post: Post):
             missing_elements: List[str] = []
@@ -392,10 +370,3 @@ class Planner(Role):
         self.tracing.set_span_attribute("out.attachments", str(reply_post.attachment_list))
 
         return reply_post
-
-    def get_examples(self) -> List[Conversation]:
-        example_conv_list = load_examples(
-            self.config.example_base_path,
-            role_set=set(self.recipient_alias_set) | {self.alias, "User"},
-        )
-        return example_conv_list

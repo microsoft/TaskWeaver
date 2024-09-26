@@ -464,6 +464,8 @@ def test_compose_prompt_with_not_plugin_only():
     memory = Memory(session_id="session-1")
     memory.conversation.add_round(round1)
 
+    code_generator.role_load_example({"Planner", "CodeInterpreter"}, memory)
+
     messages = code_generator.compose_prompt(
         rounds=memory.conversation.rounds,
         plugins=code_generator.get_plugin_pool(),
@@ -620,26 +622,20 @@ def test_compose_with_shared_plan():
     memory.conversation.add_round(round1)
 
     selected_experiences = [
-        (
-            Experience(
-                exp_id="exp-1",
-                experience_text="this is a test experience",
-            ),
-            0.3,
+        Experience(
+            exp_id="exp-1",
+            experience_text="this is a test experience",
         ),
-        (
-            Experience(
-                exp_id="exp-2",
-                experience_text="this is another test experience",
-            ),
-            0.2,
+        Experience(
+            exp_id="exp-2",
+            experience_text="this is another test experience",
         ),
     ]
+    code_generator.experiences = selected_experiences
 
     messages = code_generator.compose_prompt(
         rounds=memory.conversation.rounds,
         plugins=code_generator.get_plugin_pool(),
-        selected_experiences=selected_experiences,
         planning_enrichments=[
             "shared_memory_entry1",
             "shared_memory_entry2",

@@ -24,9 +24,10 @@ A project directory typically contains the following files and folders:
 📦project
  ┣ 📜taskweaver_config.json # the project configuration file for TaskWeaver
  ┣ 📂plugins # the folder to store plugins
- ┣ 📂planner_examples # the folder to store planner examples
- ┣ 📂codeinterpreter_examples # the folder to store code interpreter examples
  ┣ 📂logs # the folder to store logs, will be generated after program starts
+ ┣ 📂examples
+    ┣ 📂 planner_examples # the folder to store planner examples
+    ┗ 📂 code_generator_examples # the folder to store code generator examples
  ┗ 📂workspace # the directory stores session data， will be generated after program starts
     ┗ 📂 session_id 
       ┣ 📂ces # the folder used by the code execution service

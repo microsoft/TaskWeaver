@@ -7,6 +7,7 @@ from taskweaver.memory.conversation import Conversation
 
 def load_examples(
     folder: str,
+    sub_path: Optional[str] = None,
     role_set: Optional[Set[str]] = None,
 ) -> List[Conversation]:
     """
@@ -14,8 +15,14 @@ def load_examples(
 
     Args:
         folder: the folder path.
+        sub_path: the sub-folder path.
         role_set: the roles should be included in the examples.
     """
+    if sub_path:
+        folder = path.join(folder, sub_path)
+    if not path.exists(folder):
+        raise FileNotFoundError(f"Folder {folder} does not exist.")
+
     example_file_list: List[str] = glob.glob(path.join(folder, "*.yaml"))
     example_conv_pool: List[Conversation] = []
     for yaml_path in example_file_list:
