@@ -15,8 +15,8 @@ This directory contains the scripts used to evaluate the performance of the [DS-
    - metadata.json: the metadata of the test case.
    - prompt.txt: the composed prompt of the test case.
    - reference_code.py: the ground truth code.
-4. Copy the example files from `ds1000_scritps/planner_examples` to `project/planner_examples` directory; 
-   and the example files from `ds1000_scritps/codeinterpreter_examples` to `project/codeinterpreter_examples` directory.
+4. Copy the example files from `ds1000_scritps/planner_examples` to `project/examples/planner_examples` directory; 
+   and the example files from `ds1000_scritps/codeinterpreter_examples` to `project/examples/code_generator_examples` directory.
    Disable (or discard) the original example files from the project directory. See the notes below for understanding why.
 5. Once the test cases are generated, follow the instructions in `auto_eval/README.md` to evaluate the performance of the benchmark.
 

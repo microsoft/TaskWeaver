@@ -98,15 +98,25 @@ def reply(self, memory: Memory, **kwargs: ...) -> Post:
 In a role that needs to set the experience subdirectory, we can get the experience subdirectory from the shared memory.
 
 ```python
-exp_sub_paths = memory.get_shared_memory_entries(
-    entry_type="experience_sub_path",
-)
+def reply(
+        self,
+        memory: Memory,
+        post_proxy: Optional[PostEventProxy] = None,
+        prompt_log_path: Optional[str] = None,
+        **kwargs: ...,
+    ) -> Post:
+    ...
+    rounds = memory.get_role_rounds(
+        role=self.alias,
+        include_failure_rounds=False,
+    )
 
-if exp_sub_paths:
-    exp_sub_path = exp_sub_paths[0].content
-else:
-    exp_sub_path = ""
-selected_experiences = self.role_load_experience(query=query, sub_path=exp_sub_path)
+    # obtain the query from the last round
+    query = rounds[-1].post_list[-1].message
+    
+    # retrieve the experience based on the query
+    self.role_load_experience(query=query, memory=memory)
+    ...
 ```
 
 :::tip
