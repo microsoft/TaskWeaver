@@ -51,11 +51,6 @@ class OpenAIServiceConfig(LLMServiceConfig):
 
         # openai specific config
         self.api_version = self._get_str("api_version", "2024-06-01")
-        self.api_auth_type = self._get_enum(
-            "api_auth_type",
-            ["openai", "azure", "azure_ad"],
-            "openai",
-        )
         is_azure_ad_login = self.api_type == "azure_ad"
         self.aad_auth_mode = self._get_enum(
             "aad_auth_mode",
