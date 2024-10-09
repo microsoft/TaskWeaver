@@ -9,7 +9,7 @@ from ast import literal_eval
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Literal, Optional, Union
 
-from jupyter_client import BlockingKernelClient
+from jupyter_client.blocking.client import BlockingKernelClient
 from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
 from jupyter_client.manager import KernelManager
 from jupyter_client.multikernelmanager import MultiKernelManager
@@ -187,13 +187,14 @@ class Environment:
         os.makedirs(cwd, exist_ok=True)
 
         if self.mode == EnvMode.Local:
-            # set python home from current python environment
-            python_home = os.path.sep.join(sys.executable.split(os.path.sep)[:-2])
+            import site
+
             python_path = os.pathsep.join(
                 [
+                    # package base directory
                     os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "..")),
-                    os.path.join(python_home, "Lib", "site-packages"),
                 ]
+                + site.getsitepackages()
                 + sys.path,
             )
 
@@ -212,7 +213,6 @@ class Environment:
                     "CONNECTION_FILE": self._get_connection_file(session_id, new_kernel_id),
                     "PATH": os.environ["PATH"],
                     "PYTHONPATH": python_path,
-                    "PYTHONHOME": python_home,
                 },
             )
             session.kernel_id = self.multi_kernel_manager.start_kernel(
