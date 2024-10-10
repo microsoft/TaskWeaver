@@ -83,11 +83,7 @@ def start_app():
 if __name__ == "__main__":
     if sys.path[0] == "":
         del sys.path[0]
-    import site
 
-    user_site_packages = site.getusersitepackages()
-    if user_site_packages not in sys.path:
-        sys.path.append(site.getusersitepackages())
     logger.info("Starting process...")
     logger.info("sys.path: %s", sys.path)
     logger.info("os.getcwd(): %s", os.getcwd())
