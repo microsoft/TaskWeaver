@@ -57,6 +57,7 @@ class SubProcessManager(Manager):
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         kernel_mode: KernelModeType = "local",
+        custom_image: Optional[str] = None,
     ) -> None:
         from taskweaver.ces.environment import Environment, EnvMode
 
@@ -76,6 +77,7 @@ class SubProcessManager(Manager):
             env_id,
             env_dir,
             env_mode=env_mode,
+            custom_image=custom_image,
         )
 
     def initialize(self) -> None:
