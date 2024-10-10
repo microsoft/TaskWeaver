@@ -1,7 +1,6 @@
 import os
 import sys
 
-from taskweaver.ces.kernel.ext import TaskWeaverZMQShellDisplayHook
 from taskweaver.ces.kernel.kernel_logging import logger
 
 kernel_mode = os.getenv("TASKWEAVER_KERNEL_MODE", "local")
@@ -56,6 +55,8 @@ def start_app():
     from ipykernel.kernelapp import IPKernelApp
     from ipykernel.zmqshell import ZMQInteractiveShell
 
+    from taskweaver.ces.kernel.ext import TaskWeaverZMQShellDisplayHook
+
     # override displayhook_class for skipping output suppress token issue
     ZMQInteractiveShell.displayhook_class = TaskWeaverZMQShellDisplayHook
 
@@ -82,6 +83,11 @@ def start_app():
 if __name__ == "__main__":
     if sys.path[0] == "":
         del sys.path[0]
+    import site
+
+    user_site_packages = site.getusersitepackages()
+    if user_site_packages not in sys.path:
+        sys.path.append(site.getusersitepackages())
     logger.info("Starting process...")
     logger.info("sys.path: %s", sys.path)
     logger.info("os.getcwd(): %s", os.getcwd())

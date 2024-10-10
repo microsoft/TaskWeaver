@@ -1,7 +1,7 @@
 $scriptDirectory = $PSScriptRoot
 Write-Host "The script directory is: $scriptDirectory"
 
-$version = "0.2"
+$version = "0.3"
 $imageName = "taskweavercontainers/taskweaver-executor"
 $imageFullName = "${imageName}:${version}"
 
