@@ -17,7 +17,7 @@ COPY taskweaver/__init__.py /app/taskweaver/__init__.py
 COPY docker/ces_container/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-ENV PYTHONPATH "${PYTHONPATH}:/app"
+ENV PYTHONPATH="/app"
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 

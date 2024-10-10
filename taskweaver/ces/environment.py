@@ -111,12 +111,15 @@ class EnvMode(enum.Enum):
 
 
 class Environment:
+    DEFAULT_IMAGE = "taskweavercontainers/taskweaver-executor:latest"
+
     def __init__(
         self,
         env_id: Optional[str] = None,
         env_dir: Optional[str] = None,
         env_mode: Optional[EnvMode] = EnvMode.Local,
         port_start_inside_container: Optional[int] = 12345,
+        custom_image: Optional[str] = None,
     ) -> None:
         self.session_dict: Dict[str, EnvSession] = {}
         self.id = get_id(prefix="env") if env_id is None else env_id
@@ -145,19 +148,27 @@ class Environment:
             except docker.errors.DockerException as e:
                 raise docker.errors.DockerException(f"Failed to connect to Docker daemon: {e}. ")
 
-            self.image_name = "taskweavercontainers/taskweaver-executor:latest"
-            try:
-                local_image = self.docker_client.images.get(self.image_name)
-                registry_image = self.docker_client.images.get_registry_data(self.image_name)
-                if local_image.id != registry_image.id:
-                    logger.info(f"Local image {local_image.id} does not match registry image {registry_image.id}.")
-                    raise docker.errors.ImageNotFound("Local image is outdated.")
-            except docker.errors.ImageNotFound:
-                logger.info("Pulling image from docker.io.")
+            if custom_image:
+                logger.info(f"Using custom image {custom_image}.")
+                self.image_name = custom_image
                 try:
-                    self.docker_client.images.pull(self.image_name)
-                except docker.errors.DockerException as e:
-                    raise docker.errors.DockerException(f"Failed to pull image: {e}. ")
+                    self.docker_client.images.get(self.image_name)
+                except docker.errors.ImageNotFound:
+                    raise docker.errors.ImageNotFound(f"Custom image {self.image_name} not found.")
+            else:
+                self.image_name = self.DEFAULT_IMAGE
+                try:
+                    local_image = self.docker_client.images.get(self.image_name)
+                    registry_image = self.docker_client.images.get_registry_data(self.image_name)
+                    if local_image.id != registry_image.id:
+                        logger.info(f"Local image {local_image.id} does not match registry image {registry_image.id}.")
+                        raise docker.errors.ImageNotFound("Local image is outdated.")
+                except docker.errors.ImageNotFound:
+                    logger.info("Pulling image from docker.io.")
+                    try:
+                        self.docker_client.images.pull(self.image_name)
+                    except docker.errors.DockerException as e:
+                        raise docker.errors.DockerException(f"Failed to pull image: {e}. ")
 
             self.session_container_dict: Dict[str, str] = {}
             self.port_start_inside_container = port_start_inside_container
