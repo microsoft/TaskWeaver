@@ -8,24 +8,25 @@ description: Using LLMs from OpenAI/AOAI
 1. Create an account on [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai-service) and get your API key.
 2. Create a new deployment of the model and get the deployment name.
 3. Add the following to your `taskweaver_config.json` file:
-```jsonc showLineNumbers
-{
-  "llm.api_base":"YOUR_AOAI_ENDPOINT", // in the format of https://<my-resource>.openai.azure.com"
-  "llm.api_key":"YOUR_API_KEY",
-  "llm.api_type":"azure",
-  "llm.auth_mode":"api-key",
-  "llm.model":"gpt-4-1106-preview", // this is known as deployment_name in Azure OpenAI
-  "llm.response_format": "json_object"
-}
-```
+   ```jsonc showLineNumbers
+   {
+     "llm.api_base":"YOUR_AOAI_ENDPOINT", // in the format of https://<my-resource>.openai.azure.com"
+     "llm.api_key":"YOUR_API_KEY",
+     "llm.api_type":"azure",
+     "llm.model":"gpt-4-1106-preview", // this is known as deployment_name in Azure OpenAI
+     "llm.response_format": "json_object",
+     "llm.azure.api_version": "2024-06-01"
+   }
+   ```
 
-:::info
-For model versions or after `1106`, `llm.response_format` can be set to `json_object`.
-However, for the earlier models, which do not support JSON response explicitly, `llm.response_format` should be set to `null`.
-:::
+   :::info
+   For model versions or after `1106`, `llm.response_format` can be set to `json_object`.
+   However, for the earlier models, which do not support JSON response explicitly, `llm.response_format` should be set to `null`.
+   :::
 
 4. Start TaskWeaver and chat with TaskWeaver.
-You can refer to the [Quick Start](../quickstart.md) for more details.
+
+   You can refer to the [Quick Start](../quickstart.md) for more details.
 
 ## Using Entra Authentication
 
@@ -33,15 +34,16 @@ You can refer to the [Quick Start](../quickstart.md) for more details.
    [assign the proper Azure RBAC Role](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/role-based-access-control) to your account (or service principal).
 2. Create a new deployment of the model and get the deployment name.
 3. Add the following to your `taskweaver_config.json` file:
-  ```jsonc showLineNumbers
-  {
-    "llm.api_base":"YOUR_AOAI_ENDPOINT", // in the format of https://<my-resource>.openai.azure.com"
-    "llm.api_type":"azure_ad",
-    "llm.auth_mode":"default_azure_credential",
-    "llm.model":"gpt-4-1106-preview", // this is known as deployment_name in Azure OpenAI
-    "llm.response_format": "json_object"
-  }
-  ```
+   ```jsonc showLineNumbers
+   {
+     "llm.api_base":"YOUR_AOAI_ENDPOINT", // in the format of https://<my-resource>.openai.azure.com"
+     "llm.api_type":"azure_ad",
+     "llm.model":"gpt-4-1106-preview", // this is known as deployment_name in Azure OpenAI
+     "llm.response_format": "json_object",
+     "llm.azure_ad.api_version": "2024-06-01",
+     "llm.azure_ad.aad_auth_mode": "default_azure_credential"
+   }
+   ```
 4. Install extra dependencies:
    ```bash
    pip install azure-identity
