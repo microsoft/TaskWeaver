@@ -9,5 +9,6 @@ groupmod -g $GROUP_ID taskweaver
 
 chown -R taskweaver:taskweaver /app
 
-su taskweaver -c "python -m taskweaver.ces.kernel.launcher"
+su taskweaver -c "python -m venv --system-site-packages venv"
+su taskweaver -c "bash -c 'source venv/bin/activate; python -m taskweaver.ces.kernel.launcher'"
 

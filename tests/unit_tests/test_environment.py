@@ -161,7 +161,11 @@ def test_environment_start_outside_container():
     cwd = os.path.dirname(os.path.abspath(__file__))
     sessions = os.path.join(cwd, "sessions")
     try:
-        env = Environment("local", env_mode=EnvMode.Container)
+        env = Environment(
+            "local",
+            env_mode=EnvMode.Container,
+            custom_image="taskweavercontainers/taskweaver-executor:0.3",
+        )
         env.start_session(
             session_id="session_id",
             session_dir=os.path.join(sessions, "session_id"),
@@ -177,13 +181,11 @@ def test_environment_start_outside_container():
         connection_file = glob.glob(conn_file_glob)[0]
         ports_file = os.path.join(ces_dir, "ports.json")
         assert os.path.isfile(ports_file)
-
-        connect_and_execute_code(connection_file, ports_file)
-
-        saved_file = os.path.join(session_dir, "cwd", "filename.txt")
-        assert os.path.isfile(saved_file)
+        code = "!pip install yfinance\nimport sys\nprint(sys.path)\nimport yfinance as yf\nprint(yf.__version__)"
+        connect_and_execute_code(connection_file, ports_file, code=code)
 
         env.stop_session("session_id")
+
     finally:
         # delete sessions
         shutil.rmtree(sessions)
