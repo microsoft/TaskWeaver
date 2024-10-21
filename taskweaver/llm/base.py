@@ -55,7 +55,7 @@ class LLMModuleConfig(ModuleConfig):
 
         self.response_format: Optional[str] = self._get_enum(
             "response_format",
-            options=["json_object", "text"],
+            options=["json_object", "text", "json_schema"],
             default="json_object",
         )
 

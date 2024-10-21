@@ -180,6 +180,14 @@ class OpenAIService(CompletionService, EmbeddingService):
                 response_format = kwargs["response_format"]
             elif self.config.response_format == "json_object":
                 response_format = {"type": "json_object"}
+            elif self.config.response_format == "json_schema":
+                response_format = {"type": "json_schema"}
+                assert "json_schema" in kwargs, "JSON schema is required for JSON schema response format"
+                response_format["json_schema"] = {
+                    "name": "response",
+                    "strict": True,
+                    "schema": kwargs["json_schema"],
+                }
             else:
                 response_format = None
 
