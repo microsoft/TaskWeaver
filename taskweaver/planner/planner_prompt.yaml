@@ -150,11 +150,14 @@ response_json_schema: |-
                 "plan",
                 "current_plan_step",
                 "send_to",
-                "message"
-            ]
+                "message",
+                "review"
+            ],
+            "additionalProperties": false
         }
     },
     "required": [
         "response"
-    ]
+    ],
+    "additionalProperties": false
   }

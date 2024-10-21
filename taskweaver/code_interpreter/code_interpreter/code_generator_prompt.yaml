@@ -36,7 +36,6 @@ response_json_schema: |-
                 "properties": {
                     "thought": {
                         "type": "string",
-                        "maxLength": 1000,
                         "description": "The thoughts before generating the code."
                     },
                     "reply_type": {
@@ -49,7 +48,6 @@ response_json_schema: |-
                     },
                     "reply_content": {
                         "type": "string",
-                        "minLength": 10,
                         "description": "The actual content of the response. If the reply_type is 'python', the content should be a valid python code snippet. Make sure escaping the special characters (e.g., '\\', '/', and '\"') in the strings for JSON format."
                     }
                 },
@@ -57,12 +55,14 @@ response_json_schema: |-
                     "thought",
                     "reply_type",
                     "reply_content"
-                ]
+                ],
+                "additionalProperties": false
             }
         },
         "required": [
             "response"
-        ]
+        ],
+        "additionalProperties": false
     }
 
     
