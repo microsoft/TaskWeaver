@@ -11,6 +11,7 @@ from taskweaver.llm.base import (
     ExtLLMModuleConfig,
     LLMModuleConfig,
     LLMServiceConfig,
+    AgentOpsModuleConfig,
 )
 from taskweaver.llm.google_genai import GoogleGenAIService
 from taskweaver.llm.groq import GroqService, GroqServiceConfig
@@ -48,11 +49,13 @@ class LLMApi(object):
         config: LLMModuleConfig,
         injector: Injector,
         ext_llms_config: Optional[ExtLLMModuleConfig] = None,
+        agentops_config: Optional[AgentOpsModuleConfig] = None,
     ):
         self.config = config
         self.injector = injector
         self.ext_llm_injector = Injector([])
         self.ext_llms = {}  # extra llm models
+        self.agentops_config = agentops_config
 
         if self.config.api_type in ["openai", "azure", "azure_ad"]:
             self._set_completion_service(OpenAIService)
@@ -114,6 +117,25 @@ class LLMApi(object):
                 assert api_type in llm_completion_config_map, f"API type {api_type}  is not supported"
                 llm_completion_service = self._get_completion_service(config)
                 self.ext_llms[key] = llm_completion_service
+
+        if self.agentops_config.enabled:
+            try:
+                from agentops import Client
+                from agentops.llms import LlmTracker
+
+                if Client().is_initialized:
+                    self.agentops_client = Client().current_client
+                else:
+                    self.agentops_client = Client()
+                    self.agentops_client.configure(api_key=self.agentops_config.api_key, default_tags=self.agentops_config.default_tags)
+
+                self.llm_tracker = LlmTracker(self.agentops_client)
+                self.llm_tracker.override_api()
+            except ImportError as exc:
+                raise ImportError(
+                    "AgentOps is not installed. Please install it with 'pip install agentops' "
+                    "to use AgentOps tracking features."
+                ) from exc
 
     def _set_completion_service(self, svc: Type[CompletionService]) -> None:
         self.completion_service: CompletionService = self.injector.get(svc)

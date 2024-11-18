@@ -76,6 +76,21 @@ class LLMServiceConfig(ModuleConfig):
         self.name = f"llm.{name}"
 
 
+class AgentOpsModuleConfig(ModuleConfig):
+    def _configure(self) -> None:
+        self._set_name("agentops")
+        self.enabled: bool = self._get_bool("enabled", False)
+        self.api_key: Optional[str] = self._get_str(
+            "api_key",
+            None,
+            required=False,
+        )
+        self.default_tags: Optional[List[str]] = self._get_list(
+            "default_tags",
+            ["taskweaver"],
+        )
+
+
 class CompletionService(abc.ABC):
     @abc.abstractmethod
     def chat_completion(
