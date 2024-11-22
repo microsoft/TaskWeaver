@@ -4,7 +4,7 @@
         <title>TaskWeaver Blog</title>
         <link>https://docusaurus.io/TaskWeaver/blog</link>
         <description>TaskWeaver Blog</description>
-        <lastBuildDate>Tue, 19 Nov 2024 04:36:03 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 22 Nov 2024 02:18:33 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en</language>
@@ -12,7 +12,7 @@
             <title><![CDATA[How to evaluate a LLM agent?]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/evaluation</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/evaluation</guid>
-            <pubDate>Tue, 19 Nov 2024 04:36:03 GMT</pubDate>
+            <pubDate>Fri, 22 Nov 2024 02:18:33 GMT</pubDate>
             <description><![CDATA[The challenges]]></description>
             <content:encoded><![CDATA[<h2 class="anchor anchorWithStickyNavbar_LWe7" id="the-challenges">The challenges<a href="https://docusaurus.io/TaskWeaver/blog/evaluation#the-challenges" class="hash-link" aria-label="Direct link to The challenges" title="Direct link to The challenges">​</a></h2>
 <p>It is nontrivial to evaluate the performance of a LLM agent.
@@ -79,7 +79,7 @@ as we did for TaskWeaver in <code>auto_eval/taskweaver_eval.py</code>:</p>
             <title><![CDATA[Experience selection]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/experience</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/experience</guid>
-            <pubDate>Tue, 19 Nov 2024 04:36:03 GMT</pubDate>
+            <pubDate>Fri, 22 Nov 2024 02:18:33 GMT</pubDate>
             <description><![CDATA[We have introduced the motivation of the experience module in Experience]]></description>
             <content:encoded><![CDATA[<p>We have introduced the motivation of the <code>experience</code> module in <a href="https://docusaurus.io/TaskWeaver/docs/customization/experience">Experience</a>
 and how to create a handcrafted experience in <a href="https://docusaurus.io/TaskWeaver/docs/customization/experience/handcrafted_experience">Handcrafted Experience</a>.
@@ -138,7 +138,7 @@ To enable dynamic experience selection, we have introduced the concept of shared
             <title><![CDATA[Run TaskWeaver with Locally Deployed Not-that-Large Language Models]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/local_llm</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/local_llm</guid>
-            <pubDate>Tue, 19 Nov 2024 04:36:03 GMT</pubDate>
+            <pubDate>Fri, 22 Nov 2024 02:18:33 GMT</pubDate>
             <description><![CDATA[The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver]]></description>
             <content:encoded><![CDATA[<div class="theme-admonition theme-admonition-info admonition_xJq3 alert alert--info"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M7 2.3c3.14 0 5.7 2.56 5.7 5.7s-2.56 5.7-5.7 5.7A5.71 5.71 0 0 1 1.3 8c0-3.14 2.56-5.7 5.7-5.7zM7 1C3.14 1 0 4.14 0 8s3.14 7 7 7 7-3.14 7-7-3.14-7-7-7zm1 3H6v5h2V4zm0 6H6v2h2v-2z"></path></svg></span>info</div><div class="admonitionContent_BuS1"><p>The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver
 if you have customized the examples for the planner and code interpreter.
@@ -218,7 +218,7 @@ If you have any questions or suggestions, please feel free to contact us.</p>]]>
             <title><![CDATA[Plugins In-Depth]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/plugin</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/plugin</guid>
-            <pubDate>Tue, 19 Nov 2024 04:36:03 GMT</pubDate>
+            <pubDate>Fri, 22 Nov 2024 02:18:33 GMT</pubDate>
             <description><![CDATA[**Pre-requisites**: Please refer to the Introduction and the Plugin Development]]></description>
             <content:encoded><![CDATA[<p><em><strong>Pre-requisites</strong>: Please refer to the <a href="https://docusaurus.io/TaskWeaver/docs/plugin/plugin_intro">Introduction</a> and the <a href="https://docusaurus.io/TaskWeaver/docs/plugin/how_to_develop_a_new_plugin">Plugin Development</a>
 pages for a better understanding of the plugin concept and its development process.</em></p>
@@ -285,7 +285,7 @@ The plugin is a powerful component in TaskWeaver to extend the functionality of 
             <title><![CDATA[Roles in TaskWeaver]]></title>
             <link>https://docusaurus.io/TaskWeaver/blog/role</link>
             <guid>https://docusaurus.io/TaskWeaver/blog/role</guid>
-            <pubDate>Tue, 19 Nov 2024 04:36:03 GMT</pubDate>
+            <pubDate>Fri, 22 Nov 2024 02:18:33 GMT</pubDate>
             <description><![CDATA[We frame TaskWeaver as a code-first agent framework. The term "code-first" means that the agent is designed to]]></description>
             <content:encoded><![CDATA[<p>We frame TaskWeaver as a <strong>code-first</strong> agent framework. The term "code-first" means that the agent is designed to
 convert the user's request into one or multiple runnable code snippets and then execute them to generate the response.
