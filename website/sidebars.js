@@ -149,6 +149,7 @@ const sidebars = {
       'advanced/code_verification',
       'advanced/cli_only',
       'advanced/telemetry',
+      'advanced/observability',
       'advanced/plugin_only'
       ],
     }
