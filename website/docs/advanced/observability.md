@@ -11,9 +11,9 @@ TaskWeaver is integrated with AgentOps, so you can use TaskWeaver to generate co
 
 ## Get Started
 
-TaskWeaver integration with AgentOps is documented [here](https://www.agentops.ai/docs/taskweaver).
+TaskWeaver integration with AgentOps is documented [here](https://docs.agentops.ai/v1/integrations/taskweaver).
 
-To get started, you need an API key from AgentOps by [signing up](https://www.agentops.ai/signup) for a free account. Then you need to create a new project and generate the API key from the project settings.
+To get started, you need an API key from AgentOps by [signing up](https://app.agentops.ai/signup) for a free account. Then you need to create a new project and generate the API key from the project settings.
 
 Once you have the API keys, the following steps will help you to get started.
 
