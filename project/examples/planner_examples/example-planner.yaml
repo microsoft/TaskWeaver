@@ -11,7 +11,7 @@ rounds:
         send_from: Planner
         send_to: CodeInterpreter
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
               The user wants to count the rows of the data file /home/data.csv. The first step is to load the data file and count the rows of the loaded data.
           - type: init_plan
@@ -33,7 +33,7 @@ rounds:
         send_from: Planner
         send_to: User
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
               The data file /home/data.csv is loaded and there are 100 rows in the data file
               The execution result is correct

@@ -1,0 +1,7 @@
+alias: Recepta
+module: taskweaver.ext_role.recepta.recepta.Recepta
+intro : |-
+  - Recepta is responsible for helping the Planner to record the reasoning process.
+  - When the Planner is reasoning and do not involve any Workers, it must send a message to Recepta to record the reasoning process.
+  - When Planner needs to reason in the middle of the task and it is not ready to talk to the User, it can send a message to `Recepta` to record the problem-solving process and result. No need to outline a plan, just the reasoning process and conclusion.
+  - The reasoning result should be conclusion of reasoning of the task step, and should not be a plan or instruction.

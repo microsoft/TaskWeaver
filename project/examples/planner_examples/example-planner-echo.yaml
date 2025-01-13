@@ -11,7 +11,7 @@ rounds:
         send_from: Planner
         send_to: Echo
         attachment_list:
-        - type: reasoning
+        - type: plan_reasoning
           content: |-
             The user wants to echo the input 'Hello World'
         - type: init_plan
@@ -30,7 +30,7 @@ rounds:
         send_from: Planner
         send_to: User
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
               The user query is successfully answered
           - type: init_plan

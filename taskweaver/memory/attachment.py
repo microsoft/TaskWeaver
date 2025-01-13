@@ -12,7 +12,7 @@ class AttachmentType(Enum):
     init_plan = "init_plan"
     plan = "plan"
     current_plan_step = "current_plan_step"
-    reasoning = "reasoning"
+    plan_reasoning = "plan_reasoning"
 
     # CodeInterpreter - generate code
     thought = "thought"
