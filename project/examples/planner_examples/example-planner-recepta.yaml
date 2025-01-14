@@ -62,6 +62,8 @@ rounds:
             4. report the result to the user
         - type: current_plan_step
           content: 1. extract information from the employee summary
+        - type: stop
+          content: InProcess
       - message: Got it! Please go ahead.
         send_from: Recepta
         send_to: Planner
@@ -90,6 +92,8 @@ rounds:
             4. report the result to the user
         - type: current_plan_step
           content: 2. validate the role
+        - type: stop
+          content: InProcess
       - message: Got it! Please go ahead.
         send_from: Recepta
         send_to: Planner
@@ -129,3 +133,5 @@ rounds:
             4. report the result to the user
         - type: current_plan_step
           content: 3. construct and print the SQL query using the extracted details and report the result to the user
+        - type: stop
+          content: Completed
