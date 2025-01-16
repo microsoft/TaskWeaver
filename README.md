@@ -23,6 +23,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 
 ## 🆕 News
+- 📅2025-01-16: TaskWeaver has been enhanced with an experimental role called [Recepta](https://microsoft.github.io/TaskWeaver/blog/reasoning) for its reasoning power.🧠
 - 📅2024-12-23: TaskWeaver has been integrated with the [AgentOps](https://microsoft.github.io/TaskWeaver/docs/observability) for better observability and monitoring.🔍
 - 📅2024-09-13: We introduce the shared memory to store information that is shared between the roles in TaskWeaver. Please check the [memory](https://microsoft.github.io/TaskWeaver/docs/memory) for more details.🧠
 - 📅2024-09-13: We have enhanced the experience feature by allowing static and dynamic experience selection. Please check the [experience](https://microsoft.github.io/TaskWeaver/blog/experience) for more details.📚 
@@ -31,7 +32,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - 📅2024-03-28: TaskWeaver now offers all-in-one Docker image, providing a convenient one-stop experience for users. Please check the [docker](https://microsoft.github.io/TaskWeaver/docs/usage/docker) for more details.🐳
 - 📅2024-03-27: TaskWeaver now switches to `container` mode by default for code execution. Please check the [code execution](https://microsoft.github.io/TaskWeaver/docs/code_execution) for more details.🐳
 - 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗
-- 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳
+<!-- - 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳 -->
 <!-- - 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/advanced/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟 -->
 <!-- - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚 -->
 <!-- - 📅2024-01-30: TaskWeaver introduces a new plugin-only mode that securely generates calls to specified plugins without producing extraneous code.🪡 --> 
@@ -54,7 +55,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - [x] **Code verification** - TaskWeaver is designed to verify the generated code before execution. It can detect potential issues in the generated code and provide suggestions to fix them.
 - [x] **Easy to use** - TaskWeaver is easy to use with sample plugins, examples and tutorials to help you get started. TaskWeaver offers an open-box experience, allowing users to run it immediately after installation.
 - [x] **Easy to debug** - TaskWeaver is easy to debug with detailed and transparent logs to help you understand the entire process, including LLM prompts, the code generation, and execution process.
-- [x] **Security consideration** - TaskWeaver supports a basic session management to keep different users' data separate. The code execution is separated into different processes to avoid mutal interference.
+- [x] **Security consideration** - TaskWeaver supports a basic session management to keep different users' data separate. The code execution is separated into different processes to avoid mutual interference.
 - [x] **Easy extension** - TaskWeaver is easy to extend to accomplish more complex tasks with multiple agents as the plugins.
 
 ## ✨ Quick Start
