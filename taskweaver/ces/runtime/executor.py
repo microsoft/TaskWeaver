@@ -173,8 +173,9 @@ class Executor:
             # customize pandas display options
             pd.set_option("display.html.table_schema", False)
             pd.set_option("display.notebook_repr_html", False)
-            pd.set_option("display.max_rows", 4)
+            pd.set_option("display.max_rows", 5)
             pd.set_option("display.expand_frame_repr", False)
+            pd.set_option("display.max_colwidth", None)
             local_ns["pd"] = pd
         except ImportError:
             self.log(

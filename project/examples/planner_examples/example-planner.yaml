@@ -11,7 +11,7 @@ rounds:
         send_from: Planner
         send_to: CodeInterpreter
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
               The user wants to count the rows of the data file /home/data.csv. The first step is to load the data file and count the rows of the loaded data.
           - type: init_plan
@@ -25,6 +25,8 @@ rounds:
               2. Check the execution result and report the result to the user if it is correct
           - type: current_plan_step
             content: 1. Instruct CodeInterpreter to load the data file and count the rows of the loaded data
+          - type: stop
+            content: InProcess
       - message: Load the data file /home/data.csv successfully and there are 100 rows in the data file
         send_from: CodeInterpreter
         send_to: Planner
@@ -33,7 +35,7 @@ rounds:
         send_from: Planner
         send_to: User
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
               The data file /home/data.csv is loaded and there are 100 rows in the data file
               The execution result is correct
@@ -49,3 +51,5 @@ rounds:
               2. Check the execution result and report the result to the user if it is correct
           - type: current_plan_step
             content: 2. report the result to the user
+          - type: stop
+            content: Completed

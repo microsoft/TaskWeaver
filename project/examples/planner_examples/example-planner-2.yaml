@@ -11,7 +11,7 @@ rounds:
         send_from: Planner
         send_to: User
         attachment_list:
-          - type: reasoning
+          - type: plan_reasoning
             content: |-
                 The user greets the Planner
           - type: init_plan
@@ -22,3 +22,5 @@ rounds:
               1. Respond to the user's greeting
           - type: current_plan_step
             content: 1. Respond to the user's greeting
+          - type: stop
+            content: Completed

@@ -1,0 +1,137 @@
+enabled: True
+rounds:
+  - user_query: echo 'Generate Employee Report'
+    state: created
+    post_list:
+      - message: |-  
+          please follow the instructions below to complete the task:  
+  
+          # Task Instructions  
+          ## Step 1: Extract Employee Data  
+          Extract the following information from the employee summary:  
+          - `Employee ID`  
+          - `Department`  
+          - `Project Code`  
+          - `Role`  
+          - `Manager`  
+          - `Location`  
+  
+          ### Employee Summary  
+          On April 10, 2025, a review was conducted for an employee with ID `E12345`. The employee is part of the `Development` department and is currently assigned to project code `"X987"`. The role held is `"Software Engineer"` under the supervision of manager `"J. Doe."` The primary work location is `"Remote."`  
+  
+          ## Step 2: Validate the Role  
+          - Confirm if the role is recognized among the following: Software Engineer, Data Analyst, Project Manager, DevOps Specialist, QA Tester.  
+          - Check if the role is one of the recognized roles.  
+  
+          ## Step 3: Construct SQL Query  
+          Prepare and print the SQL query using the extracted details:  
+          ```sql  
+          SELECT EmployeeID, Department, ProjectCode, Role, Manager, Location  
+          FROM EmployeeRecords  
+          WHERE EmployeeID = '{EmployeeID}'  
+          AND Department = '{Department}'  
+          AND ProjectCode = '{ProjectCode}'  
+          AND Role = '{Role}'  
+          AND Manager = '{Manager}'  
+          AND Location = '{Location}'  
+          ORDER BY EmployeeID;  
+          ```
+        send_from: User
+        send_to: Planner
+        attachment_list:
+      - message: |-  
+          Thought: I can read and comprehend the employee summary to extract the required information.  
+          Result: the `Employee ID` is `E12345`, the `Department` is `Development`, the `Project Code` is `X987`, the `Role` is `Software Engineer`, the `Manager` is `J. Doe`, and the `Location` is `Remote`.
+        send_from: Planner
+        send_to: Recepta
+        attachment_list:
+        - type: plan_reasoning
+          content: |-  
+            The first step is to extract the following information from the employee summary: `Employee ID`, `Department`, `Project Code`, `Role`, `Manager`, `Location`.
+        - type: init_plan
+          content: |-  
+            1. extract the following information from the employee summary: `Employee ID`, `Department`, `Project Code`, `Role`, `Manager`, `Location`  
+            2. validate the role <interactively depends on 1>  
+            3. construct and print the SQL query using the extracted details <interactively depends on 1>  
+            4. check the execution result and report the result to the user <interactively depends on 1 and 3>
+        - type: plan
+          content: |-  
+            1. extract information from the employee summary  
+            2. validate the role  
+            3. construct SQL query using the extracted details  
+            4. report the result to the user
+        - type: current_plan_step
+          content: 1. extract information from the employee summary
+        - type: stop
+          content: InProcess
+      - message: Got it! Please go ahead.
+        send_from: Recepta
+        send_to: Planner
+        attachment_list:
+      - message: |-  
+          Thought: I can verify if the role is one of the recognized roles with my pattern matching capability.  
+          Thought: The recognized roles are `Software Engineer, Data Analyst, Project Manager, DevOps Specialist, QA Tester`.  
+          Result: The role is `Software Engineer`, which is recognized.
+        send_from: Planner
+        send_to: Recepta
+        attachment_list:
+        - type: plan_reasoning
+          content: |-  
+            I have extracted the information from the employee summary. The next step is to verify if the role is one of the recognized roles.
+        - type: init_plan
+          content: |-  
+            1. extract the following information from the employee summary: `Employee ID`, `Department`, `Project Code`, `Role`, `Manager`, `Location`  
+            2. validate the role <interactively depends on 1>  
+            3. construct and print the SQL query using the extracted details <interactively depends on 1>  
+            4. check the execution result and report the result to the user <interactively depends on 1 and 3>
+        - type: plan
+          content: |-  
+            1. extract information from the employee summary  
+            2. validate the role  
+            3. construct SQL query using the extracted details  
+            4. report the result to the user
+        - type: current_plan_step
+          content: 2. validate the role
+        - type: stop
+          content: InProcess
+      - message: Got it! Please go ahead.
+        send_from: Recepta
+        send_to: Planner
+        attachment_list:
+      - message: |-  
+          The role is `Software Engineer`, which is recognized.  
+  
+          Here is the SQL query using the extracted details:  
+          ```sql  
+          SELECT EmployeeID, Department, ProjectCode, Role, Manager, Location  
+          FROM EmployeeRecords  
+          WHERE EmployeeID = 'E12345'  
+          AND Department = 'Development'  
+          AND ProjectCode = 'X987'  
+          AND Role = 'Software Engineer'  
+          AND Manager = 'J. Doe'  
+          AND Location = 'Remote'  
+          ORDER BY EmployeeID;  
+          ```
+        send_from: Planner
+        send_to: User
+        attachment_list:
+        - type: plan_reasoning
+          content: |-  
+            I can prepare and print the SQL query using the extracted details to the User.
+        - type: init_plan
+          content: |-  
+            1. extract the following information from the employee summary: `Employee ID`, `Department`, `Project Code`, `Role`, `Manager`, `Location`  
+            2. validate the role <interactively depends on 1>  
+            3. construct and print the SQL query using the extracted details <interactively depends on 1>  
+            4. check the execution result and report the result to the user <interactively depends on 1 and 3>
+        - type: plan
+          content: |-  
+            1. extract information from the employee summary  
+            2. validate the role  
+            3. construct SQL query using the extracted details  
+            4. report the result to the user
+        - type: current_plan_step
+          content: 3. construct and print the SQL query using the extracted details and report the result to the user
+        - type: stop
+          content: Completed
