@@ -64,7 +64,8 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 There are still many features and improvements can be made. But due to our limited resources, we are not able to implement all of them or the progress will be slow. 
 We are looking forward to your contributions to make TaskWeaver better.
-- [ ] Easy to use and maintainable UX/UI 
+- [ ] Easy-to-use and maintainable UX/UI
+- [ ] Support for prompt template management
 - [ ] Better plugin experiences, such as displaying updates or stopping in the middle of running the plugin and user confirmation before running the plugin
 - [ ] Async interaction with LLMs
 - [ ] Support for vision input for Roles such as the Planner and CodeInterpreter
