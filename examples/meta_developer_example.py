@@ -15,36 +15,52 @@ def main():
     logger = logging.getLogger("MetaDeveloperExample")
 
     # Initialize the MetaDeveloper role
-    logger.info("Initializing MetaDeveloper role...")
+    logger.info("Initializing the MetaDeveloper role to orchestrate the development phases...")
     meta_developer = MetaDeveloper()
 
     # Define a simple task description
     task_description = "Analyze, generate, and debug a simple Python project."
 
     # Phase 1: Analysis
-    logger.info("Starting Analysis Phase...")
+    logger.info("Starting the Analysis Phase: Extracting structural and functional details from the codebase...")
     analyzer = Analyzer()
-    analysis_result = analyzer.analyze(task_description)
-    logger.info(f"Analysis Result: {analysis_result}")
+    try:
+        analysis_result = analyzer.analyze(task_description)
+        logger.info(f"Analysis Phase Completed Successfully. Result: {analysis_result}")
+    except Exception as e:
+        logger.error(f"Analysis Phase Failed. Error: {e}")
+        return
 
     # Phase 2: Generation
-    logger.info("Starting Generation Phase...")
+    logger.info("Starting the Generation Phase: Creating new code based on the analysis results...")
     generator = Generator()
-    generation_result = generator.generate(analysis_result)
-    logger.info(f"Generation Result: {generation_result}")
+    try:
+        generation_result = generator.generate(analysis_result)
+        logger.info(f"Generation Phase Completed Successfully. Result: {generation_result}")
+    except Exception as e:
+        logger.error(f"Generation Phase Failed. Error: {e}")
+        return
 
     # Phase 3: Debugging
-    logger.info("Starting Debugging Phase...")
+    logger.info("Starting the Debugging Phase: Identifying and resolving issues in the generated code...")
     debugger = Debugger()
-    debugging_result = debugger.debug(generation_result)
-    logger.info(f"Debugging Result: {debugging_result}")
+    try:
+        debugging_result = debugger.debug(generation_result)
+        logger.info(f"Debugging Phase Completed Successfully. Result: {debugging_result}")
+    except Exception as e:
+        logger.error(f"Debugging Phase Failed. Error: {e}")
+        return
 
     # Final Output
     logger.info("MetaDeveloper Example Completed.")
     logger.info("Summary of Results:")
-    logger.info(f"1. Analysis Result: {analysis_result}")
-    logger.info(f"2. Generation Result: {generation_result}")
-    logger.info(f"3. Debugging Result: {debugging_result}")
+    logger.info("===================================")
+    logger.info(f"1. Analysis Result:\\n{analysis_result}")
+    logger.info("-----------------------------------")
+    logger.info(f"2. Generation Result:\\n{generation_result}")
+    logger.info("-----------------------------------")
+    logger.info(f"3. Debugging Result:\\n{debugging_result}")
+    logger.info("===================================")
 
 if __name__ == "__main__":
     main()
