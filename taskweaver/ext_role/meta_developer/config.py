@@ -19,11 +19,15 @@ class MetaDeveloperConfig:
     ENABLE_DEBUGGING_PHASE = True
 
     # Logging configuration
+    ENABLE_LOGGING = True  # Enable or disable logging
     LOGGING_LEVEL = logging.INFO  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
     # Analysis phase settings
     ANALYSIS_MAX_DEPTH = 10  # Maximum depth for codebase traversal
     ANALYSIS_INCLUDE_TESTS = False  # Whether to include test files in the analysis
+
+    # Debugging phase settings
+    DEBUGGING_MAX_RETRIES = 3  # Maximum number of retries for debugging
 
     # Generation phase settings
     GENERATION_TEMPLATE_PATH = "templates/"  # Path to code generation templates
@@ -50,9 +54,11 @@ class MetaDeveloperConfig:
             "ENABLE_ANALYSIS_PHASE": cls.ENABLE_ANALYSIS_PHASE,
             "ENABLE_GENERATION_PHASE": cls.ENABLE_GENERATION_PHASE,
             "ENABLE_DEBUGGING_PHASE": cls.ENABLE_DEBUGGING_PHASE,
+            "ENABLE_LOGGING": cls.ENABLE_LOGGING,
             "LOGGING_LEVEL": cls.LOGGING_LEVEL,
             "ANALYSIS_MAX_DEPTH": cls.ANALYSIS_MAX_DEPTH,
             "ANALYSIS_INCLUDE_TESTS": cls.ANALYSIS_INCLUDE_TESTS,
+            "DEBUGGING_MAX_RETRIES": cls.DEBUGGING_MAX_RETRIES,
             "GENERATION_TEMPLATE_PATH": cls.GENERATION_TEMPLATE_PATH,
             "GENERATION_STRICT_MODE": cls.GENERATION_STRICT_MODE,
             "DEBUGGING_ENABLE_SYNTAX_CHECK": cls.DEBUGGING_ENABLE_SYNTAX_CHECK,

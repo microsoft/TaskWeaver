@@ -44,6 +44,11 @@ class AttachmentType(Enum):
     invalid_response = "invalid_response"
     text = "text"
 
+    # MetaDeveloper
+    analysis_result = "analysis_result"
+    generation_result = "generation_result"
+    debugging_result = "debugging_result"
+
     # shared memory entry
     shared_memory_entry = "shared_memory_entry"
 

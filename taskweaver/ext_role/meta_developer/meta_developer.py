@@ -43,9 +43,9 @@ class MetaDeveloper(Role):
 
         # Prepare the final response
         final_message = (
-            "MetaDeveloper has completed all phases:\\n"
-            f"1. Analysis Result: {analysis_result}\\n"
-            f"2. Generation Result: {generation_result}\\n"
+            "MetaDeveloper has completed all phases:\\\n"
+            f"1. Analysis Result: {analysis_result}\\\n"
+            f"2. Generation Result: {generation_result}\\\n"
             f"3. Debugging Result: {debugging_result}"
         )
 
@@ -176,9 +176,9 @@ class MetaDeveloper(Role):
 
         # Prepare the final response
         final_message = (
-            "MetaDeveloper has completed all phases:\\n"
-            f"1. Analysis Result: {analysis_result}\\n"
-            f"2. Generation Result: {generation_result}\\n"
+            "MetaDeveloper has completed all phases:\\\n"
+            f"1. Analysis Result: {analysis_result}\\\n"
+            f"2. Generation Result: {generation_result}\\\n"
             f"3. Debugging Result: {debugging_result}"
         )
 
