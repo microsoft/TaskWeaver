@@ -8,7 +8,7 @@ from typing import Dict, Iterable, List, Optional
 from injector import inject
 
 from taskweaver.llm import LLMApi
-from taskweaver.llm.util import ChatMessageType, format_chat_message, format_chat_message_content
+from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
@@ -167,44 +167,18 @@ class Planner(Role):
                         )
                 else:
                     # messages from user or workers
-                    image_urls = post.get_attachment(type=AttachmentType.image_url)
-                    if not image_urls:
-                        conversation.append(
-                            format_chat_message(
-                                role="user",
-                                message=self.format_message(
-                                    role=post.send_from,
-                                    message=post.message
-                                    if conv_init_message is None
-                                    else conv_init_message + "\n" + post.message,
-                                ),
-                            ),
-                        )
-                    else:
-                        message = format_chat_message(
+                    conversation.append(
+                        format_chat_message(
                             role="user",
-                            message=[
-                                format_chat_message_content(
-                                    content_type="text",
-                                    content_value=self.format_message(
-                                        role=post.send_from,
-                                        message=post.message
-                                        if conv_init_message is None
-                                        else conv_init_message + "\n" + post.message,
-                                    ),
-                                ),
-                            ],
-                        )
-                        message["content"].extend(
-                            [
-                                format_chat_message_content(
-                                    content_type="image_url",
-                                    content_value=image_url,
-                                )
-                                for image_url in image_urls
-                            ],
-                        )
-                        conversation.append(message)
+                            message=self.format_message(
+                                role=post.send_from,
+                                message=post.message
+                                if conv_init_message is None
+                                else conv_init_message + "\n" + post.message,
+                            ),
+                            image_urls=post.get_attachment(type=AttachmentType.image_url),
+                        ),
+                    )
 
                     conv_init_message = None
 

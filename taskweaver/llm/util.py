@@ -43,13 +43,23 @@ def format_chat_message_content(
 
 def format_chat_message(
     role: ChatMessageRoleType,
-    message: str | List[ChatContentType],
+    message: str,
+    image_urls: Optional[List[str]] = None,
     name: Optional[str] = None,
 ) -> ChatMessageType:
-    msg: ChatMessageType = {
-        "role": role,
-        "content": message,
-    }
+    if not image_urls:
+        msg: ChatMessageType = {
+            "role": role,
+            "content": message,
+        }
+    else:
+        msg: ChatMessageType = {
+            "role": role,
+            "content": [
+                format_chat_message_content("text", message),
+            ]
+            + [format_chat_message_content("image_url", image) for image in image_urls],
+        }
     if name is not None:
         msg["name"] = name
     return msg
