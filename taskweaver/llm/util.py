@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Literal, Optional, TypedDict, Union
 
 ChatMessageRoleType = Literal["system", "user", "assistant", "function"]
-ChatMessageType = Dict[Literal["role", "name", "content"], str]
+ChatContentType = Dict[Literal["type", "text", "image_url"], str | Dict[Literal["url"], str]]
+ChatMessageType = Dict[Literal["role", "name", "content"], str | List[ChatContentType]]
+
 PromptTypeSimple = List[ChatMessageType]
 
 
@@ -21,9 +23,27 @@ class PromptTypeWithTools(TypedDict):
     tools: Optional[List[PromptToolType]]
 
 
+def format_chat_message_content(
+    content_type: Literal["text", "image_url"],
+    content_value: str,
+) -> ChatContentType:
+    if content_type == "image_url":
+        return {
+            "type": content_type,
+            content_type: {
+                "url": content_value,
+            },
+        }
+    else:
+        return {
+            "type": content_type,
+            content_type: content_value,
+        }
+
+
 def format_chat_message(
     role: ChatMessageRoleType,
-    message: str,
+    message: str | List[ChatContentType],
     name: Optional[str] = None,
 ) -> ChatMessageType:
     msg: ChatMessageType = {

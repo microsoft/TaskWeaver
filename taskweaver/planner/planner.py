@@ -8,7 +8,7 @@ from typing import Dict, Iterable, List, Optional
 from injector import inject
 
 from taskweaver.llm import LLMApi
-from taskweaver.llm.util import ChatMessageType, format_chat_message
+from taskweaver.llm.util import ChatMessageType, format_chat_message, format_chat_message_content
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round, RoundCompressor
 from taskweaver.memory.attachment import AttachmentType
@@ -133,6 +133,7 @@ class Planner(Role):
             for post in chat_round.post_list:
                 if post.send_from == self.alias:
                     if post.send_to == "User" or post.send_to in self.recipient_alias_set:
+                        # planner responses
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
                         )
@@ -144,6 +145,7 @@ class Planner(Role):
                         )
                     elif post.send_to == self.alias:
                         # self correction for planner response, e.g., format error/field check error
+                        # append the invalid response to chat history
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
@@ -153,7 +155,7 @@ class Planner(Role):
                             ),
                         )
 
-                        # append the invalid response to chat history
+                        # append the self correction instruction message to chat history
                         conversation.append(
                             format_chat_message(
                                 role="user",
@@ -163,28 +165,48 @@ class Planner(Role):
                                 ),
                             ),
                         )
-                        # append the self correction instruction message to chat history
-
                 else:
-                    if conv_init_message is not None:
-                        message = self.format_message(
-                            role=post.send_from,
-                            message=conv_init_message + "\n" + post.message,
-                        )
-                        conversation.append(
-                            format_chat_message(role="user", message=message),
-                        )
-                        conv_init_message = None
-                    else:
+                    # messages from user or workers
+                    image_urls = post.get_attachment(type=AttachmentType.image_url)
+                    if not image_urls:
                         conversation.append(
                             format_chat_message(
                                 role="user",
                                 message=self.format_message(
                                     role=post.send_from,
-                                    message=post.message,
+                                    message=post.message
+                                    if conv_init_message is None
+                                    else conv_init_message + "\n" + post.message,
                                 ),
                             ),
                         )
+                    else:
+                        message = format_chat_message(
+                            role="user",
+                            message=[
+                                format_chat_message_content(
+                                    content_type="text",
+                                    content_value=self.format_message(
+                                        role=post.send_from,
+                                        message=post.message
+                                        if conv_init_message is None
+                                        else conv_init_message + "\n" + post.message,
+                                    ),
+                                ),
+                            ],
+                        )
+                        message["content"].extend(
+                            [
+                                format_chat_message_content(
+                                    content_type="image_url",
+                                    content_value=image_url,
+                                )
+                                for image_url in image_urls
+                            ],
+                        )
+                        conversation.append(message)
+
+                    conv_init_message = None
 
         return conversation
 
