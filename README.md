@@ -48,6 +48,8 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 ## 💥 Highlights
 
+- [x] **Planning for complex tasks** - TaskWeaver, which features task decomposition and progress tracking, is designed to solve complex tasks.
+- [x] **Reflective execution** - TaskWeaver supports reflective execution, which allows the agent to reflect on the execution process and make adjustments.
 - [x] **Rich data structure** - TaskWeaver allows you to work with rich data structures in Python, such as DataFrames, instead of dealing with strings.
 - [x] **Customized algorithms** - TaskWeaver allows you to encapsulate your own algorithms into plugins and orchestrate them.
 - [x] **Incorporating domain-specific knowledge** - TaskWeaver is designed to incorporate domain-specific knowledge easily to improve the reliability.
@@ -55,8 +57,20 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - [x] **Code verification** - TaskWeaver is designed to verify the generated code before execution. It can detect potential issues in the generated code and provide suggestions to fix them.
 - [x] **Easy to use** - TaskWeaver is easy to use with sample plugins, examples and tutorials to help you get started. TaskWeaver offers an open-box experience, allowing users to run it immediately after installation.
 - [x] **Easy to debug** - TaskWeaver is easy to debug with detailed and transparent logs to help you understand the entire process, including LLM prompts, the code generation, and execution process.
-- [x] **Security consideration** - TaskWeaver supports a basic session management to keep different users' data separate. The code execution is separated into different processes to avoid mutual interference.
-- [x] **Easy extension** - TaskWeaver is easy to extend to accomplish more complex tasks with multiple agents as the plugins.
+- [x] **Security consideration** - TaskWeaver supports a basic session management to keep different users' data separate. The code execution is separated into different processes to avoid mutal interference.
+- [x] **Easy extension** - TaskWeaver is easy to extend to accomplish more complex tasks with multiple agents as roles and plugins.
+
+## 📚 Asking for Contributions
+
+There are still many features and improvements can be made. But due to our limited resources, we are not able to implement all of them or the progress will be slow. 
+We are looking forward to your contributions to make TaskWeaver better.
+- [ ] Easy-to-use and maintainable UX/UI
+- [ ] Support for prompt template management
+- [ ] Better plugin experiences, such as displaying updates or stopping in the middle of running the plugin and user confirmation before running the plugin
+- [ ] Async interaction with LLMs
+- [ ] Support for vision input for Roles such as the Planner and CodeInterpreter
+- [ ] Support for remote code execution
+
 
 ## ✨ Quick Start
 
