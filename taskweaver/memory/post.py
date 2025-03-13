@@ -87,9 +87,9 @@ class Post:
         """Add an attachment to the post."""
         self.attachment_list.append(attachment)
 
-    def get_attachment(self, type: AttachmentType) -> List[Any]:
+    def get_attachment(self, type: AttachmentType) -> List[Attachment]:
         """Get all the attachments of the given type."""
-        return [attachment.content for attachment in self.attachment_list if attachment.type == type]
+        return [attachment for attachment in self.attachment_list if attachment.type == type]
 
     def del_attachment(self, type_list: List[AttachmentType]) -> None:
         """Delete all the attachments of the given type."""

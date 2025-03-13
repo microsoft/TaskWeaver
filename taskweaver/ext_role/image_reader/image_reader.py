@@ -1,5 +1,6 @@
 import base64
 import json
+import os.path
 from mimetypes import guess_type
 
 from injector import inject
@@ -12,6 +13,7 @@ from taskweaver.module.event_emitter import SessionEventEmitter
 from taskweaver.module.tracing import Tracing
 from taskweaver.role import Role
 from taskweaver.role.role import RoleConfig, RoleEntry
+from taskweaver.session import SessionMetadata
 
 
 # Function to encode a local image into data URL
@@ -31,7 +33,7 @@ def local_image_to_data_url(image_path):
 
 class ImageReaderConfig(RoleConfig):
     def _configure(self):
-        self.extensions = self._get_str("extensions", "jpg,jpeg,png")
+        pass
 
 
 class ImageReader(Role):
@@ -44,10 +46,12 @@ class ImageReader(Role):
         event_emitter: SessionEventEmitter,
         role_entry: RoleEntry,
         llm_api: LLMApi,
+        session_metadata: SessionMetadata,
     ):
         super().__init__(config, logger, tracing, event_emitter, role_entry)
 
         self.llm_api = llm_api
+        self.session_metadata = session_metadata
 
     def reply(self, memory: Memory, **kwargs: ...) -> Post:
         rounds = memory.get_role_rounds(
@@ -87,17 +91,23 @@ class ImageReader(Role):
         image_url = json.loads(response["content"])["image_url"]
         if image_url.startswith("http"):
             image_content = image_url
+            attachment_message = f"Image from {image_url}."
         else:
-            image_content = local_image_to_data_url(image_url)
+            if os.path.isabs(image_url):
+                image_content = local_image_to_data_url(image_url)
+            else:
+                image_content = local_image_to_data_url(os.path.join(self.session_metadata.execution_cwd, image_url))
+            attachment_message = f"Image from {image_url} encoded as a Base64 data URL."
 
         post_proxy.update_attachment(
-            message=image_content,
+            message=attachment_message,
             type=AttachmentType.image_url,
+            extra={"image_url": image_content},
             is_end=True,
         )
 
         post_proxy.update_message(
-            "I have read the image path from the message. Here is the image:",
+            "I have read the image path from the message. The image is attached below.",
         )
 
         return post_proxy.end()

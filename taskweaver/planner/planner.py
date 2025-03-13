@@ -151,7 +151,7 @@ class Planner(Role):
                                 role="assistant",
                                 message=post.get_attachment(
                                     type=AttachmentType.invalid_response,
-                                )[0],
+                                )[0].content,
                             ),
                         )
 
@@ -161,7 +161,7 @@ class Planner(Role):
                                 role="user",
                                 message=self.format_message(
                                     role="User",
-                                    message=post.get_attachment(type=AttachmentType.revise_message)[0],
+                                    message=post.get_attachment(type=AttachmentType.revise_message)[0].content,
                                 ),
                             ),
                         )
@@ -176,7 +176,10 @@ class Planner(Role):
                                 if conv_init_message is None
                                 else conv_init_message + "\n" + post.message,
                             ),
-                            image_urls=post.get_attachment(type=AttachmentType.image_url),
+                            image_urls=[
+                                attachment.extra["image_url"]
+                                for attachment in post.get_attachment(type=AttachmentType.image_url)
+                            ],
                         ),
                     )
 

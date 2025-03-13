@@ -78,7 +78,7 @@ class CodeInterpreterPluginOnly(Role, Interpreter):
             return post_proxy.end()
 
         functions = json.loads(
-            post_proxy.post.get_attachment(type=AttachmentType.function)[0],
+            post_proxy.post.get_attachment(type=AttachmentType.function)[0].content,
         )
         if len(functions) > 0:
             code: List[str] = []

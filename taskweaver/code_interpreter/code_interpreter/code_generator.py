@@ -251,7 +251,7 @@ class CodeGenerator(Role):
                     # for code correction
                     user_message += self.user_message_head_template.format(
                         FEEDBACK=format_code_feedback(post),
-                        MESSAGE=f"{post.get_attachment(AttachmentType.revise_message)[0]}",
+                        MESSAGE=f"{post.get_attachment(AttachmentType.revise_message)[0].content}",
                     )
 
                     assistant_message = self.post_translator.post_to_raw_text(

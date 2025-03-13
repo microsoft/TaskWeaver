@@ -117,6 +117,8 @@ class LoggingModule(Module):
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
 
+            logger.propagate = False
+
         if config.injector:
             logging.getLogger("injector").setLevel(logging.INFO)
 
