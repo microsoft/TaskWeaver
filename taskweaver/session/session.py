@@ -25,7 +25,7 @@ class AppSessionConfig(ModuleConfig):
             os.path.join(self.src.app_base_path, "experience"),
         )
 
-        self.roles = self._get_list("roles", ["planner", "code_interpreter", "recepta", "image_reader"])
+        self.roles = self._get_list("roles", ["planner", "code_interpreter"])
 
         assert len(self.roles) > 0, "At least one role should be provided."
         self.num_code_interpreters = len([w for w in self.roles if w.startswith("code_interpreter")])
