@@ -498,7 +498,7 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
             self.session.stop()
             self.session = self.app.get_session()
 
-        self._system_message("--- new session starts ---")
+        self._system_message("--- new session started ---")
         self._assistant_message(
             "I am TaskWeaver, an AI assistant. To get started, could you please enter your request?",
         )

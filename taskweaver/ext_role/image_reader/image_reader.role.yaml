@@ -1,0 +1,5 @@
+alias: ImageReader
+module: taskweaver.ext_role.image_reader.image_reader.ImageReader
+intro : |-
+  - ImageReader is responsible for helping the Planner to read images.
+  - The input message must contain the image path, either local or remote.

@@ -60,9 +60,12 @@ class CodeInterpreterCLIOnly(Role, Interpreter):
             prompt_log_path=prompt_log_path,
         )
 
-        code = post_proxy.post.get_attachment(type=AttachmentType.reply_content)[0]
+        code = post_proxy.post.get_attachment(type=AttachmentType.reply_content)[0].content
         if len(code) == 0:
-            post_proxy.update_message(post_proxy.post.get_attachment(type=AttachmentType.thought)[0], is_end=True)
+            post_proxy.update_message(
+                post_proxy.post.get_attachment(type=AttachmentType.thought)[0].content,
+                is_end=True,
+            )
             return post_proxy.end()
 
         code_to_exec = "! " + code
