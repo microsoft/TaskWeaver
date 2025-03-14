@@ -23,6 +23,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 
 
 ## 🆕 News
+- 📅2025-03-13: TaskWeaver now supports vision input for the Planner role. Please check the [vision input](https://microsoft.github.io/TaskWeaver/blog/vision) for more details.👀
 - 📅2025-01-16: TaskWeaver has been enhanced with an experimental role called [Recepta](https://microsoft.github.io/TaskWeaver/blog/reasoning) for its reasoning power.🧠
 - 📅2024-12-23: TaskWeaver has been integrated with the [AgentOps](https://microsoft.github.io/TaskWeaver/docs/observability) for better observability and monitoring.🔍
 - 📅2024-09-13: We introduce the shared memory to store information that is shared between the roles in TaskWeaver. Please check the [memory](https://microsoft.github.io/TaskWeaver/docs/memory) for more details.🧠
@@ -31,7 +32,7 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 - 📅2024-05-07: We have added two blog posts on [Evaluating a LLM agent](https://microsoft.github.io/TaskWeaver/blog/evaluation) and [Adding new roles to TaskWeaver](https://microsoft.github.io/TaskWeaver/blog/role) in the documentation.📝
 - 📅2024-03-28: TaskWeaver now offers all-in-one Docker image, providing a convenient one-stop experience for users. Please check the [docker](https://microsoft.github.io/TaskWeaver/docs/usage/docker) for more details.🐳
 - 📅2024-03-27: TaskWeaver now switches to `container` mode by default for code execution. Please check the [code execution](https://microsoft.github.io/TaskWeaver/docs/code_execution) for more details.🐳
-- 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗
+<!-- - 📅2024-03-07: TaskWeaver now supports configuration of different LLMs for various components, such as the Planner and CodeInterpreter. Please check the [multi-llm](https://microsoft.github.io/TaskWeaver/docs/llms/multi-llm) for more details.🔗 -->
 <!-- - 📅2024-03-04: TaskWeaver now supports a [container](https://microsoft.github.io/TaskWeaver/docs/code_execution) mode, which provides a more secure environment for code execution.🐳 -->
 <!-- - 📅2024-02-28: TaskWeaver now offers a [CLI-only](https://microsoft.github.io/TaskWeaver/docs/advanced/cli_only) mode, enabling users to interact seamlessly with the Command Line Interface (CLI) using natural language.📟 -->
 <!-- - 📅2024-02-01: TaskWeaver now has a plugin [document_retriever](https://github.com/microsoft/TaskWeaver/blob/main/project/plugins/README.md#document_retriever) for RAG based on a knowledge base.📚 -->
@@ -43,7 +44,8 @@ Unlike many agent frameworks that only track the chat history with LLMs in text,
 <!-- - 📅2023-12-21: TaskWeaver now supports a number of LLMs, such as LiteLLM, Ollama, Gemini, and QWen🎈.) -->
 <!-- - 📅2023-12-21: TaskWeaver Website is now [available]&#40;https://microsoft.github.io/TaskWeaver/&#41; with more documentations.) -->
 <!-- - 📅2023-12-12: A simple UI demo is available in playground/UI folder, try it [here](https://microsoft.github.io/TaskWeaver/docs/usage/webui)! -->
-<!-- - 📅2023-11-30: TaskWeaver is released on GitHub🎈.  -->
+- ......
+- 📅2023-11-30: TaskWeaver is released on GitHub🎈.  
 
 
 ## 💥 Highlights
@@ -68,7 +70,6 @@ We are looking forward to your contributions to make TaskWeaver better.
 - [ ] Support for prompt template management
 - [ ] Better plugin experiences, such as displaying updates or stopping in the middle of running the plugin and user confirmation before running the plugin
 - [ ] Async interaction with LLMs
-- [ ] Support for vision input for Roles such as the Planner and CodeInterpreter
 - [ ] Support for remote code execution
 
 
