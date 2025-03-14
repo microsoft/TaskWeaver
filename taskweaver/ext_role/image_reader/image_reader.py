@@ -28,10 +28,10 @@ def local_image_to_data_url(image_path):
         with open(image_path, "rb") as image_file:
             base64_encoded_data = base64.b64encode(image_file.read()).decode("utf-8")
     except FileNotFoundError:
-        print(f"Error: The file {image_path} does not exist.")
+        logger.error(f"Error: The file {image_path} does not exist.")
         return None
     except IOError:
-        print(f"Error: The file {image_path} could not be read.")
+        logger.error(f"Error: The file {image_path} could not be read.")
         return None
     # Construct the data URL
     return f"data:{mime_type};base64,{base64_encoded_data}"
