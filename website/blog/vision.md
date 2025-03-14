@@ -36,7 +36,7 @@ The Planner role can then use the image information for various tasks.
 Let's ask the agent to describe any uploaded image.
 
 
-![image_reader](../static/img/image_reader.png)
+![image_reader](/img/image_reader.png)
 
 The flow of the conversation is as follows:
 ```mermaid
