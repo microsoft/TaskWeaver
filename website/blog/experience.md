@@ -1,4 +1,8 @@
-# Experience selection
+---
+title: Experience Selection in TaskWeaver
+authors: liqli
+date: 2024-09-14
+---
 
 We have introduced the motivation of the `experience` module in [Experience](/docs/customization/experience) 
 and how to create a handcrafted experience in [Handcrafted Experience](/docs/customization/experience/handcrafted_experience).

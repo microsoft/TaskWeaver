@@ -1,4 +1,8 @@
-# Plugins In-Depth
+---
+title: Plugins In-Depth
+authors: liqli
+date: 2024-05-23
+---
 
 _**Pre-requisites**: Please refer to the [Introduction](/docs/plugin/plugin_intro) and the [Plugin Development](/docs/plugin/how_to_develop_a_new_plugin) 
 pages for a better understanding of the plugin concept and its development process._

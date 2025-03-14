@@ -1,4 +1,8 @@
-# What makes a good agent reasoning framework?
+---
+title: What makes a good agent reasoning framework?
+authors: liqli
+date: 2025-01-20
+---
 
 An agent can listen to the user's request, understand the context, make plans, take actions, observe the results, and respond to the user. Its behavior is driven by the reasoning process, which is the core of the agent's intelligence. 
 

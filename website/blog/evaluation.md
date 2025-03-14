@@ -1,4 +1,8 @@
-# How to evaluate a LLM agent?
+---
+title: How to evaluate a LLM agent?  
+authors: [liqli, xu]
+date: 2024-05-07  
+---
 
 ## The challenges
 It is nontrivial to evaluate the performance of a LLM agent. 
