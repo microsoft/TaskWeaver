@@ -4,6 +4,7 @@ import os
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, NamedTuple, Optional
+from ..utils import replace_env_vars
 
 AppConfigSourceType = Literal["override", "env", "json", "app", "default"]
 AppConfigValueType = Literal["str", "int", "float", "bool", "list", "enum", "path", "dict"]
@@ -97,7 +98,10 @@ class AppConfigSource:
                 return val
 
         if var_name in self.json_file_store.keys():
-            return self.json_file_store.get(var_name, default_value)
+            val = self.json_file_store.get(var_name, default_value)
+            # e.g., llm.api_base -> LLM_API_BASE
+            val = replace_env_vars(val)
+            return val
 
         if default_value is not None:
             return default_value
