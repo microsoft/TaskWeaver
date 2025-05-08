@@ -133,6 +133,7 @@ class Planner(Role):
             for post in chat_round.post_list:
                 if post.send_from == self.alias:
                     if post.send_to == "User" or post.send_to in self.recipient_alias_set:
+                        # planner responses
                         planner_message = self.planner_post_translator.post_to_raw_text(
                             post=post,
                         )
@@ -144,47 +145,45 @@ class Planner(Role):
                         )
                     elif post.send_to == self.alias:
                         # self correction for planner response, e.g., format error/field check error
+                        # append the invalid response to chat history
                         conversation.append(
                             format_chat_message(
                                 role="assistant",
                                 message=post.get_attachment(
                                     type=AttachmentType.invalid_response,
-                                )[0],
+                                )[0].content,
                             ),
                         )
 
-                        # append the invalid response to chat history
+                        # append the self correction instruction message to chat history
                         conversation.append(
                             format_chat_message(
                                 role="user",
                                 message=self.format_message(
                                     role="User",
-                                    message=post.get_attachment(type=AttachmentType.revise_message)[0],
+                                    message=post.get_attachment(type=AttachmentType.revise_message)[0].content,
                                 ),
                             ),
                         )
-                        # append the self correction instruction message to chat history
-
                 else:
-                    if conv_init_message is not None:
-                        message = self.format_message(
-                            role=post.send_from,
-                            message=conv_init_message + "\n" + post.message,
-                        )
-                        conversation.append(
-                            format_chat_message(role="user", message=message),
-                        )
-                        conv_init_message = None
-                    else:
-                        conversation.append(
-                            format_chat_message(
-                                role="user",
-                                message=self.format_message(
-                                    role=post.send_from,
-                                    message=post.message,
-                                ),
+                    # messages from user or workers
+                    conversation.append(
+                        format_chat_message(
+                            role="user",
+                            message=self.format_message(
+                                role=post.send_from,
+                                message=post.message
+                                if conv_init_message is None
+                                else conv_init_message + "\n" + post.message,
                             ),
-                        )
+                            image_urls=[
+                                attachment.extra["image_url"]
+                                for attachment in post.get_attachment(type=AttachmentType.image_url)
+                            ],
+                        ),
+                    )
+
+                    conv_init_message = None
 
         return conversation
 

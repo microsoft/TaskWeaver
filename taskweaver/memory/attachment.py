@@ -47,6 +47,9 @@ class AttachmentType(Enum):
     # shared memory entry
     shared_memory_entry = "shared_memory_entry"
 
+    # vision input
+    image_url = "image_url"
+
 
 @dataclass
 class Attachment:

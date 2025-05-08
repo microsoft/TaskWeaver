@@ -1,4 +1,8 @@
-# Run TaskWeaver with Locally Deployed Not-that-Large Language Models
+---
+title: Run TaskWeaver with Locally Deployed Not-that-Large Language Models
+authors: liqli
+date: 2024-07-08
+---
 
 :::info
 The feature introduced in this blog post can cause incompatibility issue with the previous version of TaskWeaver
