@@ -14,10 +14,9 @@ injector>=0.21.0
 ijson>=3.2.3
 requests>=2.31.0
 docker>=7.0.0
-
+chainlit<1.1.300
 # Code Execution related
 ipykernel==6.26.0
-
 pre-commit>=2.19.0
 tenacity>=8.2.2
 plotly>=5.14.1
