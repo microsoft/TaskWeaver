@@ -1,0 +1,78 @@
+name: Build for SLSA
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: "ubuntu-latest"
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Build Wheel and Generate checksum
+        id: build
+        run: |
+          pip install build
+          python -m pip install -r requirements.txt
+          python -m build
+      - name: Generate Python SBOM
+        id: sbom-json
+        uses: CycloneDX/gh-python-generate-sbom@v2
+        with:
+          input: ./requirements.txt
+          output: dist/generated_bom.json
+          format: json  # output format  (json)
+      - name: Generate Python SBOM
+        id: sbom-xml
+        uses: CycloneDX/gh-python-generate-sbom@v2
+        with:
+          input: ./requirements.txt
+          output: dist/generated_bom.xml
+          format: json  # output format  (xml)
+      - name: Generate subject
+        id: hash
+        run: |
+          cd dist
+          HASHES=$(sha256sum * | base64 -w0)
+          echo "hashes=$HASHES" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        name: release
+        with:
+          path: dist/
+
+
+  provenance:
+    needs: [build]
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.10.0
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    with:
+      base64-subjects: ${{ needs.build.outputs.hashes }}
+
+
+  publish:
+    needs: ["provenance"]
+    permissions:
+      contents: write
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Generate list of files to upload
+        id: filelist
+        run: |
+          echo "list<<EOF" >> "$GITHUB_OUTPUT"
+          find dist/ -type f >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT" 
+      - name: Release
+        uses: softprops/action-gh-release@v2.0.4
+        with:
+          files: ${{ steps.filelist.outputs.list }}
