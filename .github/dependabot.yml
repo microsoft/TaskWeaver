@@ -8,3 +8,11 @@ updates:
         - "*"  # Group all Actions updates into a single larger pull request
   schedule:
     interval: weekly
+- package-ecosystem: "npm"
+  directory: "/website"
+  groups:
+    website_dependencies:
+      patterns:
+        - "*"  # Group all npm dependencies updates into a single larger pull request
+  schedule:
+    interval: monthly
