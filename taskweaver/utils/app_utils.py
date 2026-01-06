@@ -1,3 +1,4 @@
+import json
 from os import listdir, path
 from typing import Optional, Tuple
 
@@ -13,7 +14,11 @@ def discover_app_dir(
         config_path = path.join(workspace, "taskweaver_config.json")
         if not path.exists(config_path):
             return False
-        # TODO: read, parse and validate config
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                json.load(f)
+        except json.JSONDecodeError:
+            return False
         return True
 
     def is_dir_valid(dir: str) -> bool:
