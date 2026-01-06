@@ -16,8 +16,11 @@ def discover_app_dir(
             return False
         try:
             with open(config_path, "r", encoding="utf-8") as f:
-                json.load(f)
-        except json.JSONDecodeError:
+                data = json.load(f)
+                # Config must be a dictionary (key-value pairs)
+                if not isinstance(data, dict):
+                    return False
+        except (json.JSONDecodeError, OSError):
             return False
         return True
 
