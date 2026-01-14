@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from typing import Dict, Generic, List, Optional, Tuple, TypeVar, Union
@@ -33,6 +34,15 @@ class ComponentRegistry(ABC, Generic[component_type]):
             return False
         return True
 
+    def _should_skip_plugin_file(self, path):
+        splitted_path = path.split(os.sep)
+        is_plugin = os.path.join('plugins','project') in path
+        is_plugin_yaml = splitted_path[-2] == splitted_path[-1].split('.')[0]
+        if is_plugin:
+            if not is_plugin_yaml:
+                return True
+        return False
+
     def get_registry(
         self,
         force_reload: bool = False,
@@ -45,6 +55,8 @@ class ComponentRegistry(ABC, Generic[component_type]):
 
         registry: Dict[str, component_type] = {}
         for path in glob_files(self._file_glob):
+            if self._should_skip_plugin_file(path):
+                continue
             try:
                 name, component = self._load_component(path)
             except ComponentDisabledException:
