@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict, List, Union
+from .json_replace import replace_env_vars
 
 
 def create_id(length: int = 4) -> str:
