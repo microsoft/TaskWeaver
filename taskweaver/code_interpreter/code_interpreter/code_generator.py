@@ -1,7 +1,7 @@
 import datetime
 import json
 import os
-from typing import List, Optional
+from typing import List, Literal, Optional, Union
 
 from injector import inject
 
@@ -119,10 +119,10 @@ class CodeGenerator(Role):
                 + ", ".join([f"{module}" for module in self.allowed_modules]),
             )
 
-        if len(self.allowed_modules) == 0:
+        if self.allowed_modules is not None and len(self.allowed_modules) == 0:
             requirements.append(f"- {self.role_name} cannot import any Python modules.")
 
-        if len(self.blocked_functions) > 0:
+        if self.blocked_functions is not None and len(self.blocked_functions) > 0:
             requirements.append(
                 f"- {self.role_name} cannot use the following Python functions: "
                 + ", ".join([f"{function}" for function in self.blocked_functions]),
@@ -207,10 +207,11 @@ class CodeGenerator(Role):
             AttachmentType.code_error,
             AttachmentType.execution_status,
             AttachmentType.execution_result,
+            AttachmentType.session_variables,
         ]
 
         is_first_post = True
-        last_post: Post = None
+        last_post: Optional[Post] = None
         for round_index, conversation_round in enumerate(rounds):
             for post_index, post in enumerate(conversation_round.post_list):
                 # compose user query
@@ -292,10 +293,24 @@ class CodeGenerator(Role):
                 if len(user_message) > 0:
                     # add requirements to the last user message
                     if is_final_post and add_requirements:
+                        available_vars_section = ""
+                        session_vars = post.get_attachment(AttachmentType.session_variables)
+                        if session_vars is not None and len(session_vars) > 0:
+                            try:
+                                decoded_vars = json.loads(session_vars[0].content)
+                                if isinstance(decoded_vars, list) and len(decoded_vars) > 0:
+                                    formatted_vars = "\n".join([f"- {name}: {value}" for name, value in decoded_vars])
+                                    available_vars_section = (
+                                        "\nCurrently available variables in the Python session:\n" + formatted_vars
+                                    )
+                            except Exception:
+                                pass
                         user_message += "\n" + self.query_requirements_template.format(
                             CODE_GENERATION_REQUIREMENTS=self.compose_verification_requirements(),
                             ROLE_NAME=self.role_name,
                         )
+                        if available_vars_section:
+                            user_message += available_vars_section
                     chat_history.append(
                         format_chat_message(role="user", message=user_message),
                     )
@@ -365,7 +380,7 @@ class CodeGenerator(Role):
             },
         )
 
-        def early_stop(_type: AttachmentType, value: str) -> bool:
+        def early_stop(_type: Union[AttachmentType, Literal["message", "send_to"]], value: str) -> bool:
             if _type in [AttachmentType.reply_content]:
                 return True
             else:
@@ -443,6 +458,7 @@ def format_code_feedback(post: Post) -> str:
     feedback = ""
     verification_status = ""
     execution_status = ""
+    variable_lines = []
     for attachment in post.attachment_list:
         if attachment.type == AttachmentType.verification and attachment.content == "CORRECT":
             feedback += "## Verification\nCode verification has been passed.\n"
@@ -466,4 +482,13 @@ def format_code_feedback(post: Post) -> str:
             execution_status = "FAILURE"
         elif attachment.type == AttachmentType.execution_result and execution_status != "NONE":
             feedback += f"{attachment.content}\n"
+        elif attachment.type == AttachmentType.session_variables:
+            try:
+                variables = json.loads(attachment.content)
+                if isinstance(variables, list) and len(variables) > 0:
+                    variable_lines.extend([f"- {name}: {value}" for name, value in variables])
+            except Exception:
+                pass
+    if len(variable_lines) > 0:
+        feedback += "## Available Variables\n" + "\n".join(variable_lines) + "\n"
     return feedback

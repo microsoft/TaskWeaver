@@ -44,6 +44,9 @@ class AttachmentType(Enum):
     invalid_response = "invalid_response"
     text = "text"
 
+    # CodeInterpreter - visible variables snapshot
+    session_variables = "session_variables"
+
     # shared memory entry
     shared_memory_entry = "shared_memory_entry"
 

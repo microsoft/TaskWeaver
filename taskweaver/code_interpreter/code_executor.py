@@ -10,6 +10,7 @@ from taskweaver.memory.plugin import PluginRegistry
 from taskweaver.module.tracing import Tracing, get_tracer, tracing_decorator
 from taskweaver.plugin.context import ArtifactType
 from taskweaver.session import SessionMetadata
+from taskweaver.utils import pretty_repr
 
 TRUNCATE_CHAR_LENGTH = 1500
 
@@ -190,6 +191,11 @@ class CodeExecutor:
                 lines.append(
                     "The result of above Python code after execution is:\n" + str(output),
                 )
+        elif len(result.variables) > 0:
+            lines.append("The following variables are currently available in the Python session:\n")
+            for name, val in result.variables:
+                lines.append(f"- {name}: {pretty_repr(val, limit=500)}")
+            lines.append("")
         elif result.is_success:
             if len(result.stdout) > 0:
                 lines.append(

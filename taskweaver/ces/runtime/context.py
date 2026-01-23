@@ -1,7 +1,14 @@
 import os
+import types
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+try:
+    import numpy as _np  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    _np = None
+
 from taskweaver.module.prompt_util import PromptUtil
+from taskweaver.plugin.base import Plugin
 from taskweaver.plugin.context import ArtifactType, LogErrorLevel, PluginContext
 
 if TYPE_CHECKING:
@@ -15,6 +22,7 @@ class ExecutorPluginContext(PluginContext):
         self.artifact_list: List[Dict[str, str]] = []
         self.log_messages: List[Tuple[LogErrorLevel, str, str]] = []
         self.output: List[Tuple[str, str]] = []
+        self.latest_variables: List[Tuple[str, str]] = []
 
     @property
     def execution_id(self) -> str:
@@ -146,6 +154,54 @@ class ExecutorPluginContext(PluginContext):
         if variable_name in self.executor.session_var:
             return self.executor.session_var[variable_name]
         return default
+
+    def extract_visible_variables(self, local_ns: Dict[str, Any]) -> List[Tuple[str, str]]:
+        ignore_names = {
+            "__builtins__",
+            "In",
+            "Out",
+            "get_ipython",
+            "exit",
+            "quit",
+            "pd",
+            "np",
+            "plt",
+        }
+
+        visible: List[Tuple[str, str]] = []
+        for name, value in local_ns.items():
+            if name.startswith("_") or name in ignore_names:
+                continue
+
+            if isinstance(value, (types.ModuleType, types.FunctionType)):
+                continue
+
+            if isinstance(value, Plugin) or getattr(value, "__module__", "").startswith("taskweaver_ext.plugin"):
+                continue
+
+            if _np is not None and isinstance(value, _np.ndarray):
+                try:
+                    rendered = _np.array2string(
+                        value,
+                        max_line_width=120,
+                        threshold=20,
+                        edgeitems=3,
+                    )
+                    rendered = f"ndarray shape={value.shape} dtype={value.dtype} value={rendered}"
+                except Exception:
+                    rendered = "<ndarray>"
+                visible.append((name, rendered[:500]))
+                continue
+
+            try:
+                rendered = repr(value)
+            except Exception:
+                rendered = "<unrepresentable>"
+
+            visible.append((name, rendered[:500]))
+
+        self.latest_variables = visible
+        return visible
 
     def wrap_text_with_delimiter_temporal(self, text: str) -> str:
         """wrap text with delimiter"""

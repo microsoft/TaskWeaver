@@ -58,6 +58,7 @@ class TaskWeaverContextMagic(Magics):
     def _taskweaver_exec_post_check(self, line: str, local_ns: Dict[str, Any]):
         if "_" in local_ns:
             self.executor.ctx.set_output(local_ns["_"])
+        self.executor.ctx.extract_visible_variables(local_ns)
         return fmt_response(True, "", self.executor.get_post_execution_state())
 
     @cell_magic

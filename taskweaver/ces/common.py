@@ -68,6 +68,7 @@ class ExecutionResult:
 
     log: List[Tuple[str, str, str]] = dataclasses.field(default_factory=list)
     artifact: List[ExecutionArtifact] = dataclasses.field(default_factory=list)
+    variables: List[Tuple[str, str]] = dataclasses.field(default_factory=list)
 
 
 class Client(ABC):

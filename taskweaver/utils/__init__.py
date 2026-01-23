@@ -80,6 +80,18 @@ def json_dump(obj: Any, fp: Any):
     json.dump(obj, fp, cls=EnhancedJSONEncoder)
 
 
+def pretty_repr(val: Any, limit: int = 200) -> str:
+    try:
+        rendered = repr(val)
+    except Exception:
+        rendered = "<unrepresentable>"
+
+    if len(rendered) > limit:
+        omitted = len(rendered) - limit
+        return f"{rendered[:limit]}...omitted {omitted} chars..."
+    return rendered
+
+
 def generate_md5_hash(content: str) -> str:
     from hashlib import md5
 

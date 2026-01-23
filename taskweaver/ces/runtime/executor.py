@@ -226,6 +226,7 @@ class Executor:
             "artifact": self.ctx.artifact_list,
             "log": self.ctx.log_messages,
             "output": self.ctx.get_normalized_output(),
+            "variables": list(self.ctx.latest_variables),
         }
 
     def log(self, level: LogErrorLevel, message: str):

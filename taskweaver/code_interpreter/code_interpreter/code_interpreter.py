@@ -1,3 +1,4 @@
+import json
 import os
 from typing import Dict, Literal, Optional
 
@@ -246,6 +247,12 @@ class CodeInterpreter(Role, Interpreter):
             exec_id=post_proxy.post.id,
             code=executable_code,
         )
+
+        if len(exec_result.variables) > 0:
+            post_proxy.update_attachment(
+                json.dumps(exec_result.variables),
+                AttachmentType.session_variables,
+            )
 
         code_output = self.executor.format_code_output(
             exec_result,

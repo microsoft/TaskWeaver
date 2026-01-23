@@ -697,6 +697,8 @@ class Environment:
                             preview=artifact_dict["preview"],
                         )
                         result.artifact.append(artifact_item)
+                elif key == "variables":
+                    result.variables = value
                 else:
                     pass
 
