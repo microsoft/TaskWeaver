@@ -9,7 +9,13 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, 
 
 import click
 
-from taskweaver.module.event_emitter import PostEventType, RoundEventType, SessionEventHandlerBase, SessionEventType
+from taskweaver.module.event_emitter import (
+    ConfirmationHandler,
+    PostEventType,
+    RoundEventType,
+    SessionEventHandlerBase,
+    SessionEventType,
+)
 
 if TYPE_CHECKING:
     from taskweaver.memory.attachment import AttachmentType
@@ -65,7 +71,30 @@ def user_input_message(prompt: str = "   Human  ") -> str:
             continue
 
 
-class TaskWeaverRoundUpdater(SessionEventHandlerBase):
+def user_confirmation_input(prompt: str = "Execute code? [y/N]: ") -> str:
+    import prompt_toolkit
+
+    session = prompt_toolkit.PromptSession[str](
+        multiline=False,
+    )
+
+    while True:
+        try:
+            user_input: str = session.prompt(
+                prompt_toolkit.formatted_text.FormattedText(
+                    [
+                        ("bg:ansiyellow fg:ansiblack", " Confirm "),
+                        ("fg:ansiyellow", "▶"),
+                        ("", f" {prompt}"),
+                    ],
+                ),
+            )
+            return user_input.strip().lower()
+        except KeyboardInterrupt:
+            return "n"
+
+
+class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
     def __init__(self):
         self.exit_event = threading.Event()
         self.update_cond = threading.Condition()
@@ -74,9 +103,22 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         self.last_attachment_id = ""
         self.pending_updates: List[Tuple[str, str]] = []
 
+        # Handshake pair for pausing animation (e.g., during confirmation prompts)
+        self.pause_animation = threading.Event()  # Main requests pause
+        self.animation_paused = threading.Event()  # Animation acknowledges pause
+        self.animation_paused.set()  # Initially paused (not animating yet)
+
         self.messages: List[Tuple[str, str]] = []
         self.response: List[str] = []
         self.result: Optional[str] = None
+
+    def request_confirmation(
+        self,
+        code: str,
+        round_id: str,
+        post_id: Optional[str],
+    ) -> bool:
+        return True
 
     def handle_session(
         self,
@@ -153,6 +195,8 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         message: str,
         files: List[Dict[Literal["name", "path", "content"], str]],
     ) -> Optional[str]:
+        session.event_emitter.confirmation_handler = self
+
         def execution_thread():
             try:
                 round = session.send_message(
@@ -171,7 +215,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
                 with self.update_cond:
                     self.update_cond.notify_all()
 
-        t_ui = threading.Thread(target=lambda: self._animate_thread(), daemon=True)
+        t_ui = threading.Thread(target=lambda: self._animate_thread(session), daemon=True)
         t_ex = threading.Thread(target=execution_thread, daemon=True)
 
         t_ui.start()
@@ -179,6 +223,10 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
         exit_no_wait: bool = False
         try:
             while True:
+                if session.event_emitter.confirmation_pending:
+                    self._handle_confirmation(session)
+                    continue
+
                 self.exit_event.wait(0.1)
                 if self.exit_event.is_set():
                     break
@@ -186,7 +234,6 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
             error_message("Interrupted by user")
             exit_no_wait = True
 
-            # keyboard interrupt leave the session in unknown state, exit directly
             exit(1)
         finally:
             self.exit_event.set()
@@ -200,8 +247,45 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
         return self.result
 
-    def _animate_thread(self):
-        # get terminal width
+    def _handle_confirmation(self, session: Session) -> None:
+        from colorama import ansi
+
+        # Signal animation thread to pause
+        self.pause_animation.set()
+
+        # Wait for animation thread to acknowledge it has paused
+        self.animation_paused.wait(timeout=5.0)
+
+        # Clear any leftover animation output
+        print(ansi.clear_line(), end="\r")
+
+        code = session.event_emitter.pending_confirmation_code or ""
+
+        # Display code in a style consistent with the UI
+        click.secho(
+            click.style(" ├─► ", fg="blue")
+            + click.style("[", fg="blue")
+            + click.style("confirm", fg="bright_cyan")
+            + click.style("]", fg="blue"),
+        )
+        for line in code.split("\n"):
+            click.secho(click.style(" │   ", fg="blue") + click.style(line, fg="bright_black"))
+
+        response = user_confirmation_input()
+        approved = response in ("y", "yes")
+
+        if approved:
+            click.secho(click.style(" │   ", fg="blue") + click.style("✓ approved", fg="green"))
+        else:
+            click.secho(click.style(" │   ", fg="blue") + click.style("✗ cancelled", fg="red"))
+
+        # Allow animation thread to resume
+        self.animation_paused.clear()
+        self.pause_animation.clear()
+
+        session.event_emitter.provide_confirmation(approved)
+
+    def _animate_thread(self, session: Session):
         terminal_column = shutil.get_terminal_size().columns
         counter = 0
         status_msg = "preparing"
@@ -306,6 +390,22 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
         last_time = 0
         while True:
+            # Check if we should pause FIRST, before any output
+            if self.pause_animation.is_set():
+                # Signal that animation has paused
+                self.animation_paused.set()
+                # Wait until pause is lifted
+                while self.pause_animation.is_set():
+                    if self.exit_event.is_set():
+                        break
+                    with self.update_cond:
+                        self.update_cond.wait(0.1)
+                # Reset for next iteration
+                continue
+
+            # Animation is running, clear the paused signal
+            self.animation_paused.clear()
+
             clear_line()
             with self.lock:
                 for action, opt in self.pending_updates:
@@ -366,6 +466,10 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase):
 
             if self.exit_event.is_set():
                 break
+
+            # Check again before printing status line
+            if self.pause_animation.is_set():
+                continue
 
             cur_message_prefix: str = " TaskWeaver "
             cur_ani_frame = get_ani_frame(counter)

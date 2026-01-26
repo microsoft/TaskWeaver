@@ -59,6 +59,7 @@ class CodeInterpreterConfig(RoleConfig):
         )
 
         self.code_prefix = self._get_str("code_prefix", "")
+        self.require_confirmation = self._get_bool("require_confirmation", False)
 
 
 def update_verification(
@@ -233,6 +234,27 @@ class CodeInterpreter(Role, Interpreter):
             return post_proxy.end()
         elif len(code_verify_errors) == 0:
             update_verification(post_proxy, "CORRECT", "No error is found.")
+
+        if self.config.require_confirmation:
+            post_proxy.update_status("awaiting confirmation")
+            self.logger.info("Requesting user confirmation for code execution")
+
+            confirmed = self.event_emitter.request_code_confirmation(
+                code.content,
+                post_proxy.post.id,
+            )
+
+            if not confirmed:
+                self.logger.info("Code execution cancelled by user")
+                self.tracing.set_span_status("OK", "User cancelled code execution.")
+                update_execution(
+                    post_proxy,
+                    "NONE",
+                    "Code execution was cancelled by user.",
+                )
+                post_proxy.update_message("Code execution was cancelled.")
+                self.retry_count = 0
+                return post_proxy.end()
 
         executable_code = f"{code.content}"
         full_code_prefix = None

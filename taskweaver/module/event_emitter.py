@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import threading
 from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
@@ -40,6 +41,8 @@ class PostEventType(Enum):
     post_send_to_update = "post_send_to_update"
     post_message_update = "post_message_update"
     post_attachment_update = "post_attachment_update"
+    post_confirmation_request = "post_confirmation_request"
+    post_confirmation_response = "post_confirmation_response"
 
 
 @dataclass
@@ -121,6 +124,32 @@ class SessionEventHandlerBase(SessionEventHandler):
         **kwargs: Any,
     ):
         pass
+
+
+class ConfirmationHandler(abc.ABC):
+    """Protocol for handling execution confirmations.
+
+    Implementers of this protocol can intercept code execution
+    and request user confirmation before proceeding.
+    """
+
+    @abc.abstractmethod
+    def request_confirmation(
+        self,
+        code: str,
+        round_id: str,
+        post_id: Optional[str],
+    ) -> bool:
+        """Request confirmation for code execution.
+
+        Args:
+            code: The code that is about to be executed.
+            round_id: The current round ID.
+            post_id: The current post ID (may be None).
+
+        Returns:
+            True to proceed with execution, False to abort.
+        """
 
 
 class PostEventProxy:
@@ -232,6 +261,75 @@ class SessionEventEmitter:
     def __init__(self):
         self.handlers: List[SessionEventHandler] = []
         self.current_round_id: Optional[str] = None
+
+        self._confirmation_handler: Optional[ConfirmationHandler] = None
+        self._confirmation_event = threading.Event()
+        self._confirmation_cond = threading.Condition()
+        self._confirmation_result: Optional[bool] = None
+        self._confirmation_code: Optional[str] = None
+        self._confirmation_post_id: Optional[str] = None
+
+    @property
+    def confirmation_handler(self) -> Optional[ConfirmationHandler]:
+        return self._confirmation_handler
+
+    @confirmation_handler.setter
+    def confirmation_handler(self, handler: Optional[ConfirmationHandler]):
+        self._confirmation_handler = handler
+
+    @property
+    def confirmation_pending(self) -> bool:
+        return self._confirmation_event.is_set()
+
+    @property
+    def pending_confirmation_code(self) -> Optional[str]:
+        return self._confirmation_code
+
+    def request_code_confirmation(self, code: str, post_id: Optional[str] = None) -> bool:
+        if self._confirmation_handler is None:
+            return True
+
+        self._confirmation_code = code
+        self._confirmation_post_id = post_id
+        self._confirmation_event.set()
+
+        self.emit(
+            TaskWeaverEvent(
+                EventScope.post,
+                PostEventType.post_confirmation_request,
+                self.current_round_id,
+                post_id,
+                code,
+                extra={"code": code},
+            ),
+        )
+
+        with self._confirmation_cond:
+            while self._confirmation_result is None:
+                self._confirmation_cond.wait()
+            result = self._confirmation_result
+            self._confirmation_result = None
+            self._confirmation_code = None
+            self._confirmation_post_id = None
+
+        self.emit(
+            TaskWeaverEvent(
+                EventScope.post,
+                PostEventType.post_confirmation_response,
+                self.current_round_id,
+                post_id,
+                "approved" if result else "rejected",
+                extra={"approved": result},
+            ),
+        )
+
+        return result
+
+    def provide_confirmation(self, approved: bool):
+        with self._confirmation_cond:
+            self._confirmation_result = approved
+            self._confirmation_event.clear()  # Clear immediately so main thread won't see stale True
+            self._confirmation_cond.notify_all()
 
     def emit(self, event: TaskWeaverEvent):
         for handler in self.handlers:

@@ -73,6 +73,7 @@ instruction_template: |-
     + AdditionalInformation: The User's request is incomplete or missing critical information and requires additional information.
     + SecurityRisks: The User's request contains potential security risks or illegal activities and requires rejection.
     + TaskFailure: The task fails after few attempts and requires the User's confirmation to proceed.
+    + UserCancelled: The User has explicitly cancelled the operation (e.g., declined code execution confirmation). Do NOT retry or continue the task - stop immediately and acknowledge the cancellation.
   
   
   ### Examples of planning process
@@ -126,6 +127,7 @@ instruction_template: |-
   - When the request involves loading a file or pulling a table from db, Planner should always set the first subtask to reading the content to understand the structure or schema of the data.
   - When the request involves text analysis, Planner should always set the first subtask to read and print the text content to understand its content structure.
   - When the request involves read instructions for task execution, Planner should always update the plan to the steps and sub-steps in the instructions and then follow the updated plan to execute necessary actions.
+  - When a Worker responds with "Code execution was cancelled by user" or similar cancellation message, Planner must immediately stop the task with stop="UserCancelled" and NOT retry or attempt alternative approaches.
   
   ## Planner's response format
   - Planner must strictly format the response into the following JSON object:
@@ -160,10 +162,10 @@ response_json_schema: |-
                     "type": "string",
                     "description": "The current step Planner is executing."
                 },
-                "stop": {
+            "stop": {
                     "type": "string",
                     "description": "The stop reason when the Planner needs to talk to the User. Set it to 'InProcess' if the Planner is not talking to the User.",
-                    "enum": ["InProcess", "Completed", "Clarification", "AdditionalInformation", "SecurityRisks", "TaskFailure"]
+                    "enum": ["InProcess", "Completed", "Clarification", "AdditionalInformation", "SecurityRisks", "TaskFailure", "UserCancelled"]
                 },
                 "send_to": {
                     "type": "string",
