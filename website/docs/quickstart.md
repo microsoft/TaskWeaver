@@ -37,7 +37,9 @@ A project directory typically contains the following files and folders:
 
 ## OpenAI Configuration
 Before running TaskWeaver, you need to provide your OpenAI API key and other necessary information. 
-You can do this by editing the `taskweaver_config.json` file. 
+You can do this by creating a `taskweaver_config.json` file in your project directory.
+A template file `taskweaver_config.json.example` is provided - copy it to `taskweaver_config.json` and fill in your credentials.
+
 If you are using Azure OpenAI, you need to set the following parameters in the `taskweaver_config.json` file:
 ### Azure OpenAI
 ```json
@@ -83,6 +85,5 @@ Human: ___
 ```
 
 There are other ways to start TaskWeaver:
-- [A Chainlit UI interface](./usage/webui.md): TaskWeaver provides an experimental web-based interface to interact with the system.
 - [A Library](./usage/library.md): You can also use TaskWeaver as a library in your Python code.
 - [The all-in-one Docker image](./usage/docker.md): We provide a Docker image that contains all the dependencies to run TaskWeaver.

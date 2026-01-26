@@ -1,0 +1,6 @@
+{
+  "llm.api_type": "openai",
+  "llm.api_base": "https://api.openai.com/v1",
+  "llm.api_key": "YOUR_API_KEY",
+  "llm.model": "gpt-4"
+}

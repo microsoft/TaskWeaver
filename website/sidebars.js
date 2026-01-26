@@ -60,7 +60,6 @@ const sidebars = {
       collapsed: false,
       items: [
         'usage/cmd',
-        'usage/webui',
         'usage/library',
         'usage/docker',
         ],

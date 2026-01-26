@@ -5,6 +5,9 @@ workspace/*
 set_env.sh
 sample_case_results.csv
 
+# Project config (use taskweaver_config.json.example as template)
+project/taskweaver_config.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
