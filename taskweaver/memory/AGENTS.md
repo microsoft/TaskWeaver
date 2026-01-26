@@ -57,7 +57,6 @@ class Post:
 ```python
 class AttachmentType(str, Enum):
     # Planning
-    init_plan = "init_plan"
     plan = "plan"
     current_plan_step = "current_plan_step"
     

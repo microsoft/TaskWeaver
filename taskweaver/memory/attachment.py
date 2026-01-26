@@ -9,7 +9,6 @@ from taskweaver.utils import create_id
 
 class AttachmentType(Enum):
     # Planner Type
-    init_plan = "init_plan"
     plan = "plan"
     current_plan_step = "current_plan_step"
     plan_reasoning = "plan_reasoning"
@@ -114,7 +113,7 @@ class Attachment:
         }
 
     @staticmethod
-    def from_dict(content: AttachmentDict) -> Attachment:
+    def from_dict(content: AttachmentDict) -> Optional[Attachment]:
         # deprecated types
         if content["type"] in ["python", "sample", "text"]:
             raise ValueError(
@@ -122,6 +121,10 @@ class Attachment:
                 f"Please check our blog https://microsoft.github.io/TaskWeaver/blog/local_llm "
                 f"on how to fix it.",
             )
+
+        removed_types = ["init_plan"]
+        if content["type"] in removed_types:
+            return None
 
         type = AttachmentType(content["type"])
         return Attachment.create(

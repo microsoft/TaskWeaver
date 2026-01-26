@@ -14,9 +14,6 @@ rounds:
           - type: plan_reasoning
             content: |-
                 The user greets the Planner
-          - type: init_plan
-            content: |-
-              1. Respond to the user's greeting
           - type: plan
             content: |-
               1. Respond to the user's greeting

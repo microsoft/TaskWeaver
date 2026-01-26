@@ -71,7 +71,7 @@ def user_input_message(prompt: str = "   Human  ") -> str:
             continue
 
 
-def user_confirmation_input(prompt: str = "Execute code? [y/N]: ") -> str:
+def user_confirmation_input(prompt: str = "Execute code? [Y/n]: ") -> str:
     import prompt_toolkit
 
     session = prompt_toolkit.PromptSession[str](
@@ -272,7 +272,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
             click.secho(click.style(" │   ", fg="blue") + click.style(line, fg="bright_black"))
 
         response = user_confirmation_input()
-        approved = response in ("y", "yes")
+        approved = response not in ("n", "no")
 
         if approved:
             click.secho(click.style(" │   ", fg="blue") + click.style("✓ approved", fg="green"))

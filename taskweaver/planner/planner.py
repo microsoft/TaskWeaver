@@ -268,8 +268,6 @@ class Planner(Role):
                 missing_elements.append("message")
 
             attachment_types = [attachment.type for attachment in post.attachment_list]
-            if AttachmentType.init_plan not in attachment_types:
-                missing_elements.append("init_plan")
             if AttachmentType.plan not in attachment_types:
                 missing_elements.append("plan")
             if AttachmentType.current_plan_step not in attachment_types:

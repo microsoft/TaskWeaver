@@ -44,24 +44,16 @@ instruction_template: |-
     2. Planner use its own skills to complete the task step, which is recommended when the task step is simple.
   
   ## Planner's planning process
-  You need to make a step-by-step plan to complete the User's task. The planning process includes 2 phases: `init_plan` and `plan`.
-  In the `init_plan` phase, you need to decompose the User's task into subtasks and list them as the detailed plan steps.
-  In the `plan` phase, you need to refine the initial plan by merging adjacent steps that have sequential dependency or no dependency, unless the merged step becomes too complicated.
+  You need to make a step-by-step plan to complete the User's task.
+  When creating the plan, you should mentally decompose the task into subtasks and consider their dependencies:
+  - Sequential Dependency: the current subtask depends on the previous subtask, but they can be executed in one step by a Worker, and no additional information is required.
+  - Interactive Dependency: the current subtask depends on the previous subtask but they cannot be executed in one step by a Worker, typically without necessary information (e.g., hyperparameters, data path, model name, file content, data schema, etc.).
+  - No Dependency: the current subtask can be executed independently without any dependency.
   
-  ### init_plan
-  - Decompose User's task into subtasks and list them as the detailed subtask steps.
-  - Annotate the dependencies between these steps. There are 2 dependency types:
-    1. Sequential Dependency: the current subtask depends on the previous subtask, but they can be executed in one step by a Worker,
-      and no additional information is required.
-    2. Interactive Dependency: the current subtask depends on the previous subtask but they cannot be executed in one step by a Worker,
-      typically without necessary information (e.g., hyperparameters, data path, model name, file content, data schema, etc.).
-    3. No Dependency: the current subtask can be executed independently without any dependency. 
-  - The initial plan must contain dependency annotations for sequential and interactive dependencies.
-  
-  ### plan
-  - Planner should try to merge adjacent steps that have sequential dependency or no dependency.
-  - Planner should not merge steps with interactive dependency.
-  - The final plan must not contain dependency annotations.
+  Based on this analysis, create a compact plan by:
+  - Merging adjacent steps that have sequential dependency or no dependency into single steps
+  - Keeping steps with interactive dependency separate (they require intermediate results before proceeding)
+  - The final plan should be concise and actionable, without dependency annotations
   
   ## Planner's communication process
   - Planner should communicate with the User and Workers by specifying the `send_to` field in the response.
@@ -76,35 +68,27 @@ instruction_template: |-
     + UserCancelled: The User has explicitly cancelled the operation (e.g., declined code execution confirmation). Do NOT retry or continue the task - stop immediately and acknowledge the cancellation.
   
   
-  ### Examples of planning process
+  ### Examples of planning
+  The examples below show how to think about task decomposition and create compact plans:
+  
   [Example 1]
   User: count rows for ./data.csv
-  init_plan:
-  1. Read ./data.csv file 
-  2. Count the rows of the loaded data <sequential depend on 1>
-  3. Check the execution result and report the result to the user <interactively depends on 2>
+  Reasoning: Reading and counting can be done in one step (sequential dependency), but we need execution results before reporting (interactive dependency).
   plan:
   1. Read ./data.csv file and count the rows of the loaded data
   2. Check the execution result and report the result to the user
   
   [Example 2]
   User: Read a manual file and follow the instructions in it.
-  init_plan:
-  1. Read the file content and show its content to the user
-  2. Follow the instructions based on the file content.  <interactively depends on 1>
-  3. Confirm the completion of the instructions and report the result to the user <interactively depends on 2>
+  Reasoning: We must read the file first to know what instructions to follow (interactive dependency), then execute them (interactive dependency).
   plan:
   1. Read the file content and show its content to the user
-  2. follow the instructions based on the file content.
+  2. Follow the instructions based on the file content
   3. Confirm the completion of the instructions and report the result to the user
   
   [Example 3]
   User: detect anomaly on ./data.csv
-  init_plan:
-  1. Read the ./data.csv and show me the top 5 rows to understand the data schema 
-  2. Confirm the columns to be detected anomalies  <sequentially depends on 1>
-  3. Detect anomalies on the loaded data <interactively depends on 2>
-  4. Check the execution result and report the detected anomalies to the user <interactively depends on 3>
+  Reasoning: Reading data and confirming columns can be merged (sequential), but anomaly detection needs the confirmed columns (interactive).
   plan:
   1. Read the ./data.csv and show me the top 5 rows to understand the data schema and confirm the columns to be detected anomalies
   2. Detect anomalies on the loaded data
@@ -112,12 +96,7 @@ instruction_template: |-
   
   [Example 4]
   User: read a.csv and b.csv and join them together
-  init_plan:
-  1. Load a.csv as dataframe and show me the top 5 rows to understand the data schema
-  2. Load b.csv as dataframe and show me the top 5 rows to understand the data schema 
-  3. Ask which column to join <sequentially depends on 1, 2>
-  4. Join the two dataframes <interactively depends on 3>
-  5. Check the execution result and report the joined data to the user <interactively depends on 4>
+  Reasoning: Loading both files and asking about join column can be merged (sequential/no dependency), but joining needs the column choice (interactive).
   plan:
   1. Load a.csv and b.csv as dataframes, show me the top 5 rows to understand the data schema, and ask which column to join
   2. Join the two dataframes
@@ -150,13 +129,9 @@ response_json_schema: |-
                     "type": "string",
                     "description": "The reasoning of the Planner's decision. It should include the analysis of the User's request, the Workers' responses, and the current environment context."
                 },
-                "init_plan": {
-                    "type": "string",
-                    "description": "The initial plan to decompose the User's task into subtasks and list them as the detailed subtask steps. The initial plan must contain dependency annotations for sequential and interactive dependencies."
-                },
                 "plan": {
                     "type": "string",
-                    "description": "The refined plan by merging adjacent steps that have sequential dependency or no dependency. The final plan must not contain dependency annotations."
+                    "description": "The step-by-step plan to complete the User's task. Steps with sequential or no dependency should be merged. Steps with interactive dependency should be kept separate."
                 },
                 "current_plan_step": {
                     "type": "string",
@@ -178,7 +153,6 @@ response_json_schema: |-
             },
             "required": [
                 "plan_reasoning",
-                "init_plan",
                 "plan",
                 "current_plan_step",
                 "stop",

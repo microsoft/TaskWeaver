@@ -73,14 +73,18 @@ class Post:
     @staticmethod
     def from_dict(content: Dict[str, Any]) -> Post:
         """Convert the dict to a post. Will assign a new id to the post."""
+        attachments = []
+        if content["attachment_list"] is not None:
+            for attachment in content["attachment_list"]:
+                parsed = Attachment.from_dict(attachment)
+                if parsed is not None:
+                    attachments.append(parsed)
         return Post(
             id="post-" + secrets.token_hex(6),
             message=content["message"],
             send_from=content["send_from"],
             send_to=content["send_to"],
-            attachment_list=[Attachment.from_dict(attachment) for attachment in content["attachment_list"]]
-            if content["attachment_list"] is not None
-            else [],
+            attachment_list=attachments,
         )
 
     def add_attachment(self, attachment: Attachment) -> None:

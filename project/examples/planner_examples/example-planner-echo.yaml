@@ -14,9 +14,6 @@ rounds:
         - type: plan_reasoning
           content: |-
             The user wants to echo the input 'Hello World'
-        - type: init_plan
-          content: |-
-            1. Ask Echo to echo the user's input, 'Hello World'
         - type: plan
           content: |-
             1. Ask Echo to echo the user's input, 'Hello World'
@@ -35,9 +32,6 @@ rounds:
           - type: plan_reasoning
             content: |-
               The user query is successfully answered
-          - type: init_plan
-            content: |-
-              1. Ask Echo to echo the user's input, 'Hello World'
           - type: plan
             content: |-
               1. Ask Echo to echo the user's input, 'Hello World'
