@@ -1,6 +1,15 @@
 # AGENTS.md - TaskWeaver Development Guide
 
+**Generated:** 2026-01-26 | **Commit:** 7c2888e | **Branch:** liqun/add_variables_to_code_generator
+
 This document provides guidance for AI coding agents working on the TaskWeaver codebase.
+
+## Subdirectory Knowledge Bases
+- [`taskweaver/llm/AGENTS.md`](taskweaver/llm/AGENTS.md) - LLM provider abstractions
+- [`taskweaver/ces/AGENTS.md`](taskweaver/ces/AGENTS.md) - Code execution service (Jupyter kernels)
+- [`taskweaver/code_interpreter/AGENTS.md`](taskweaver/code_interpreter/AGENTS.md) - Code interpreter role variants
+- [`taskweaver/memory/AGENTS.md`](taskweaver/memory/AGENTS.md) - Memory data model (Post/Round/Conversation)
+- [`taskweaver/ext_role/AGENTS.md`](taskweaver/ext_role/AGENTS.md) - Extended role definitions
 
 ## Project Overview
 
@@ -190,15 +199,15 @@ config = {
 ```
 taskweaver/
 ├── app/              # Application entry points and session management
-├── ces/              # Code execution service
+├── ces/              # Code execution service (see ces/AGENTS.md)
 ├── chat/             # Chat interfaces (console, web)
 ├── cli/              # CLI implementation
-├── code_interpreter/ # Code generation and interpretation
+├── code_interpreter/ # Code generation and interpretation (see code_interpreter/AGENTS.md)
 ├── config/           # Configuration management
-├── ext_role/         # Extended roles (web_search, image_reader, etc.)
-├── llm/              # LLM integrations (OpenAI, Anthropic, etc.)
+├── ext_role/         # Extended roles (see ext_role/AGENTS.md)
+├── llm/              # LLM integrations (see llm/AGENTS.md)
 ├── logging/          # Logging and telemetry
-├── memory/           # Conversation memory and attachments
+├── memory/           # Conversation memory (see memory/AGENTS.md)
 ├── misc/             # Utilities and component registry
 ├── module/           # Core modules (tracing, events)
 ├── planner/          # Planning logic

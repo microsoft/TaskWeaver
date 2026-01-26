@@ -19,26 +19,28 @@ The code interpreter generates Python in a persistent kernel but the prompt does
    - Filtering rules:
      - Skip names starting with `_`.
      - Skip builtins and common libs: `__builtins__`, `In`, `Out`, `get_ipython`, `exit`, `quit`, `pd`, `np`, `plt`.
-     - Skip modules and any defined functions (only keep data-bearing variables).
-     - For other values, store `(name, repr(value))`, truncated to 500 chars and fall back to `<unrepresentable>` on repr errors.
+     - Skip modules, functions, and plugin instances (data-only snapshot).
+     - For values, store `(name, repr(value))`, truncated to 500 chars; numpy arrays get shape/dtype-aware pretty repr; fall back to `<unrepresentable>` on repr errors.
    - Store the snapshot on `ExecutorPluginContext.latest_variables`.
 
 2) **Return variables with execution result**
-   - `Executor.get_post_execution_state` now includes `variables` (list of `(name, repr)` tuples).
+   - `Executor.get_post_execution_state` includes `variables` (list of `(name, repr)` tuples).
    - `Environment._parse_exec_result` copies these into `ExecutionResult.variables` (added to dataclass).
 
 3) **Surface variables to user and prompt**
    - `CodeExecutor.format_code_output` renders available variables when there is no explicit result/output, using `pretty_repr` to keep lines concise.
-   - `CodeInterpreter.reply` attaches a new `session_variables` attachment (JSON list of tuples) when variables are present.
-   - `CodeGenerator.compose_conversation` ignores this attachment in assistant-message rendering but includes it in feedback via `format_code_feedback`, adding an “Available Variables” section for the model’s context.
+   - `CodeInterpreter.reply` attaches a `session_variables` attachment (JSON list of tuples) when variables are present.
+   - Prompt threading strategy:
+     - Assistant turns: `session_variables` is **ignored** via `ignored_types` to avoid polluting assistant history with execution-state metadata.
+     - Final user turn of the latest round: the attachment is decoded and appended as a “Currently available variables” block so the model can reuse state in the next code generation.
 
 4) **Attachment type**
    - Added `AttachmentType.session_variables` to carry the variable snapshot per execution.
 
 ## Open Items / Next Steps
-- Wire the variables directly into the final user turn’s prompt text (e.g., under a “Currently available variables” block) to make reuse even clearer.
 - Revisit filtering to ensure we skip large data/DF previews (could add size/type caps).
 - Validate end-to-end with unit tests for: variable capture, attachment propagation, prompt inclusion, and formatting.
+
 
 ## Files Touched
 - `taskweaver/ces/runtime/context.py` — collect and store visible variables.
