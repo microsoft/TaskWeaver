@@ -70,6 +70,7 @@ We are looking forward to your contributions to make TaskWeaver better.
 - [ ] Better plugin experiences, such as displaying updates or stopping in the middle of running the plugin and user confirmation before running the plugin
 - [ ] Async interaction with LLMs
 - [ ] Support for remote code execution
+- [ ] Better memory management
 
 
 ## ✨ Quick Start

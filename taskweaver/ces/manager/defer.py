@@ -83,8 +83,13 @@ class DeferredClient(Client):
     def update_session_var(self, session_var_dict: Dict[str, str]) -> None:
         self._get_proxy_client().update_session_var(session_var_dict)
 
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        return self._get_proxy_client().execute_code(exec_id, code)
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        on_output: Optional[Callable[[str, str], None]] = None,
+    ) -> ExecutionResult:
+        return self._get_proxy_client().execute_code(exec_id, code, on_output=on_output)
 
     def _get_proxy_client(self) -> Client:
         return self._init_deferred_var()()
