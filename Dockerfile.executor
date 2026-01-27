@@ -1,0 +1,61 @@
+# Dockerfile.executor
+# Docker image for TaskWeaver Code Execution Server
+#
+# Build:
+#   docker build -f Dockerfile.executor -t taskweaver-executor:latest .
+#
+# Run:
+#   docker run -p 8000:8000 -v $(pwd)/workspace:/app/workspace taskweaver-executor:latest
+#
+# With API key:
+#   docker run -p 8000:8000 -e TASKWEAVER_SERVER_API_KEY=your-secret-key taskweaver-executor:latest
+
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install additional dependencies for the execution server
+RUN pip install --no-cache-dir \
+    fastapi \
+    uvicorn[standard] \
+    httpx \
+    jupyter_client \
+    ipykernel
+
+# Copy TaskWeaver package (only required modules for execution)
+COPY taskweaver/ ./taskweaver/
+
+# Create workspace directory for session data
+RUN mkdir -p /app/workspace
+
+# Create non-root user for security
+RUN useradd -m -s /bin/bash executor && \
+    chown -R executor:executor /app
+USER executor
+
+# Environment variables (can be overridden at runtime)
+ENV TASKWEAVER_SERVER_HOST=0.0.0.0
+ENV TASKWEAVER_SERVER_PORT=8000
+ENV TASKWEAVER_SERVER_WORK_DIR=/app/workspace
+ENV PYTHONPATH="/app"
+ENV PYTHONUNBUFFERED=1
+
+# Expose the server port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/v1/health').raise_for_status()" || exit 1
+
+# Run the execution server
+CMD ["python", "-m", "taskweaver.ces.server", "--host", "0.0.0.0", "--port", "8000"]

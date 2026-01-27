@@ -1,5 +1,4 @@
 import json
-import os
 from typing import Dict, Literal, Optional
 
 from injector import inject
@@ -19,13 +18,6 @@ from taskweaver.role.role import RoleConfig, RoleEntry
 
 class CodeInterpreterConfig(RoleConfig):
     def _configure(self):
-        self.use_local_uri = self._get_bool(
-            "use_local_uri",
-            self.src.get_bool(
-                "use_local_uri",
-                True,
-            ),
-        )
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
         # for verification
@@ -283,7 +275,6 @@ class CodeInterpreter(Role, Interpreter):
         code_output = self.executor.format_code_output(
             exec_result,
             with_code=False,
-            use_local_uri=self.config.use_local_uri,
             code_mask=full_code_prefix,
         )
 
@@ -295,14 +286,7 @@ class CodeInterpreter(Role, Interpreter):
 
         # add artifact paths
         post_proxy.update_attachment(
-            [
-                (
-                    a.file_name
-                    if os.path.isabs(a.file_name) or not self.config.use_local_uri
-                    else os.path.join(self.executor.execution_cwd, a.file_name)
-                )
-                for a in exec_result.artifact
-            ],  # type: ignore
+            [a.file_name for a in exec_result.artifact],
             AttachmentType.artifact_paths,
         )
 
@@ -310,7 +294,6 @@ class CodeInterpreter(Role, Interpreter):
             self.executor.format_code_output(
                 exec_result,
                 with_code=True,  # the message to be sent to the user should contain the code
-                use_local_uri=self.config.use_local_uri,
                 code_mask=full_code_prefix,
             ),
             is_end=True,

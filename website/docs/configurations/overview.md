@@ -38,7 +38,10 @@ The following table lists the parameters in the configuration file:
 | `session.roles`                               | The roles included for the conversation.                                               | ["planner", "code_interpreter"]                                                                                                             |
 | `round_compressor.rounds_to_compress`         | The number of rounds to compress.                                                      | `2`                                                                                                                                         |
 | `round_compressor.rounds_to_retain`           | The number of rounds to retain.                                                        | `3`                                                                                                                                         |
-| `execution_service.kernel_mode`               | The mode of the code executor, could be `local` or `container`.                        | `container`                                                                                                                                 |
+| `execution_service.server.url`                | The URL of the execution server.                                                       | `http://localhost:8000`                                                                                                                     |
+| `execution_service.server.auto_start`         | Whether to auto-start the server if not running.                                       | `true`                                                                                                                                      |
+| `execution_service.server.container`          | Whether to run the execution server in a Docker container.                             | `false`                                                                                                                                     |
+| `execution_service.server.timeout`            | Request timeout in seconds for server communication.                                   | `300`                                                                                                                                       |
 
 :::tip
 $\{AppBaseDir\} is the project directory.

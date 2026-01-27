@@ -18,13 +18,6 @@ from taskweaver.role.role import RoleConfig, RoleEntry
 
 class CodeInterpreterConfig(RoleConfig):
     def _configure(self):
-        self.use_local_uri = self._get_bool(
-            "use_local_uri",
-            self.src.get_bool(
-                "use_local_uri",
-                True,
-            ),
-        )
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
 
@@ -131,7 +124,6 @@ class CodeInterpreterPluginOnly(Role, Interpreter):
                 code_output = self.executor.format_code_output(
                     exec_result,
                     with_code=True,
-                    use_local_uri=self.config.use_local_uri,
                 )
 
                 post_proxy.update_message(

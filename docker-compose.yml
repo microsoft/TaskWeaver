@@ -1,0 +1,75 @@
+# Docker Compose configuration for TaskWeaver Code Execution Server
+#
+# Usage:
+#   # Start the executor service
+#   docker-compose up -d executor
+#
+#   # View logs
+#   docker-compose logs -f executor
+#
+#   # Stop the service
+#   docker-compose down
+#
+# Environment variables (create .env file or set in environment):
+#   API_KEY - API key for authentication (optional for localhost)
+#   SESSION_TIMEOUT - Session timeout in seconds (default: 3600)
+
+version: '3.8'
+
+# Note: GPU profile removed. The executor is CPU-only by default and does not
+# include NVIDIA runtime or GPU reservations. If GPU support is needed, add a
+# dedicated profile with the appropriate device reservations for your platform.
+
+services:
+  executor:
+    build:
+      context: .
+      dockerfile: Dockerfile.executor
+    image: taskweaver-executor:latest
+    container_name: taskweaver-executor
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount workspace for persistent session data and artifacts
+      - ./workspace:/app/workspace
+      # Optional: Mount custom plugins
+      # - ./project/plugins:/app/plugins:ro
+    environment:
+      - TASKWEAVER_SERVER_API_KEY=${API_KEY:-}
+      - TASKWEAVER_SERVER_SESSION_TIMEOUT=${SESSION_TIMEOUT:-3600}
+      - TASKWEAVER_SERVER_HOST=0.0.0.0
+      - TASKWEAVER_SERVER_PORT=8000
+      - TASKWEAVER_SERVER_WORK_DIR=/app/workspace
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/api/v1/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Development configuration with live reload
+  executor-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.executor
+    image: taskweaver-executor:dev
+    container_name: taskweaver-executor-dev
+    ports:
+      - "8001:8000"
+    volumes:
+      # Mount source code for development
+      - ./taskweaver:/app/taskweaver:ro
+      - ./workspace:/app/workspace
+    environment:
+      - TASKWEAVER_SERVER_API_KEY=${API_KEY:-dev-key}
+      - TASKWEAVER_SERVER_SESSION_TIMEOUT=7200
+      - TASKWEAVER_SERVER_HOST=0.0.0.0
+      - TASKWEAVER_SERVER_PORT=8000
+    profiles:
+      - dev
+    restart: unless-stopped
+
+volumes:
+  workspace:
+    driver: local

@@ -36,6 +36,7 @@ class ExecutionArtifact:
     file_content: str = ""
     file_content_encoding: Literal["str", "base64"] = "str"
     preview: str = ""
+    download_url: str = ""  # HTTP URL for downloading the artifact from the server
 
     @staticmethod
     def from_dict(d: Dict[str, str]) -> ExecutionArtifact:

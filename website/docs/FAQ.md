@@ -18,10 +18,9 @@ However, you should check if your use case needs the planning step.
 
 ### Q: Why TaskWeaver fails and the logs say "Failed to connect to docker.daemon"?
 
-A: This error typically happens when TaskWeaver is running in the `container` mode and cannot connect to the Docker daemon.
-We have switched to the `container` mode by default to provide a more secure environment for code execution.
-To opt out of the `container` mode, you can set the `execution_service.kernel_mode` parameter to `local` in the `taskweaver_config.json` file.
-However, you should be aware that TaskWeaver can interact with the host machine directly in the `local` mode, which may have security risks.
+A: This error typically happens when TaskWeaver is configured to run the execution server in container mode and cannot connect to the Docker daemon.
+To run without Docker, ensure `execution_service.server.container` is set to `false` (or not set, as local mode is the default) in the `taskweaver_config.json` file.
+However, you should be aware that in local mode TaskWeaver can interact with the host machine directly, which may have security risks.
 
 ### Q: Why I see errors saying the Planner failed to generate the `send_to`, `message` or other fields?
 

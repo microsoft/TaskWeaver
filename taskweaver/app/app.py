@@ -12,18 +12,87 @@ from taskweaver.role.role import RoleModule
 from taskweaver.session.session import Session
 
 
+def _cleanup_existing_servers(port: int = 8000) -> Optional[int]:
+    """Check for and kill any existing server processes on the specified port.
+
+    This is called at TaskWeaver startup to ensure a clean state.
+
+    Args:
+        port: The port to check for existing servers.
+
+    Returns:
+        The PID of the killed server, or None if no server was found.
+    """
+    import os
+    import platform
+    import signal
+    import subprocess
+    import time
+
+    def get_pid_on_port(port: int) -> Optional[int]:
+        """Get the PID of the process listening on the port."""
+        try:
+            if platform.system() == "Windows":
+                result = subprocess.run(
+                    ["netstat", "-ano"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                for line in result.stdout.split("\n"):
+                    if f":{port}" in line and "LISTENING" in line:
+                        parts = line.split()
+                        if parts:
+                            return int(parts[-1])
+            else:
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{port}"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                if result.stdout.strip():
+                    return int(result.stdout.strip().split("\n")[0])
+        except Exception:
+            pass
+        return None
+
+    pid = get_pid_on_port(port)
+    if pid is None:
+        return None
+
+    try:
+        if platform.system() == "Windows":
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=10)
+        else:
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(1)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+        # Wait for port to be released
+        for _ in range(10):
+            if get_pid_on_port(port) is None:
+                return pid
+            time.sleep(0.5)
+
+        return pid
+    except Exception:
+        return None
+
+
 class TaskWeaverApp(object):
     def __init__(
         self,
         app_dir: Optional[str] = None,
-        use_local_uri: Optional[bool] = None,
         config: Optional[Dict[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
         """
         Initialize the TaskWeaver app.
         :param app_dir: The project directory.
-        :param use_local_uri: Whether to use local URI for artifacts.
         :param config: The configuration.
         :param kwargs: The additional arguments.
         """
@@ -34,8 +103,6 @@ class TaskWeaverApp(object):
             **(config or {}),
             **(kwargs or {}),
         }
-        if use_local_uri is not None:
-            config["use_local_uri"] = use_local_uri
 
         config_src = AppConfigSource(
             config_file_path=app_config_file,

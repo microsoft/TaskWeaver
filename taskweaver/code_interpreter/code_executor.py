@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 from typing import Callable, List, Literal, Optional
 
 from injector import inject
@@ -15,10 +14,23 @@ from taskweaver.utils import pretty_repr
 TRUNCATE_CHAR_LENGTH = 1500
 
 
-def get_artifact_uri(execution_id: str, file: str, use_local_uri: bool) -> str:
-    return (
-        Path(os.path.join("workspace", execution_id, file)).as_uri() if use_local_uri else f"http://artifact-ref/{file}"
-    )
+def get_artifact_uri(file_name: str, download_url: str) -> str:
+    """Get the URI for an artifact.
+
+    Since all execution goes through the HTTP server, artifacts always have
+    download URLs available.
+
+    Args:
+        file_name: The artifact file name (used as fallback).
+        download_url: The HTTP download URL from the server.
+
+    Returns:
+        The download URL, or a placeholder if not available.
+    """
+    if download_url:
+        return download_url
+    # Fallback - should not happen in normal operation
+    return f"artifact://{file_name}"
 
 
 def get_default_artifact_name(artifact_type: ArtifactType, mine_type: str) -> str:
@@ -163,7 +175,6 @@ class CodeExecutor:
         indent: int = 0,
         with_code: bool = True,
         code_mask: Optional[str] = None,
-        use_local_uri: bool = False,
     ) -> str:
         lines: List[str] = []
 
@@ -233,17 +244,7 @@ class CodeExecutor:
             lines.extend(
                 [
                     f"- type: {a.type} ; uri: "
-                    + (
-                        get_artifact_uri(
-                            execution_id=result.execution_id,
-                            file=(
-                                a.file_name
-                                if os.path.isabs(a.file_name) or not use_local_uri
-                                else os.path.join(self.execution_cwd, a.file_name)
-                            ),
-                            use_local_uri=use_local_uri,
-                        )
-                    )
+                    + get_artifact_uri(a.file_name, a.download_url)
                     + f" ; description: {a.preview}"
                     for a in result.artifact
                 ],

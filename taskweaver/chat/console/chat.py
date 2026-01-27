@@ -530,9 +530,14 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
 
 class TaskWeaverChatApp(SessionEventHandlerBase):
     def __init__(self, app_dir: Optional[str] = None):
-        from taskweaver.app.app import TaskWeaverApp
+        from taskweaver.app.app import TaskWeaverApp, _cleanup_existing_servers
 
-        self.app = TaskWeaverApp(app_dir=app_dir, use_local_uri=True)
+        # Check and kill any existing server before starting
+        cleanup_result = _cleanup_existing_servers()
+        if cleanup_result:
+            click.secho(f"[Startup] Killed existing server (PID: {cleanup_result}) on port 8000", fg="yellow")
+
+        self.app = TaskWeaverApp(app_dir=app_dir)
         self.session = self.app.get_session()
         self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
         atexit.register(self.app.stop)
