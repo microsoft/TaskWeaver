@@ -101,7 +101,7 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
         self.lock = threading.Lock()
 
         self.last_attachment_id = ""
-        self.pending_updates: List[Tuple[str, str]] = []
+        self.pending_updates: List[Tuple[str, Any]] = []
 
         # Handshake pair for pausing animation (e.g., during confirmation prompts)
         self.pause_animation = threading.Event()  # Main requests pause
@@ -188,6 +188,11 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
         elif type == PostEventType.post_status_update:
             with self.lock:
                 self.pending_updates.append(("status_update", msg))
+        elif type == PostEventType.post_execution_output:
+            with self.lock:
+                stream_name = extra["stream"]
+                text = extra["text"]
+                self.pending_updates.append(("execution_output", (stream_name, text)))
 
     def handle_message(
         self,
@@ -461,6 +466,18 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
                         error_message(opt)
                     elif action == "status_update":
                         status_msg = opt
+                    elif action == "execution_output":
+                        # Streaming output from plugin execution (print statements)
+                        stream_name, text = opt
+                        # Print inline with appropriate styling
+                        prefix = " │   " if stream_name == "stdout" else " │!  "
+                        # Handle multi-line output
+                        for line in text.splitlines(keepends=True):
+                            line_text = line.rstrip("\n\r")
+                            if line_text:  # Only print non-empty lines
+                                click.secho(
+                                    style_line(prefix) + style_msg(line_text),
+                                )
 
                 self.pending_updates.clear()
 

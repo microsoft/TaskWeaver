@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional
 
 from taskweaver.ces.common import Client, ExecutionResult, KernelModeType, Manager
 
@@ -47,8 +47,18 @@ class SubProcessClient(Client):
     def update_session_var(self, session_var_dict: Dict[str, str]) -> None:
         self.mgr.env.update_session_var(self.session_id, session_var_dict)
 
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
-        return self.mgr.env.execute_code(self.session_id, code=code, exec_id=exec_id)
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        on_output: Optional[Callable[[str, str], None]] = None,
+    ) -> ExecutionResult:
+        return self.mgr.env.execute_code(
+            self.session_id,
+            code=code,
+            exec_id=exec_id,
+            on_output=on_output,
+        )
 
 
 class SubProcessManager(Manager):

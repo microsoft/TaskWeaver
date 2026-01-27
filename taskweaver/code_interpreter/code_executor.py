@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Callable, List, Literal, Optional
 
 from injector import inject
 
@@ -67,7 +67,12 @@ class CodeExecutor:
         self.session_variables = {}
 
     @tracing_decorator
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        on_output: Optional[Callable[[str, str], None]] = None,
+    ) -> ExecutionResult:
         with get_tracer().start_as_current_span("start"):
             self.start()
 
@@ -81,7 +86,7 @@ class CodeExecutor:
 
         with get_tracer().start_as_current_span("run_code"):
             self.tracing.set_span_attribute("code", code)
-            result = self.exec_client.execute_code(exec_id, code)
+            result = self.exec_client.execute_code(exec_id, code, on_output=on_output)
 
         if result.is_success:
             for artifact in result.artifact:

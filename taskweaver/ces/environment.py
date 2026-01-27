@@ -7,7 +7,7 @@ import sys
 import time
 from ast import literal_eval
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 from jupyter_client.blocking.client import BlockingKernelClient
 from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
@@ -314,7 +314,20 @@ class Environment:
         session_id: str,
         code: str,
         exec_id: Optional[str] = None,
+        on_output: Optional[Callable[[str, str], None]] = None,
     ) -> ExecutionResult:
+        """Execute code in the given session.
+
+        Args:
+            session_id: The session ID.
+            code: The code to execute.
+            exec_id: Optional execution ID (auto-generated if not provided).
+            on_output: Optional callback for streaming stdout/stderr during execution.
+                       Signature: on_output(stream_name: str, text: str).
+
+        Returns:
+            ExecutionResult with the execution outcome.
+        """
         exec_id = get_id(prefix="exec") if exec_id is None else exec_id
         session = self._get_session(session_id)
 
@@ -332,6 +345,7 @@ class Environment:
             session.session_id,
             exec_id=exec_id,
             code=code,
+            on_output=on_output,
         )
         exec_extra_result = self._execute_control_code_on_kernel(
             session.session_id,
@@ -523,7 +537,24 @@ class Environment:
         silent: bool = False,
         store_history: bool = True,
         exec_type: ExecType = "user",
+        on_output: Optional[Callable[[str, str], None]] = None,
     ) -> EnvExecution:
+        """Execute code on the kernel and return the result.
+
+        Args:
+            session_id: The session ID.
+            exec_id: The execution ID.
+            code: The code to execute.
+            silent: Whether to suppress output.
+            store_history: Whether to store the execution in history.
+            exec_type: The type of execution ("user" or "control").
+            on_output: Optional callback called for each stdout/stderr chunk during execution.
+                       Signature: on_output(stream_name: str, text: str) where stream_name is
+                       "stdout" or "stderr".
+
+        Returns:
+            EnvExecution with the execution result.
+        """
         exec_result = EnvExecution(exec_id=exec_id, code=code, exec_type=exec_type)
         kc = self._get_client(session_id)
         result_msg_id = kc.execute(
@@ -553,6 +584,10 @@ class Environment:
                 elif msg_type == "stream":
                     stream_name = message["content"]["name"]
                     stream_text = message["content"]["text"]
+
+                    # Stream output callback for real-time updates
+                    if on_output is not None:
+                        on_output(stream_name, stream_text)
 
                     if stream_name == "stdout":
                         exec_result.stdout.append(stream_text)

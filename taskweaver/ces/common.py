@@ -4,7 +4,7 @@ import dataclasses
 import secrets
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 if TYPE_CHECKING:
     from taskweaver.plugin.context import ArtifactType
@@ -102,7 +102,12 @@ class Client(ABC):
         ...
 
     @abstractmethod
-    def execute_code(self, exec_id: str, code: str) -> ExecutionResult:
+    def execute_code(
+        self,
+        exec_id: str,
+        code: str,
+        on_output: Optional[Callable[[str, str], None]] = None,
+    ) -> ExecutionResult:
         ...
 
 

@@ -55,25 +55,47 @@ class Post:
 
 ### AttachmentType (attachment.py)
 ```python
-class AttachmentType(str, Enum):
-    # Planning
+class AttachmentType(Enum):
+    # Planner
     plan = "plan"
     current_plan_step = "current_plan_step"
+    plan_reasoning = "plan_reasoning"
+    stop = "stop"
     
-    # Code execution
-    reply_content = "reply_content"  # Generated code
+    # CodeInterpreter - code generation
+    thought = "thought"
+    reply_type = "reply_type"
+    reply_content = "reply_content"
     verification = "verification"
+    
+    # CodeInterpreter - execution
+    code_error = "code_error"
     execution_status = "execution_status"
     execution_result = "execution_result"
-    
-    # Control flow
+    artifact_paths = "artifact_paths"
     revise_message = "revise_message"
-    invalid_response = "invalid_response"
+    
+    # Function calling
+    function = "function"
+    
+    # WebExplorer
+    web_exploring_plan = "web_exploring_plan"
+    web_exploring_screenshot = "web_exploring_screenshot"
+    web_exploring_link = "web_exploring_link"
     
     # Shared state
-    shared_memory_entry = "shared_memory_entry"
     session_variables = "session_variables"
+    shared_memory_entry = "shared_memory_entry"
+    
+    # Misc
+    invalid_response = "invalid_response"
+    text = "text"
+    image_url = "image_url"
 ```
+
+### Backward Compatibility
+`Attachment.from_dict()` returns `None` for removed types (e.g., `init_plan`).
+`Post.from_dict()` filters out `None` attachments when loading old data.
 
 ### SharedMemoryEntry (shared_memory_entry.py)
 Cross-role communication:

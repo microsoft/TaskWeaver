@@ -265,9 +265,13 @@ class CodeInterpreter(Role, Interpreter):
         post_proxy.update_status("executing code")
         self.logger.info(f"Code to be executed: {executable_code}")
 
+        def on_execution_output(stream_name: str, text: str):
+            post_proxy.emit_execution_output(stream_name, text)
+
         exec_result = self.executor.execute_code(
             exec_id=post_proxy.post.id,
             code=executable_code,
+            on_output=on_execution_output,
         )
 
         if len(exec_result.variables) > 0:

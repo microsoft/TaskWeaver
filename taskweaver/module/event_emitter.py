@@ -43,6 +43,7 @@ class PostEventType(Enum):
     post_attachment_update = "post_attachment_update"
     post_confirmation_request = "post_confirmation_request"
     post_confirmation_response = "post_confirmation_response"
+    post_execution_output = "post_execution_output"  # Real-time stdout/stderr during code execution
 
 
 @dataclass
@@ -234,6 +235,14 @@ class PostEventProxy:
         self.post.attachment_list = []
         self.post.message = msg
         self._emit(PostEventType.post_error, msg)
+
+    def emit_execution_output(self, stream_name: str, text: str):
+        """Emit real-time execution output (stdout/stderr) during code execution."""
+        self._emit(
+            PostEventType.post_execution_output,
+            text,
+            {"stream": stream_name, "text": text},
+        )
 
     def end(self, msg: str = ""):
         self._emit(PostEventType.post_end, msg)

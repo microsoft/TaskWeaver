@@ -1,0 +1,24 @@
+name: long_running_demo
+enabled: true
+required: false
+plugin_only: true
+description: >-
+  A demo plugin that simulates a long-running task with progress updates.
+  This plugin demonstrates real-time streaming of print() output during execution.
+examples: |-
+  result = long_running_demo(steps=5, delay=1.0)
+
+parameters:
+  - name: steps
+    type: int
+    required: false
+    description: Number of steps to simulate (default 5).
+  - name: delay
+    type: float
+    required: false
+    description: Delay between steps in seconds (default 1.0).
+
+returns:
+  - name: result
+    type: str
+    description: A summary of the completed task.
