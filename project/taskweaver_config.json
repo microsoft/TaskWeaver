@@ -1,0 +1,19 @@
+{
+  "llm.azure_ad.aad_api_resource": "api://feb7b661-cac7-44a8-8dc1-163b63c23df2",
+  "llm.azure_ad.aad_api_scope": "openai",
+  "llm.azure_ad.aad_auth_mode": "default_azure_credential",
+  "llm.azure_ad.aad_tenant_id": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+  "llm.azure_ad.aad_skip_interactive": false,
+  "llm.api_base": "https://cloudgpt-openai.azure-api.net",
+  "llm.api_type": "azure_ad",
+  "llm.model": "gpt-4.1-20250414",
+  "llm.response_format": "json_object",
+  "llm.azure_ad.max_tokens": 2048,
+  "session.roles": [
+    "planner",
+    "code_interpreter",
+    "recepta"
+  ],
+  "session.max_internal_chat_round_num": 100,
+  "execution_service.kernel_mode": "local"
+}
