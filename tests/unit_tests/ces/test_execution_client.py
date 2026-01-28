@@ -599,6 +599,96 @@ class TestExecutionClientContextManager:
         mock_client.close.assert_called_once()
 
 
+class TestExecutionClientUploadFile:
+    """Tests for file upload functionality."""
+
+    @patch("taskweaver.ces.client.execution_client.httpx.Client")
+    def test_upload_file_success(self, mock_client_class: MagicMock) -> None:
+        """Test successful file upload."""
+        import base64
+
+        mock_client = MagicMock()
+        mock_client.post.return_value = MockResponse(
+            status_code=200,
+            json_data={
+                "filename": "test.csv",
+                "status": "uploaded",
+                "path": "/workspace/test-session/cwd/test.csv",
+            },
+        )
+        mock_client_class.return_value = mock_client
+
+        client = ExecutionClient(session_id="test-session", server_url="http://localhost:8000")
+        content = b"col1,col2\n1,2\n3,4"
+        result = client.upload_file("test.csv", content)
+
+        assert result == "/workspace/test-session/cwd/test.csv"
+
+        # Verify the POST call
+        mock_client.post.assert_called_once()
+        call_args = mock_client.post.call_args
+        assert call_args[0][0] == "/api/v1/sessions/test-session/files"
+        json_body = call_args[1]["json"]
+        assert json_body["filename"] == "test.csv"
+        assert json_body["encoding"] == "base64"
+        # Verify content is base64 encoded
+        assert json_body["content"] == base64.b64encode(content).decode("ascii")
+
+    @patch("taskweaver.ces.client.execution_client.httpx.Client")
+    def test_upload_file_binary_content(self, mock_client_class: MagicMock) -> None:
+        """Test uploading binary file content."""
+        import base64
+
+        mock_client = MagicMock()
+        mock_client.post.return_value = MockResponse(
+            status_code=200,
+            json_data={"filename": "image.png", "status": "uploaded", "path": "/workspace/image.png"},
+        )
+        mock_client_class.return_value = mock_client
+
+        client = ExecutionClient(session_id="test", server_url="http://localhost:8000")
+        # Binary content with non-UTF8 bytes
+        binary_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        client.upload_file("image.png", binary_content)
+
+        call_args = mock_client.post.call_args
+        json_body = call_args[1]["json"]
+        # Verify binary content is correctly base64 encoded
+        assert json_body["content"] == base64.b64encode(binary_content).decode("ascii")
+
+    @patch("taskweaver.ces.client.execution_client.httpx.Client")
+    def test_upload_file_error(self, mock_client_class: MagicMock) -> None:
+        """Test file upload error handling."""
+        mock_client = MagicMock()
+        mock_client.post.return_value = MockResponse(
+            status_code=404,
+            json_data={"detail": "Session not found"},
+        )
+        mock_client_class.return_value = mock_client
+
+        client = ExecutionClient(session_id="test", server_url="http://localhost:8000")
+
+        with pytest.raises(ExecutionClientError) as exc_info:
+            client.upload_file("test.csv", b"content")
+        assert exc_info.value.status_code == 404
+        assert "Session not found" in str(exc_info.value)
+
+    @patch("taskweaver.ces.client.execution_client.httpx.Client")
+    def test_upload_file_empty_path_response(self, mock_client_class: MagicMock) -> None:
+        """Test upload when server returns empty path."""
+        mock_client = MagicMock()
+        mock_client.post.return_value = MockResponse(
+            status_code=200,
+            json_data={"filename": "test.csv", "status": "uploaded"},  # No "path" field
+        )
+        mock_client_class.return_value = mock_client
+
+        client = ExecutionClient(session_id="test", server_url="http://localhost:8000")
+        result = client.upload_file("test.csv", b"content")
+
+        assert result == ""  # Should return empty string when path not in response
+
+
 class TestExecutionClientError:
     """Tests for ExecutionClientError exception."""
 

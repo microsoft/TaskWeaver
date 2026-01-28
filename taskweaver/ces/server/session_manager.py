@@ -366,6 +366,40 @@ class ServerSessionManager:
 
         return None
 
+    def upload_file(
+        self,
+        session_id: str,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        """Upload a file to a session's working directory.
+
+        Args:
+            session_id: Session identifier.
+            filename: Target filename.
+            content: File content as bytes.
+
+        Returns:
+            Full path where the file was saved.
+
+        Raises:
+            KeyError: If session does not exist.
+        """
+        session = self.get_session(session_id)
+        if session is None:
+            raise KeyError(f"Session {session_id} not found")
+
+        # Sanitize filename to prevent path traversal
+        safe_filename = os.path.basename(filename)
+        file_path = os.path.join(session.cwd, safe_filename)
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        session.update_activity()
+        logger.info(f"Uploaded file {safe_filename} to session {session_id}")
+        return file_path
+
     def cleanup_all(self) -> None:
         """Stop all sessions and clean up resources."""
         with self._lock:

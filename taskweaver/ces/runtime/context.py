@@ -157,15 +157,22 @@ class ExecutorPluginContext(PluginContext):
 
     def extract_visible_variables(self, local_ns: Dict[str, Any]) -> List[Tuple[str, str]]:
         ignore_names = {
+            # IPython/Jupyter internals
             "__builtins__",
             "In",
             "Out",
             "get_ipython",
             "exit",
             "quit",
+            # Common library aliases
             "pd",
             "np",
             "plt",
+            # REPL/kernel internals
+            "original_ps1",
+            "is_wsl",
+            "PS1",
+            "REPLHooks",
         }
 
         visible: List[Tuple[str, str]] = []
@@ -194,7 +201,12 @@ class ExecutorPluginContext(PluginContext):
                 continue
 
             try:
-                rendered = repr(value)
+                # Use str() for strings to avoid extra quotes from repr()
+                # e.g., repr("hello") returns "'hello'" but str("hello") returns "hello"
+                if isinstance(value, str):
+                    rendered = value
+                else:
+                    rendered = repr(value)
             except Exception:
                 rendered = "<unrepresentable>"
 

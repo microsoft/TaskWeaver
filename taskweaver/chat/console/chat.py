@@ -606,7 +606,9 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
     def _load_file(self, file_to_load: str):
         import os
 
-        file_path = os.path.realpath(file_to_load.strip())
+        # Strip whitespace and surrounding quotes (single or double)
+        file_to_load = file_to_load.strip().strip('"').strip("'")
+        file_path = os.path.realpath(file_to_load)
         file_name = os.path.basename(file_path)
         if not os.path.exists(file_path):
             error_message(f"File '{file_to_load}' not found")

@@ -111,6 +111,14 @@ class Client(ABC):
     ) -> ExecutionResult:
         ...
 
+    @abstractmethod
+    def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        ...
+
 
 KernelModeType = Literal["local", "container"]
 

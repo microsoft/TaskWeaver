@@ -103,7 +103,7 @@ def test_compose_prompt():
     )
     post2.add_attachment(
         Attachment.create(
-            AttachmentType.init_plan,
+            AttachmentType.plan_reasoning,
             "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n"
             "3. report the result to the user <wide depend on 2>",
         ),
@@ -138,7 +138,7 @@ def test_compose_prompt():
 
     post4.add_attachment(
         Attachment.create(
-            AttachmentType.init_plan,
+            AttachmentType.plan_reasoning,
             "1. load the data file\n2. count the rows of the loaded data <narrow depend on 1>\n3. report the result "
             "to the user <wide depend on 2>",
         ),
@@ -184,7 +184,7 @@ def test_compose_prompt():
     )
     assert messages[2]["role"] == "assistant"
     assert messages[2]["content"] == (
-        '{"response": {"init_plan": "1. load the data file\\n2. count the rows of the '
+        '{"response": {"plan_reasoning": "1. load the data file\\n2. count the rows of the '
         "loaded data <narrow depend on 1>\\n3. report the result to the user <wide "
         'depend on 2>", "plan": "1. instruct CodeInterpreter to load the data file '
         'and count the rows of the loaded data\\n2. report the result to the user", '
@@ -201,7 +201,7 @@ def test_compose_prompt():
     )
     assert messages[4]["role"] == "assistant"
     assert messages[4]["content"] == (
-        '{"response": {"init_plan": "1. load the data file\\n2. count the rows of the '
+        '{"response": {"plan_reasoning": "1. load the data file\\n2. count the rows of the '
         "loaded data <narrow depend on 1>\\n3. report the result to the user <wide "
         'depend on 2>", "plan": "1. instruct CodeInterpreter to load the data file '
         'and count the rows of the loaded data\\n2. report the result to the user", '

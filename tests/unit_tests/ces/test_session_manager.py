@@ -127,14 +127,16 @@ class TestServerSessionManager:
         self,
         mock_env_class: MagicMock,
         manager: ServerSessionManager,
+        tmp_path: str,
     ) -> None:
         """Test creating a session with custom cwd."""
         mock_env = MagicMock()
         mock_env_class.return_value = mock_env
 
-        session = manager.create_session("test-session", cwd="/custom/path")
+        custom_cwd = os.path.join(str(tmp_path), "custom", "path")
+        session = manager.create_session("test-session", cwd=custom_cwd)
 
-        assert session.cwd == "/custom/path"
+        assert session.cwd == custom_cwd
 
     @patch("taskweaver.ces.server.session_manager.Environment")
     def test_create_duplicate_session_raises(
@@ -477,6 +479,158 @@ class TestServerSessionManager:
         # Should not raise, just log errors
         manager.cleanup_all()
         assert manager.active_session_count == 0
+
+
+class TestServerSessionManagerUploadFile:
+    """Tests for file upload functionality."""
+
+    @pytest.fixture()
+    def manager(self, tmp_path: str) -> ServerSessionManager:
+        """Create a ServerSessionManager with a temp work dir."""
+        return ServerSessionManager(
+            env_id="test-env",
+            work_dir=str(tmp_path),
+        )
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_success(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test successful file upload."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        session = manager.create_session("test-session")
+
+        # Upload a file
+        content = b"col1,col2\n1,2\n3,4"
+        result = manager.upload_file("test-session", "data.csv", content)
+
+        # Verify file was written to session's cwd
+        assert result == os.path.join(session.cwd, "data.csv")
+        assert os.path.isfile(result)
+
+        # Verify content
+        with open(result, "rb") as f:
+            assert f.read() == content
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_binary_content(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test uploading binary file content."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        manager.create_session("test-session")
+
+        # Binary content with non-UTF8 bytes
+        binary_content = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"
+        result = manager.upload_file("test-session", "image.png", binary_content)
+
+        # Verify file was written correctly
+        with open(result, "rb") as f:
+            assert f.read() == binary_content
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_nonexistent_session(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test that uploading to non-existent session raises KeyError."""
+        with pytest.raises(KeyError, match="not found"):
+            manager.upload_file("nonexistent", "file.csv", b"content")
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_path_traversal_prevention(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test that path traversal attacks are prevented."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        session = manager.create_session("test-session")
+
+        # Attempt path traversal
+        content = b"malicious content"
+        result = manager.upload_file("test-session", "../../../etc/passwd", content)
+
+        # Should sanitize to just "passwd" and write to session's cwd
+        assert result == os.path.join(session.cwd, "passwd")
+        assert os.path.isfile(result)
+
+        # Verify file is in session's cwd, not in /etc
+        assert session.cwd in result
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_with_subdirectory_in_name(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test that subdirectory paths in filename are sanitized."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        session = manager.create_session("test-session")
+
+        # Filename with subdirectory
+        content = b"data"
+        result = manager.upload_file("test-session", "subdir/file.csv", content)
+
+        # Should strip the subdirectory
+        assert result == os.path.join(session.cwd, "file.csv")
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_updates_activity(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test that upload updates session activity timestamp."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        session = manager.create_session("test-session")
+        old_activity = session.last_activity
+
+        # Small delay to ensure different timestamp
+        import time
+
+        time.sleep(0.01)
+
+        manager.upload_file("test-session", "file.csv", b"content")
+
+        assert session.last_activity >= old_activity
+
+    @patch("taskweaver.ces.server.session_manager.Environment")
+    def test_upload_file_overwrite_existing(
+        self,
+        mock_env_class: MagicMock,
+        manager: ServerSessionManager,
+    ) -> None:
+        """Test that uploading overwrites existing file."""
+        mock_env = MagicMock()
+        mock_env_class.return_value = mock_env
+
+        manager.create_session("test-session")
+
+        # Upload initial file
+        manager.upload_file("test-session", "file.txt", b"original content")
+
+        # Upload again with same name
+        result = manager.upload_file("test-session", "file.txt", b"new content")
+
+        # Verify content was overwritten
+        with open(result, "rb") as f:
+            assert f.read() == b"new content"
 
 
 class TestServerSessionManagerThreadSafety:

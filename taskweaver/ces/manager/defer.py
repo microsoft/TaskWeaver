@@ -91,6 +91,13 @@ class DeferredClient(Client):
     ) -> ExecutionResult:
         return self._get_proxy_client().execute_code(exec_id, code, on_output=on_output)
 
+    def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        return self._get_proxy_client().upload_file(filename, content)
+
     def _get_proxy_client(self) -> Client:
         return self._init_deferred_var()()
 

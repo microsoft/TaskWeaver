@@ -171,6 +171,7 @@ Connect to pre-started server. API key required.
 | POST | `/api/v1/sessions/{id}/execute` | Execute code |
 | GET | `/api/v1/sessions/{id}/stream/{exec_id}` | SSE stream |
 | POST | `/api/v1/sessions/{id}/variables` | Update variables |
+| POST | `/api/v1/sessions/{id}/files` | Upload file to session cwd |
 | GET | `/api/v1/sessions/{id}/artifacts/{file}` | Download artifact |
 
 ## Usage
@@ -236,6 +237,140 @@ with ExecutionClient(
 4. **Streaming**: SSE events for stdout/stderr during execution
 5. **Session Cleanup**: `DELETE /sessions/{id}` → Environment.stop_session()
 
+## File Upload Flow
+
+File upload enables the `/load` CLI command to transfer files from the client machine to the execution server's working directory. This is essential when the execution server runs in a container or on a remote machine where the client's local filesystem is not accessible.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          TASKWEAVER CLIENT                                  │
+│                                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌───────────────────────────────┐   │
+│  │   Session   │───▶│ _upload_file│───▶│ ExecutionServiceClient        │   │
+│  │  /load cmd  │    │   (lazy)    │    │   .upload_file()              │   │
+│  └─────────────┘    └─────────────┘    └───────────────┬───────────────┘   │
+│                                                        │                    │
+│                                                        ▼                    │
+│                                        ┌───────────────────────────────┐   │
+│                                        │ ExecutionClient.upload_file() │   │
+│                                        │  - Read file content          │   │
+│                                        │  - Base64 encode              │   │
+│                                        │  - HTTP POST                  │   │
+│                                        └───────────────┬───────────────┘   │
+└────────────────────────────────────────────────────────┼────────────────────┘
+                                                         │
+                                                         │ POST /api/v1/sessions/{id}/files
+                                                         │ {filename, content (base64), encoding}
+                                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          EXECUTION SERVER                                   │
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    routes.upload_file()                               │  │
+│  │  - Validate session exists                                            │  │
+│  │  - Base64 decode content                                              │  │
+│  │  - Call session_manager.upload_file()                                 │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │              ServerSessionManager.upload_file()                       │  │
+│  │  - Sanitize filename (prevent path traversal)                         │  │
+│  │  - Write to {session.cwd}/{filename}                                  │  │
+│  │  - Return full path                                                   │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                    Session Working Directory                          │  │
+│  │                    /workspace/{session_id}/cwd/                       │  │
+│  │                         └── uploaded_file.csv                         │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Request/Response Models
+
+```python
+# Request (server/models.py)
+class UploadFileRequest(BaseModel):
+    filename: str       # Target filename (basename extracted, path traversal prevented)
+    content: str        # File content (base64 encoded for binary)
+    encoding: Literal["base64", "text"] = "base64"
+
+# Response (server/models.py)
+class UploadFileResponse(BaseModel):
+    filename: str       # Uploaded filename
+    status: Literal["uploaded"] = "uploaded"
+    path: str           # Full path where file was saved on server
+```
+
+### Client Usage
+
+```python
+from taskweaver.ces.client import ExecutionClient
+
+with ExecutionClient(session_id="my-session", server_url="http://localhost:8000") as client:
+    client.start()
+    
+    # Upload a file
+    with open("/local/path/data.csv", "rb") as f:
+        content = f.read()
+    saved_path = client.upload_file("data.csv", content)
+    
+    # Now the file is available in the session's cwd
+    result = client.execute_code("exec-1", "import pandas as pd; df = pd.read_csv('data.csv')")
+```
+
+### Session Integration
+
+The `Session` class uses a lazily-initialized upload client:
+
+```python
+# In taskweaver/session/session.py
+class Session:
+    def _get_upload_client(self):
+        """Lazy client creation - only created when first upload occurs."""
+        if not hasattr(self, "_upload_client"):
+            self._upload_client = self.exec_mgr.get_session_client(
+                self.session_id,
+                session_dir=self.workspace,
+                cwd=self.execution_cwd,
+            )
+            self._upload_client_started = False
+        
+        if not self._upload_client_started:
+            self._upload_client.start()
+            self._upload_client_started = True
+        
+        return self._upload_client
+
+    def _upload_file(self, name: str, path: str = None, content: bytes = None) -> str:
+        """Upload file to execution server."""
+        target_name = os.path.basename(name)
+        
+        if path is not None:
+            with open(path, "rb") as f:
+                file_content = f.read()
+        elif content is not None:
+            file_content = content
+        else:
+            raise ValueError("path or content must be provided")
+        
+        client = self._get_upload_client()
+        client.upload_file(target_name, file_content)
+        return target_name
+```
+
+### Security Considerations
+
+1. **Path Traversal Prevention**: Server sanitizes filename using `os.path.basename()` to prevent `../../etc/passwd` attacks
+2. **Session Isolation**: Files are written only to the session's own cwd directory
+3. **API Key Authentication**: Upload endpoint respects the same API key auth as other endpoints
+4. **Size Limits**: Large files should be chunked or streamed (not yet implemented)
+
 ## Custom Kernel Magics (kernel/ext.py)
 
 ```python
@@ -270,6 +405,11 @@ Unit tests in `tests/unit_tests/ces/`:
 | `test_execution_client.py` | ExecutionClient (mocked HTTP) |
 | `test_server_launcher.py` | ServerLauncher (mocked subprocess/docker) |
 | `test_execution_service.py` | ExecutionServiceProvider |
+
+**TODO**: Add tests for file upload functionality:
+- `ExecutionClient.upload_file()` - mock HTTP POST, verify base64 encoding
+- `ServerSessionManager.upload_file()` - verify file written, path traversal blocked
+- `routes.upload_file()` - integration test with mocked session manager
 
 Run tests:
 ```bash

@@ -71,6 +71,8 @@ spec_def = [
 ]
 
 
+@pytest.mark.integration
+@pytest.mark.timeout(60)
 @pytest.mark.parametrize(
     "session_spec",
     spec_def,

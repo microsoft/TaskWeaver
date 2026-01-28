@@ -107,6 +107,16 @@ class ExecutionServiceClient(Client):
             raise RuntimeError("Client not started")
         return self._client.execute_code(exec_id, code, on_output=on_output)
 
+    def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        """Upload a file to the session's working directory."""
+        if self._client is None:
+            raise RuntimeError("Client not started")
+        return self._client.upload_file(filename, content)
+
 
 class ExecutionServiceProvider(Manager):
     """Manager implementation that uses the HTTP execution server.

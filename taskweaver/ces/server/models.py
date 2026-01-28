@@ -39,6 +39,14 @@ class UpdateVariablesRequest(BaseModel):
     variables: Dict[str, str] = Field(..., description="Session variables to update")
 
 
+class UploadFileRequest(BaseModel):
+    """Request to upload a file to a session's working directory."""
+
+    filename: str = Field(..., description="Target filename in the session's cwd")
+    content: str = Field(..., description="File content (base64 encoded for binary, plain for text)")
+    encoding: Literal["base64", "text"] = Field("base64", description="Content encoding")
+
+
 # =============================================================================
 # Response Models
 # =============================================================================
@@ -126,6 +134,14 @@ class UpdateVariablesResponse(BaseModel):
 
     status: Literal["updated"] = "updated"
     variables: Dict[str, str] = Field(..., description="Updated variables")
+
+
+class UploadFileResponse(BaseModel):
+    """Response after uploading a file."""
+
+    filename: str = Field(..., description="Uploaded filename")
+    status: Literal["uploaded"] = "uploaded"
+    path: str = Field(..., description="Path where file was saved")
 
 
 class ErrorResponse(BaseModel):

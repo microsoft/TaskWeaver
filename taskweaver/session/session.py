@@ -1,10 +1,10 @@
 import os
-import shutil
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional
 
 from injector import Injector, inject
 
+from taskweaver.ces.common import Manager
 from taskweaver.config.module_config import ModuleConfig
 from taskweaver.logging import TelemetryLogger
 from taskweaver.memory import Memory, Post, Round
@@ -50,8 +50,9 @@ class Session:
         app_injector: Injector,
         logger: TelemetryLogger,
         tracing: Tracing,
-        config: AppSessionConfig,  # TODO: change to SessionConfig
+        config: AppSessionConfig,
         role_registry: RoleRegistry,
+        exec_mgr: Manager,
     ) -> None:
         """
         Initialize the session.
@@ -62,12 +63,14 @@ class Session:
         :param tracing: The tracing.
         :param config: The configuration.
         :param role_registry: The role registry.
+        :param exec_mgr: The execution manager for file uploads.
         """
         assert session_id is not None, "session_id must be provided"
         self.logger = logger
         self.tracing = tracing
         self.session_injector = app_injector.create_child_injector()
         self.config = config
+        self.exec_mgr = exec_mgr
 
         self.session_id: str = session_id
 
@@ -315,21 +318,59 @@ class Session:
 
             return chat_round
 
+    def _get_upload_client(self):
+        """Get or create the upload client for file uploads.
+
+        Lazily creates and starts the client on first use.
+        """
+        if not hasattr(self, "_upload_client"):
+            self._upload_client = self.exec_mgr.get_session_client(
+                self.session_id,
+                session_dir=self.workspace,
+                cwd=self.execution_cwd,
+            )
+            self._upload_client_started = False
+
+        if not self._upload_client_started:
+            self._upload_client.start()
+            self._upload_client_started = True
+
+        return self._upload_client
+
     @tracing_decorator
     def _upload_file(self, name: str, path: Optional[str] = None, content: Optional[bytes] = None) -> str:
-        target_name = name.split("/")[-1]
-        target_path = self._get_full_path(self.execution_cwd, target_name)
-        self.tracing.set_span_attribute("target_path", target_path)
-        if path is not None:
-            shutil.copyfile(path, target_path)
-            return target_name
-        if content is not None:
-            with open(target_path, "wb") as f:
-                f.write(content)
-            return target_name
+        """Upload a file to the execution server's working directory.
 
-        self.tracing.set_span_status("ERROR", "path or file_content must be provided")
-        raise ValueError("path or file_content")
+        Args:
+            name: The filename (may include path, only basename is used).
+            path: Path to a local file to upload.
+            content: Raw bytes to upload.
+
+        Returns:
+            The filename on the server.
+
+        Raises:
+            ValueError: If neither path nor content is provided.
+        """
+        target_name = name.split("/")[-1]
+        self.tracing.set_span_attribute("target_name", target_name)
+
+        # Get file content
+        if path is not None:
+            with open(path, "rb") as f:
+                file_content = f.read()
+        elif content is not None:
+            file_content = content
+        else:
+            self.tracing.set_span_status("ERROR", "path or file_content must be provided")
+            raise ValueError("path or file_content must be provided")
+
+        # Upload via HTTP client
+        client = self._get_upload_client()
+        result = client.upload_file(target_name, file_content)
+        self.tracing.set_span_attribute("upload_result", result)
+
+        return target_name
 
     def _get_full_path(
         self,
@@ -354,6 +395,13 @@ class Session:
         self.logger.info(f"Session {self.session_id} is stopped")
         for worker in self.worker_instances.values():
             worker.close()
+
+        # Clean up upload client if it was created
+        if hasattr(self, "_upload_client") and self._upload_client_started:
+            try:
+                self._upload_client.stop()
+            except Exception:
+                pass  # Ignore errors during cleanup
 
     def to_dict(self) -> Dict[str, str]:
         return {

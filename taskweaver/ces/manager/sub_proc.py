@@ -60,6 +60,25 @@ class SubProcessClient(Client):
             on_output=on_output,
         )
 
+    def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        """Upload a file to the session's working directory.
+
+        For subprocess mode, this writes directly to the local filesystem
+        since the subprocess shares the same filesystem as the caller.
+        """
+        # Sanitize filename to prevent path traversal
+        safe_filename = os.path.basename(filename)
+        file_path = os.path.join(self.cwd, safe_filename)
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        return file_path
+
 
 class SubProcessManager(Manager):
     def __init__(

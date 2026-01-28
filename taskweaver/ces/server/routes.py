@@ -26,6 +26,8 @@ from taskweaver.ces.server.models import (
     StopSessionResponse,
     UpdateVariablesRequest,
     UpdateVariablesResponse,
+    UploadFileRequest,
+    UploadFileResponse,
     execution_result_to_response,
 )
 from taskweaver.ces.server.session_manager import ServerSessionManager
@@ -436,6 +438,39 @@ async def update_variables(
         return UpdateVariablesResponse(status="updated", variables=request.variables)
     except Exception as e:
         logger.error(f"Failed to update variables in session {session_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/sessions/{session_id}/files",
+    response_model=UploadFileResponse,
+    dependencies=[Depends(verify_api_key)],
+)
+async def upload_file(
+    session_id: str,
+    request: UploadFileRequest,
+    session_manager: ServerSessionManager = Depends(get_session_manager),
+) -> UploadFileResponse:
+    """Upload a file to a session's working directory."""
+    if not session_manager.session_exists(session_id):
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+
+    try:
+        import base64
+
+        if request.encoding == "base64":
+            content = base64.b64decode(request.content)
+        else:
+            content = request.content.encode("utf-8")
+
+        file_path = session_manager.upload_file(session_id, request.filename, content)
+        return UploadFileResponse(
+            filename=request.filename,
+            status="uploaded",
+            path=file_path,
+        )
+    except Exception as e:
+        logger.error(f"Failed to upload file {request.filename} to session {session_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

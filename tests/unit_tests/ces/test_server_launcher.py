@@ -1,6 +1,7 @@
 """Unit tests for ServerLauncher."""
 
 import os
+import signal
 import subprocess
 from unittest.mock import MagicMock, patch
 
@@ -116,12 +117,12 @@ class TestServerLauncherStartSubprocess:
 
     @patch("taskweaver.ces.client.server_launcher.httpx.get")
     def test_start_when_already_running(self, mock_get: MagicMock) -> None:
-        """Test start is no-op when server already running."""
+        """Test start is no-op when server already running and kill_existing=False."""
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_get.return_value = mock_response
 
-        launcher = ServerLauncher()
+        launcher = ServerLauncher(kill_existing=False)
         launcher.start()
 
         assert launcher._started is True
@@ -329,7 +330,7 @@ class TestServerLauncherStartContainer:
             call_kwargs = mock_client.containers.run.call_args[1]
             assert call_kwargs["detach"] is True
             assert call_kwargs["remove"] is True
-            assert "9000/tcp" in call_kwargs["ports"]
+            assert call_kwargs["ports"] == {"8000/tcp": 9000}
             assert call_kwargs["environment"]["TASKWEAVER_SERVER_API_KEY"] == "secret"
 
 
@@ -413,8 +414,13 @@ class TestServerLauncherStop:
 
     @patch("taskweaver.ces.client.server_launcher.httpx.get")
     @patch("subprocess.Popen")
+    @patch("os.name", "posix")
+    @patch("os.killpg")
+    @patch("os.getpgid")
     def test_stop_subprocess(
         self,
+        mock_getpgid: MagicMock,
+        mock_killpg: MagicMock,
         mock_popen: MagicMock,
         mock_get: MagicMock,
     ) -> None:
@@ -428,6 +434,7 @@ class TestServerLauncherStop:
         mock_process.poll.return_value = None
         mock_process.wait.return_value = 0
         mock_popen.return_value = mock_process
+        mock_getpgid.return_value = 12345
 
         launcher = ServerLauncher()
         launcher.start()
@@ -435,7 +442,8 @@ class TestServerLauncherStop:
 
         assert launcher._started is False
         assert launcher._process is None
-        mock_process.terminate.assert_called()
+        # On Unix, should send SIGTERM to process group
+        mock_killpg.assert_called()
 
     @patch("taskweaver.ces.client.server_launcher.httpx.get")
     @patch("subprocess.Popen")
@@ -470,8 +478,13 @@ class TestServerLauncherStop:
 
     @patch("taskweaver.ces.client.server_launcher.httpx.get")
     @patch("subprocess.Popen")
+    @patch("os.name", "posix")
+    @patch("os.killpg")
+    @patch("os.getpgid")
     def test_stop_subprocess_force_kill(
         self,
+        mock_getpgid: MagicMock,
+        mock_killpg: MagicMock,
         mock_popen: MagicMock,
         mock_get: MagicMock,
     ) -> None:
@@ -488,12 +501,16 @@ class TestServerLauncherStop:
             0,  # Second wait succeeds after force kill
         ]
         mock_popen.return_value = mock_process
+        mock_getpgid.return_value = 12345
 
         launcher = ServerLauncher()
         launcher.start()
         launcher.stop()
 
-        mock_process.kill.assert_called()
+        assert mock_killpg.call_count == 2
+        calls = mock_killpg.call_args_list
+        assert calls[0][0][1] == signal.SIGTERM
+        assert calls[1][0][1] == signal.SIGKILL
 
     def test_stop_not_started(self) -> None:
         """Test stop is no-op when not started."""

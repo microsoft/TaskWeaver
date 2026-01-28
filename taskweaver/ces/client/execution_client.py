@@ -431,6 +431,37 @@ class ExecutionClient(Client):
             )
         return response.content
 
+    def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+    ) -> str:
+        """Upload a file to the session's working directory.
+
+        Args:
+            filename: Target filename.
+            content: File content as bytes.
+
+        Returns:
+            Path where the file was saved on the server.
+
+        Raises:
+            ExecutionClientError: If upload fails.
+        """
+        import base64
+
+        response = self._client.post(
+            f"/api/v1/sessions/{self.session_id}/files",
+            json={
+                "filename": filename,
+                "content": base64.b64encode(content).decode("ascii"),
+                "encoding": "base64",
+            },
+        )
+        result = self._handle_response(response)
+        logger.info(f"Uploaded file {filename} to session {self.session_id}")
+        return result.get("path", "")
+
     def close(self) -> None:
         """Close the HTTP client and release resources."""
         self._client.close()

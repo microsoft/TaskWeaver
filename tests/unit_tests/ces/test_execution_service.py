@@ -115,9 +115,12 @@ class TestExecutionServiceClient:
             server_url="http://localhost:8000",
         )
         client.start()
-        client.stop()
 
-        # Client should still be cleaned up
+        # Exception should propagate, but cleanup should still happen
+        with pytest.raises(Exception, match="Stop failed"):
+            client.stop()
+
+        # Client should still be cleaned up despite the error
         assert client._client is None
         mock_exec_client.close.assert_called_once()
 
@@ -264,6 +267,33 @@ class TestExecutionServiceClient:
         with pytest.raises(RuntimeError, match="Client not started"):
             client.execute_code("exec-001", "code")
 
+    @patch("taskweaver.ces.manager.execution_service.ExecutionClient")
+    def test_upload_file(self, mock_client_class: MagicMock) -> None:
+        """Test uploading a file."""
+        mock_exec_client = MagicMock()
+        mock_exec_client.upload_file.return_value = "/workspace/test/file.csv"
+        mock_client_class.return_value = mock_exec_client
+
+        client = ExecutionServiceClient(
+            session_id="test",
+            server_url="http://localhost:8000",
+        )
+        client.start()
+        result = client.upload_file("file.csv", b"col1,col2\n1,2")
+
+        assert result == "/workspace/test/file.csv"
+        mock_exec_client.upload_file.assert_called_once_with("file.csv", b"col1,col2\n1,2")
+
+    def test_upload_file_not_started(self) -> None:
+        """Test that upload_file raises when not started."""
+        client = ExecutionServiceClient(
+            session_id="test",
+            server_url="http://localhost:8000",
+        )
+
+        with pytest.raises(RuntimeError, match="Client not started"):
+            client.upload_file("file.csv", b"content")
+
 
 class TestExecutionServiceProvider:
     """Tests for ExecutionServiceProvider."""
@@ -341,6 +371,7 @@ class TestExecutionServiceProvider:
             container=True,
             container_image="custom/image",
             startup_timeout=30.0,
+            kill_existing=True,
         )
         mock_launcher.start.assert_called_once()
         assert provider._initialized is True
