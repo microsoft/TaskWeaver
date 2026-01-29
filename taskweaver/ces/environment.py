@@ -269,6 +269,13 @@ class Environment:
                     f"{new_port_start + 3}/tcp": None,
                     f"{new_port_start + 4}/tcp": None,
                 },
+                # Block access to host's localhost via "magic domains" in Docker Desktop,
+                # Podman, and Containerd on Lima (macOS/Windows) to prevent container escape
+                extra_hosts={
+                    "host.docker.internal": "0.0.0.0",
+                    "host.containers.internal": "0.0.0.0",
+                    "host.lima.internal": "0.0.0.0",
+                },
             )
 
             tick = 0

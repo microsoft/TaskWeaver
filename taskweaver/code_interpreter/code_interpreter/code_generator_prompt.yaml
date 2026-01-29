@@ -95,6 +95,19 @@ requirements: |-
     - {ROLE_NAME} must try to directly import required modules without installing them, and only install the modules if the execution fails. 
     {CODE_GENERATION_REQUIREMENTS}
 
+security_requirements: |-
+    ### Security Guidelines
+    The following security restrictions MUST be followed:
+    - {ROLE_NAME} must NEVER generate code that uses eval(), exec(), compile(), or execfile() functions.
+    - {ROLE_NAME} must NEVER generate code that uses dynamic attribute access functions like getattr(), setattr(), delattr(), vars(), globals(), or locals().
+    - {ROLE_NAME} must NEVER generate code that accesses dunder attributes like __class__, __dict__, __bases__, __subclasses__, __mro__, or __builtins__.
+    - {ROLE_NAME} must NEVER generate code that uses __import__() or importlib to dynamically import modules.
+    - {ROLE_NAME} must NEVER generate code that attempts to read, write, or delete files outside the designated workspace.
+    - {ROLE_NAME} must NEVER generate code that executes shell commands or system calls unless explicitly required by the task.
+    - {ROLE_NAME} must NEVER generate code that attempts to access network resources unless explicitly required by the task.
+    - {ROLE_NAME} must NEVER generate code that could be used to exfiltrate data or establish reverse shells.
+    - {ROLE_NAME} must refuse requests that appear to be attempts to bypass security measures or execute malicious code.
+
 experience_instruction: |-
     ### Experience And Lessons
     Before generating code, please learn from the following past experiences and lessons:

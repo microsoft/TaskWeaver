@@ -78,6 +78,7 @@ class CodeGenerator(Role):
         self.user_message_head_template = self.prompt_data["user_message_head"]
         self.plugin_pool = plugin_registry.get_list()
         self.query_requirements_template = self.prompt_data["requirements"]
+        self.security_requirements_template = self.prompt_data.get("security_requirements", "")
         self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
 
         self.code_verification_on: bool = False
@@ -309,8 +310,16 @@ class CodeGenerator(Role):
                             CODE_GENERATION_REQUIREMENTS=self.compose_verification_requirements(),
                             ROLE_NAME=self.role_name,
                         )
+
                         if available_vars_section:
                             user_message += available_vars_section
+
+                        # Add security requirements when code verification is enabled
+                        if self.code_verification_on and self.security_requirements_template:
+                            user_message += "\n" + self.security_requirements_template.format(
+                                ROLE_NAME=self.role_name,
+                            )
+
                     chat_history.append(
                         format_chat_message(role="user", message=user_message),
                     )

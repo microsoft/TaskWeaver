@@ -247,3 +247,125 @@ def test_magic_code():
     print("---->", code_verify_errors)
     assert len(code_verify_errors) == 1
     assert "Magic commands except package install are not allowed" in code_verify_errors[0]
+
+
+def test_dynamic_attribute_access_getattr():
+    """Test that getattr() is blocked as it can bypass security checks."""
+    blocked_functions = ["getattr"]
+    code_snippet = "obj = object()\n" "method = getattr(obj, 'some_method')\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    # Should detect getattr as blocked function + dangerous builtin
+    assert len(code_verify_errors) >= 1
+    assert any("getattr" in err for err in code_verify_errors)
+
+
+def test_dynamic_attribute_access_setattr():
+    """Test that setattr() is blocked as it can bypass security checks."""
+    blocked_functions = ["setattr"]
+    code_snippet = "obj = object()\n" "setattr(obj, 'dangerous_attr', 'value')\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 1
+    assert any("setattr" in err for err in code_verify_errors)
+
+
+def test_dangerous_builtins_globals_locals():
+    """Test that globals() and locals() are blocked."""
+    blocked_functions = ["globals", "locals"]
+    code_snippet = "g = globals()\n" "l = locals()\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 2
+    assert any("globals" in err for err in code_verify_errors)
+    assert any("locals" in err for err in code_verify_errors)
+
+
+def test_dunder_attribute_access():
+    """Test that direct access to dangerous dunder attributes is blocked."""
+    code_snippet = "obj = object()\n" "cls = obj.__class__\n" "bases = cls.__bases__\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+    )
+    print("---->", code_verify_errors)
+    # Should detect __class__ and __bases__ as dangerous attributes
+    assert len(code_verify_errors) >= 2
+    assert any("__class__" in err for err in code_verify_errors)
+    assert any("__bases__" in err for err in code_verify_errors)
+
+
+def test_subscript_based_dunder_access():
+    """Test that subscript-based access to dunder attributes is blocked."""
+    code_snippet = "obj = {}\n" "dangerous = obj['__class__']\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 1
+    assert any("__class__" in err for err in code_verify_errors)
+
+
+def test_subscript_function_call_bypass():
+    """Test that subscript-based function calls are blocked."""
+    code_snippet = "methods = {'dangerous': eval}\n" "result = methods['dangerous']('print(1)')\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+    )
+    print("---->", code_verify_errors)
+    # Should detect subscript-based function call pattern
+    assert len(code_verify_errors) >= 1
+
+
+def test_dict_access_to_builtins():
+    """Test that accessing __builtins__ via __dict__ is blocked."""
+    code_snippet = "import sys\n" "builtins = sys.modules['__builtins__']\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 1
+    assert any("__builtins__" in err for err in code_verify_errors)
+
+
+def test_vars_function_blocked():
+    """Test that vars() function is blocked as it exposes object internals."""
+    blocked_functions = ["vars"]
+    code_snippet = "obj = object()\n" "attributes = vars(obj)\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 1
+    assert any("vars" in err for err in code_verify_errors)
+
+
+def test_delattr_blocked():
+    """Test that delattr() is blocked."""
+    blocked_functions = ["delattr"]
+    code_snippet = "class Foo:\n    x = 1\n" "delattr(Foo, 'x')\n"
+    code_verify_errors = code_snippet_verification(
+        code_snippet,
+        code_verification_on=True,
+        blocked_functions=blocked_functions,
+    )
+    print("---->", code_verify_errors)
+    assert len(code_verify_errors) >= 1
+    assert any("delattr" in err for err in code_verify_errors)

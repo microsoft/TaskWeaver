@@ -47,6 +47,16 @@ class CodeInterpreterConfig(RoleConfig):
                 "raw_input",
                 "reload",
                 "__import__",
+                # Dynamic attribute access functions that can bypass security checks
+                "getattr",
+                "setattr",
+                "delattr",
+                "vars",
+                "globals",
+                "locals",
+                "__getattribute__",
+                "__setattr__",
+                "__delattr__",
             ],
         )
 
@@ -91,8 +101,22 @@ class CodeInterpreter(Role, Interpreter):
 
         self.generator = generator
         self.generator.set_alias(self.alias)
+
+        # Determine if code verification should be enabled
+        # Enable by default for local mode for security reasons
+        code_verification_on = self.config.code_verification_on
+        kernel_mode = executor.exec_mgr.get_kernel_mode()
+        if kernel_mode == "local" and not self.config.code_verification_on:
+            code_verification_on = True
+            logger.warning(
+                "Code verification is automatically enabled for local mode. "
+                "Running in local mode without code verification poses security risks. "
+                "To disable, explicitly set code_verification_on=False in config, but this is not recommended. "
+                "For better security, consider using container mode.",
+            )
+
         self.generator.configure_verification(
-            code_verification_on=self.config.code_verification_on,
+            code_verification_on=code_verification_on,
             allowed_modules=self.config.allowed_modules,
             blocked_functions=self.config.blocked_functions,
         )
