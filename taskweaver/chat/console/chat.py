@@ -529,15 +529,19 @@ class TaskWeaverRoundUpdater(SessionEventHandlerBase, ConfirmationHandler):
 
 
 class TaskWeaverChatApp(SessionEventHandlerBase):
-    def __init__(self, app_dir: Optional[str] = None):
+    def __init__(self, app_dir: Optional[str] = None, server_url: Optional[str] = None):
         from taskweaver.app.app import TaskWeaverApp, _cleanup_existing_servers
 
-        # Check and kill any existing server before starting
-        cleanup_result = _cleanup_existing_servers()
-        if cleanup_result:
-            click.secho(f"[Startup] Killed existing server (PID: {cleanup_result}) on port 8000", fg="yellow")
+        config = {}
+        if server_url:
+            config["execution_service.server.url"] = server_url
+            config["execution_service.server.auto_start"] = False
+        else:
+            cleanup_result = _cleanup_existing_servers()
+            if cleanup_result:
+                click.secho(f"[Startup] Killed existing server (PID: {cleanup_result}) on port 8000", fg="yellow")
 
-        self.app = TaskWeaverApp(app_dir=app_dir)
+        self.app = TaskWeaverApp(app_dir=app_dir, config=config)
         self.session = self.app.get_session()
         self.pending_files: List[Dict[Literal["name", "path", "content"], Any]] = []
         atexit.register(self.app.stop)
@@ -650,8 +654,8 @@ class TaskWeaverChatApp(SessionEventHandlerBase):
         click.secho(click.style(f"▶  {message}", fg="yellow"))
 
 
-def chat_taskweaver(app_dir: Optional[str] = None):
-    TaskWeaverChatApp(app_dir=app_dir).run()
+def chat_taskweaver(app_dir: Optional[str] = None, server_url: Optional[str] = None):
+    TaskWeaverChatApp(app_dir=app_dir, server_url=server_url).run()
 
 
 if __name__ == "__main__":

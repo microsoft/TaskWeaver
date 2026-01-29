@@ -25,6 +25,43 @@ instruct TaskWeaver to execute harmful code on the host machine.
 Please be cautious when using local mode, especially when the usage of the agent is open to untrusted users.
 :::
 
+## Explicit Server Startup (CLI)
+
+While TaskWeaver can automatically start the execution server, you can also start it explicitly before running the chat interface. This is useful for debugging, running the server on a different machine, or maintaining a long-running execution environment.
+
+### Two-Terminal Workflow
+
+You can run the server in one terminal and connect to it from another:
+
+```bash
+# Terminal 1: Start the server explicitly
+python -m taskweaver -p ./project server --port 8000
+
+# Terminal 2: Connect chat to the running server
+python -m taskweaver -p ./project chat --server-url http://localhost:8000
+```
+
+### Server Command Options
+
+The `server` subcommand supports several options:
+
+- `--host`: Host to bind the server to (default: `localhost`).
+- `--port`: Port to bind the server to (default: `8000`).
+- `--api-key`: API key for authentication (optional for localhost).
+- `--log-level`: Set the logging level (`debug`, `info`, `warning`, `error`, `critical`).
+- `--reload`: Enable auto-reload for development purposes.
+
+### Using the Global --server-url Option
+
+You can also provide the `--server-url` as a global option before the subcommand:
+
+```bash
+python -m taskweaver -p ./project --server-url http://localhost:8000 chat
+```
+
+When the `--server-url` option is provided, TaskWeaver automatically disables the `auto_start` feature (`execution_service.server.auto_start = false`) and attempts to connect to the specified URL.
+
+
 
 
 ## How to Configure the Code Execution Mode

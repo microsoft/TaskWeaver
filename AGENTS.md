@@ -69,6 +69,12 @@ flake8 --config=.linters/tox.ini taskweaver/
 # CLI mode
 python -m taskweaver -p ./project/
 
+# Start CES server explicitly
+python -m taskweaver -p ./project/ server --port 8000
+
+# In another terminal, connect to running server
+python -m taskweaver -p ./project/ chat --server-url http://localhost:8000
+
 # As a module
 python -m taskweaver
 ```

@@ -28,7 +28,7 @@ class ExecutionServiceConfig(ModuleConfig):
         )
         self.server_auto_start = self._get_bool(
             "server.auto_start",
-            True,
+            False,
         )
         self.server_container = self._get_bool(
             "server.container",

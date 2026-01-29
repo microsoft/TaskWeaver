@@ -33,6 +33,7 @@ class CliContext:
     workspace_param: Optional[str]
     is_workspace_valid: bool
     is_workspace_empty: bool
+    server_url: Optional[str] = None
 
 
 def center_cli_str(text: str, width: Optional[int] = None):

@@ -176,6 +176,22 @@ Connect to pre-started server. API key required.
 
 ## Usage
 
+### CLI Integration
+
+The Code Execution Service can be started as a standalone server via the TaskWeaver CLI. This is the recommended way to run CES for remote or containerized deployments. The implementation resides in `taskweaver/cli/server.py`.
+
+```bash
+# Start CES server via CLI
+python -m taskweaver -p ./project server \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --api-key "secret" \
+    --log-level info \
+    --reload
+```
+
+The server command wraps `taskweaver.ces.server.app:app` and runs it using `uvicorn`. Note that when using `--server-url` with the `chat` command, `server_auto_start` is automatically disabled to connect to the existing instance.
+
 ### Starting the Server Manually
 
 ```bash
