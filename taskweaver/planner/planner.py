@@ -10,7 +10,7 @@ from injector import inject
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Memory, Post, Round, RoundCompressor
+from taskweaver.memory import CompactedMessage, CompactorConfig, ContextCompactor, Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import ExperienceGenerator
 from taskweaver.memory.memory import SharedMemoryEntry
@@ -33,12 +33,14 @@ class PlannerConfig(RoleConfig):
         )
         self.prompt_compression = self._get_bool("prompt_compression", False)
         self.compression_prompt_path = self._get_path(
-            "compression_prompt_path",
+            "compaction_prompt_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "compression_prompt.yaml",
+                "compaction_prompt.yaml",
             ),
         )
+        self.compaction_threshold = self._get_int("compaction_threshold", 10)
+        self.compaction_retain_recent = self._get_int("compaction_retain_recent", 3)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -55,7 +57,6 @@ class Planner(Role):
         event_emitter: SessionEventEmitter,
         llm_api: LLMApi,
         workers: Dict[str, Role],
-        round_compressor: Optional[RoundCompressor],
         post_translator: PostTranslator,
         experience_generator: Optional[ExperienceGenerator] = None,
     ):
@@ -75,7 +76,6 @@ class Planner(Role):
         self.instruction_template = self.prompt_data["instruction_template"]
 
         self.response_json_schema = json.loads(self.prompt_data["response_json_schema"])
-        # restrict the send_to field to the recipient alias set
         self.response_json_schema["properties"]["response"]["properties"]["send_to"]["enum"] = list(
             self.recipient_alias_set,
         ) + ["User"]
@@ -83,8 +83,20 @@ class Planner(Role):
         self.ask_self_cnt = 0
         self.max_self_ask_num = 3
 
-        self.round_compressor = round_compressor
-        self.compression_prompt_template = read_yaml(self.config.compression_prompt_path)["content"]
+        self.compactor: Optional[ContextCompactor] = None
+        if self.config.prompt_compression:
+            compactor_config = CompactorConfig(
+                threshold=self.config.compaction_threshold,
+                retain_recent=self.config.compaction_retain_recent,
+                prompt_template_path=self.config.compression_prompt_path,
+                enabled=True,
+            )
+            self.compactor = ContextCompactor(
+                config=compactor_config,
+                llm_api=llm_api,
+                rounds_getter=lambda: [],
+                logger=lambda msg: self.logger.debug(msg),
+            )
 
         self.experience_generator = experience_generator
         self.experience_loaded_from = None
@@ -197,6 +209,7 @@ class Planner(Role):
     def compose_prompt(
         self,
         rounds: List[Round],
+        compaction: Optional[CompactedMessage] = None,
     ) -> List[ChatMessageType]:
         experiences = self.format_experience(
             template=self.prompt_data["experience_instruction"],
@@ -215,19 +228,14 @@ class Planner(Role):
             )
             chat_history += conv_example_in_prompt
 
-        summary = None
-        if self.config.prompt_compression and self.round_compressor is not None:
-            summary, rounds = self.round_compressor.compress_rounds(
-                rounds,
-                rounds_formatter=lambda _rounds: str(
-                    self.compose_conversation_for_prompt(_rounds),
-                ),
-                prompt_template=self.compression_prompt_template,
-            )
+        summary = compaction.summary if compaction else None
+        rounds_to_format = rounds
+        if compaction:
+            rounds_to_format = rounds[compaction.end_index :]
 
         chat_history.extend(
             self.compose_conversation_for_prompt(
-                rounds,
+                rounds_to_format,
                 summary=summary,
             ),
         )
@@ -241,7 +249,12 @@ class Planner(Role):
         prompt_log_path: Optional[str] = None,
         **kwargs: ...,
     ) -> Post:
-        rounds = memory.get_role_rounds(role=self.alias)
+        if self.compactor and self.alias not in memory._compaction_providers:
+            self.compactor.rounds_getter = lambda: memory.conversation.rounds
+            memory.register_compaction_provider(self.alias, self.compactor)
+            self.compactor.start()
+
+        rounds, compaction = memory.get_role_rounds_with_compaction(role=self.alias)
         assert len(rounds) != 0, "No chat rounds found for planner"
 
         user_query = rounds[-1].user_query
@@ -255,7 +268,7 @@ class Planner(Role):
         post_proxy = self.event_emitter.create_post_proxy(self.alias)
 
         post_proxy.update_status("composing prompt")
-        chat_history = self.compose_prompt(rounds)
+        chat_history = self.compose_prompt(rounds, compaction)
 
         def check_post_validity(post: Post):
             missing_elements: List[str] = []

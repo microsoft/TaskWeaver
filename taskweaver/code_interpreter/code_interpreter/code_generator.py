@@ -9,7 +9,7 @@ from taskweaver.code_interpreter.plugin_selection import PluginSelector, Selecte
 from taskweaver.llm import LLMApi
 from taskweaver.llm.util import ChatMessageType, format_chat_message
 from taskweaver.logging import TelemetryLogger
-from taskweaver.memory import Attachment, Memory, Post, Round, RoundCompressor
+from taskweaver.memory import Attachment, CompactedMessage, CompactorConfig, ContextCompactor, Memory, Post, Round
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.experience import ExperienceGenerator
 from taskweaver.memory.plugin import PluginEntry, PluginRegistry
@@ -34,12 +34,14 @@ class CodeGeneratorConfig(RoleConfig):
         )
         self.prompt_compression = self._get_bool("prompt_compression", False)
         self.compression_prompt_path = self._get_path(
-            "compression_prompt_path",
+            "compaction_prompt_path",
             os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "compression_prompt.yaml",
+                "compaction_prompt.yaml",
             ),
         )
+        self.compaction_threshold = self._get_int("compaction_threshold", 10)
+        self.compaction_retain_recent = self._get_int("compaction_retain_recent", 3)
         self.enable_auto_plugin_selection = self._get_bool(
             "enable_auto_plugin_selection",
             False,
@@ -59,7 +61,6 @@ class CodeGenerator(Role):
         event_emitter: SessionEventEmitter,
         tracing: Tracing,
         llm_api: LLMApi,
-        round_compressor: RoundCompressor,
         post_translator: PostTranslator,
         experience_generator: ExperienceGenerator,
     ):
@@ -84,8 +85,20 @@ class CodeGenerator(Role):
         self.code_verification_on: bool = False
         self.allowed_modules: List[str] = []
 
-        self.round_compressor: RoundCompressor = round_compressor
-        self.compression_template = read_yaml(self.config.compression_prompt_path)["content"]
+        self.compactor: Optional[ContextCompactor] = None
+        if self.config.prompt_compression:
+            compactor_config = CompactorConfig(
+                threshold=self.config.compaction_threshold,
+                retain_recent=self.config.compaction_retain_recent,
+                prompt_template_path=self.config.compression_prompt_path,
+                enabled=True,
+            )
+            self.compactor = ContextCompactor(
+                config=compactor_config,
+                llm_api=llm_api,
+                rounds_getter=lambda: [],
+                logger=lambda msg: self.logger.debug(msg),
+            )
 
         if self.config.enable_auto_plugin_selection:
             self.plugin_selector = PluginSelector(plugin_registry, self.llm_api)
@@ -149,6 +162,7 @@ class CodeGenerator(Role):
         rounds: List[Round],
         plugins: List[PluginEntry],
         planning_enrichments: Optional[List[str]] = None,
+        compaction: Optional[CompactedMessage] = None,
     ) -> List[ChatMessageType]:
         experiences = self.format_experience(
             template=self.prompt_data["experience_instruction"],
@@ -166,19 +180,14 @@ class CodeGenerator(Role):
                 self.compose_conversation(example.rounds, example.plugins, add_requirements=False),
             )
 
-        summary = None
-        if self.config.prompt_compression:
-            summary, rounds = self.round_compressor.compress_rounds(
-                rounds,
-                rounds_formatter=lambda _rounds: str(
-                    self.compose_conversation(_rounds, plugins, add_requirements=False),
-                ),
-                prompt_template=self.compression_template,
-            )
+        summary = compaction.summary if compaction else None
+        rounds_to_format = rounds
+        if compaction:
+            rounds_to_format = rounds[compaction.end_index :]
 
         chat_history.extend(
             self.compose_conversation(
-                rounds,
+                rounds_to_format,
                 add_requirements=True,
                 summary=summary,
                 plugins=plugins,
@@ -352,8 +361,14 @@ class CodeGenerator(Role):
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
-        # extract all rounds from memory
-        rounds = memory.get_role_rounds(
+        # Register compactor with memory on first call (if enabled)
+        if self.compactor and self.alias not in memory._compaction_providers:
+            self.compactor.rounds_getter = lambda: memory.conversation.rounds
+            memory.register_compaction_provider(self.alias, self.compactor)
+            self.compactor.start()
+
+        # Extract rounds and compaction from memory
+        rounds, compaction = memory.get_role_rounds_with_compaction(
             role=self.alias,
             include_failure_rounds=False,
         )
@@ -377,6 +392,7 @@ class CodeGenerator(Role):
             rounds,
             self.plugin_pool,
             planning_enrichments=[pe.content for pe in planning_enrichments],
+            compaction=compaction,
         )
 
         self.tracing.set_span_attribute("prompt", json.dumps(prompt, indent=2))

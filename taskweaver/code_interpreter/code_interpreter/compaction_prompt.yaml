@@ -25,4 +25,7 @@ content: |-
   ## Previous summary
   {PREVIOUS_SUMMARY}
 
-  Let's get started! Please structure your summary in JSON format. 
+  ## Conversation to summarize
+  {content}
+
+  Let's get started! Please structure your summary in JSON format.

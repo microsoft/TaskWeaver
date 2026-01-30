@@ -13,7 +13,7 @@ memory/
 ├── attachment.py     # Attachment - typed data on Posts
 ├── type_vars.py      # Type aliases (RoleName, etc.)
 ├── experience.py     # Experience storage and retrieval
-├── compression.py    # RoundCompressor for prompt compression
+├── compaction.py     # Background context compaction (ContextCompactor)
 ├── plugin.py         # PluginModule for DI
 ├── shared_memory_entry.py  # SharedMemoryEntry for cross-role data
 └── utils.py          # Utility functions

@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import copy
 import os
-from typing import Dict, List, Tuple
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
-from taskweaver.memory import SharedMemoryEntry
 from taskweaver.memory.attachment import AttachmentType
 from taskweaver.memory.conversation import Conversation
 from taskweaver.memory.round import Round
+from taskweaver.memory.shared_memory_entry import SharedMemoryEntry
 from taskweaver.memory.type_vars import RoleName, SharedMemoryEntryType
 from taskweaver.module.prompt_util import PromptUtil
 from taskweaver.utils import write_yaml
+
+if TYPE_CHECKING:
+    from taskweaver.memory.compaction import CompactedMessage, CompactionProvider
 
 
 class Memory:
@@ -22,11 +25,19 @@ class Memory:
     def __init__(self, session_id: str) -> None:
         self.session_id = session_id
         self.conversation = Conversation.init()
+        self._compaction_providers: Dict[str, "CompactionProvider"] = {}
+        self._on_round_added_callbacks: List[Callable[[], None]] = []
+
+    def register_compaction_provider(self, role: str, provider: "CompactionProvider") -> None:
+        self._compaction_providers[role] = provider
+        self._on_round_added_callbacks.append(provider.notify_rounds_changed)
 
     def create_round(self, user_query: str) -> Round:
         """Create a round with the given query."""
         round = Round.create(user_query=user_query)
         self.conversation.add_round(round)
+        for callback in self._on_round_added_callbacks:
+            callback()
         return round
 
     def get_role_rounds(self, role: RoleName, include_failure_rounds: bool = False) -> List[Round]:
@@ -62,6 +73,17 @@ class Memory:
             post.message = PromptUtil.remove_all_delimiters(post.message)
 
         return rounds_from_role
+
+    def get_role_rounds_with_compaction(
+        self,
+        role: RoleName,
+        include_failure_rounds: bool = False,
+    ) -> Tuple[List[Round], Optional["CompactedMessage"]]:
+        rounds = self.get_role_rounds(role, include_failure_rounds)
+        compaction = None
+        if role in self._compaction_providers:
+            compaction = self._compaction_providers[role].get_compaction()
+        return rounds, compaction
 
     def save_experience(self, exp_dir: str, thin_mode: bool = True) -> None:
         raw_exp_path = os.path.join(exp_dir, f"raw_exp_{self.session_id}.yaml")
