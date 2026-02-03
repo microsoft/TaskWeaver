@@ -62,10 +62,8 @@ class TestContextCompactorInit:
             llm_api=MagicMock(),
             rounds_getter=lambda: [],
         )
-        assert compactor._compacted is None
-        assert compactor._started is False
-        assert compactor._compacting is False
-        assert compactor._pending_trigger is False
+        assert compactor.get_compaction() is None
+        assert compactor._worker is None
 
     def test_init_with_custom_logger(self):
         logs = []
@@ -80,7 +78,21 @@ class TestContextCompactorInit:
         assert "test message" in logs
 
 
-class TestContextCompactorSingleton:
+class TestContextCompactorStart:
+    def test_start_creates_worker(self):
+        config = CompactorConfig(enabled=True)
+        compactor = ContextCompactor(
+            config=config,
+            llm_api=MagicMock(),
+            rounds_getter=lambda: [],
+        )
+
+        compactor.start()
+        assert compactor._worker is not None
+        assert compactor._worker.is_alive()
+
+        compactor.stop()
+
     def test_start_is_idempotent(self):
         config = CompactorConfig(enabled=True)
         compactor = ContextCompactor(
@@ -90,11 +102,10 @@ class TestContextCompactorSingleton:
         )
 
         compactor.start()
-        first_thread = compactor._thread
-        assert compactor._started is True
+        first_worker = compactor._worker
 
         compactor.start()
-        assert compactor._thread is first_thread
+        assert compactor._worker is first_worker
 
         compactor.stop()
 
@@ -107,70 +118,7 @@ class TestContextCompactorSingleton:
         )
 
         compactor.start()
-        assert compactor._started is False
-        assert compactor._thread is None
-
-
-class TestContextCompactorTrigger:
-    def test_trigger_when_above_threshold(self):
-        logs = []
-        rounds = create_mock_rounds(10)
-        config = CompactorConfig(threshold=5, retain_recent=2, enabled=True)
-
-        compactor = ContextCompactor(
-            config=config,
-            llm_api=MagicMock(),
-            rounds_getter=lambda: rounds,
-            logger=lambda msg: logs.append(msg),
-        )
-
-        compactor.notify_rounds_changed()
-        assert any("Triggering" in log for log in logs)
-
-    def test_trigger_at_exact_threshold(self):
-        logs = []
-        rounds = create_mock_rounds(10)
-        config = CompactorConfig(threshold=10, retain_recent=2, enabled=True)
-
-        compactor = ContextCompactor(
-            config=config,
-            llm_api=MagicMock(),
-            rounds_getter=lambda: rounds,
-            logger=lambda msg: logs.append(msg),
-        )
-
-        compactor.notify_rounds_changed()
-        assert any("Triggering" in log for log in logs)
-
-    def test_no_trigger_below_threshold(self):
-        logs = []
-        rounds = create_mock_rounds(5)
-        config = CompactorConfig(threshold=10, retain_recent=2, enabled=True)
-
-        compactor = ContextCompactor(
-            config=config,
-            llm_api=MagicMock(),
-            rounds_getter=lambda: rounds,
-            logger=lambda msg: logs.append(msg),
-        )
-
-        compactor.notify_rounds_changed()
-        assert not any("Triggering" in log for log in logs)
-
-    def test_no_trigger_when_disabled(self):
-        logs = []
-        rounds = create_mock_rounds(20)
-        config = CompactorConfig(threshold=5, enabled=False)
-
-        compactor = ContextCompactor(
-            config=config,
-            llm_api=MagicMock(),
-            rounds_getter=lambda: rounds,
-            logger=lambda msg: logs.append(msg),
-        )
-
-        compactor.notify_rounds_changed()
-        assert len(logs) == 0
+        assert compactor._worker is None
 
 
 class TestContextCompactorCompaction:
@@ -231,6 +179,50 @@ class TestContextCompactorCompaction:
 
         compactor.stop()
 
+    def test_no_compaction_below_threshold(self):
+        rounds = create_mock_rounds(5)
+        config = CompactorConfig(threshold=10, retain_recent=2, enabled=True)
+
+        mock_llm = MagicMock()
+
+        compactor = ContextCompactor(
+            config=config,
+            llm_api=mock_llm,
+            rounds_getter=lambda: rounds,
+        )
+
+        compactor.start()
+        compactor.notify_rounds_changed()
+        time.sleep(0.2)
+
+        assert compactor.get_compaction() is None
+        mock_llm.chat_completion.assert_not_called()
+
+        compactor.stop()
+
+    def test_compaction_at_exact_threshold(self):
+        rounds = create_mock_rounds(10)
+        config = CompactorConfig(threshold=10, retain_recent=2, enabled=True)
+
+        mock_llm = MagicMock()
+        mock_llm.chat_completion.return_value = {"content": "Summary"}
+
+        compactor = ContextCompactor(
+            config=config,
+            llm_api=mock_llm,
+            rounds_getter=lambda: rounds,
+        )
+
+        compactor.start()
+        compactor.notify_rounds_changed()
+        time.sleep(0.2)
+
+        result = compactor.get_compaction()
+        assert result is not None
+        assert result.end_index == 8
+
+        compactor.stop()
+
     def test_compaction_failure_does_not_update_state(self):
         rounds = create_mock_rounds(10)
         config = CompactorConfig(threshold=5, retain_recent=2, enabled=True)
@@ -279,41 +271,29 @@ class TestContextCompactorCompaction:
 
         compactor.stop()
 
-
-class TestContextCompactorPendingTrigger:
-    def test_pending_trigger_during_compaction(self):
-        rounds = create_mock_rounds(10)
-        config = CompactorConfig(threshold=3, retain_recent=1, enabled=True)
+    def test_no_compaction_when_disabled(self):
+        rounds = create_mock_rounds(20)
+        config = CompactorConfig(threshold=5, enabled=False)
 
         mock_llm = MagicMock()
 
-        def slow_llm(*args, **kwargs):
-            time.sleep(0.3)
-            return {"content": "Slow summary"}
-
-        mock_llm.chat_completion.side_effect = slow_llm
-
-        logs = []
         compactor = ContextCompactor(
             config=config,
             llm_api=mock_llm,
             rounds_getter=lambda: rounds,
-            logger=lambda msg: logs.append(msg),
         )
 
         compactor.start()
         compactor.notify_rounds_changed()
         time.sleep(0.1)
 
-        compactor.notify_rounds_changed()
+        assert compactor.get_compaction() is None
+        mock_llm.chat_completion.assert_not_called()
 
-        assert any("queued" in log.lower() for log in logs)
 
-        time.sleep(0.5)
-        compactor.stop()
-
-    def test_pending_trigger_processes_after_compaction(self):
-        rounds = [create_mock_rounds(10)]
+class TestContextCompactorMultipleNotifications:
+    def test_multiple_rapid_notifications(self):
+        rounds_list = [create_mock_rounds(10)]
         config = CompactorConfig(threshold=3, retain_recent=1, enabled=True)
 
         call_count = [0]
@@ -321,7 +301,7 @@ class TestContextCompactorPendingTrigger:
 
         def counting_llm(*args, **kwargs):
             call_count[0] += 1
-            time.sleep(0.2)
+            time.sleep(0.1)
             return {"content": f"Summary {call_count[0]}"}
 
         mock_llm.chat_completion.side_effect = counting_llm
@@ -329,19 +309,20 @@ class TestContextCompactorPendingTrigger:
         compactor = ContextCompactor(
             config=config,
             llm_api=mock_llm,
-            rounds_getter=lambda: rounds[0],
+            rounds_getter=lambda: rounds_list[0],
         )
 
         compactor.start()
         compactor.notify_rounds_changed()
         time.sleep(0.05)
 
-        rounds[0] = create_mock_rounds(20)
+        rounds_list[0] = create_mock_rounds(20)
         compactor.notify_rounds_changed()
 
-        time.sleep(0.6)
+        time.sleep(0.5)
 
-        assert call_count[0] >= 2
+        assert call_count[0] >= 1
+        assert compactor.get_compaction() is not None
 
         compactor.stop()
 
@@ -360,6 +341,7 @@ class TestContextCompactorThreadSafety:
 
         compactor.start()
         compactor.notify_rounds_changed()
+        time.sleep(0.2)
 
         results = []
         errors = []
@@ -391,11 +373,12 @@ class TestContextCompactorStop:
         )
 
         compactor.start()
-        assert compactor._thread.is_alive()
+        worker = compactor._worker
+        assert worker.is_alive()
 
         compactor.stop()
         time.sleep(0.1)
-        assert not compactor._thread.is_alive()
+        assert compactor._worker is None
 
     def test_stop_during_compaction(self):
         rounds = create_mock_rounds(10)
@@ -420,4 +403,4 @@ class TestContextCompactorStop:
         time.sleep(0.1)
 
         compactor.stop()
-        assert True
+        assert compactor._worker is None

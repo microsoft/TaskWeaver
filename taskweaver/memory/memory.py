@@ -28,7 +28,15 @@ class Memory:
         self._compaction_providers: Dict[str, "CompactionProvider"] = {}
         self._on_round_added_callbacks: List[Callable[[], None]] = []
 
-    def register_compaction_provider(self, role: str, provider: "CompactionProvider") -> None:
+    def register_compaction_provider(
+        self,
+        role: str,
+        provider: "CompactionProvider",
+        rounds_getter: Callable[[], List[Round]],
+    ) -> None:
+        if role in self._compaction_providers:
+            return
+        provider.rounds_getter = rounds_getter
         self._compaction_providers[role] = provider
         self._on_round_added_callbacks.append(provider.notify_rounds_changed)
 

@@ -41,6 +41,7 @@ class PlannerConfig(RoleConfig):
         )
         self.compaction_threshold = self._get_int("compaction_threshold", 10)
         self.compaction_retain_recent = self._get_int("compaction_retain_recent", 3)
+        self.compaction_llm_alias = self._get_str("compaction_llm_alias", default="", required=False)
 
         self.llm_alias = self._get_str("llm_alias", default="", required=False)
 
@@ -96,6 +97,7 @@ class Planner(Role):
                 llm_api=llm_api,
                 rounds_getter=lambda: [],
                 logger=lambda msg: self.logger.debug(msg),
+                llm_alias=self.config.compaction_llm_alias,
             )
 
         self.experience_generator = experience_generator
@@ -249,9 +251,12 @@ class Planner(Role):
         prompt_log_path: Optional[str] = None,
         **kwargs: ...,
     ) -> Post:
-        if self.compactor and self.alias not in memory._compaction_providers:
-            self.compactor.rounds_getter = lambda: memory.conversation.rounds
-            memory.register_compaction_provider(self.alias, self.compactor)
+        if self.compactor:
+            memory.register_compaction_provider(
+                self.alias,
+                self.compactor,
+                rounds_getter=lambda: memory.get_role_rounds(role=self.alias),
+            )
             self.compactor.start()
 
         rounds, compaction = memory.get_role_rounds_with_compaction(role=self.alias)

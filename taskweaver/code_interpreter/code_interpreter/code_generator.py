@@ -42,6 +42,7 @@ class CodeGeneratorConfig(RoleConfig):
         )
         self.compaction_threshold = self._get_int("compaction_threshold", 10)
         self.compaction_retain_recent = self._get_int("compaction_retain_recent", 3)
+        self.compaction_llm_alias = self._get_str("compaction_llm_alias", default="", required=False)
         self.enable_auto_plugin_selection = self._get_bool(
             "enable_auto_plugin_selection",
             False,
@@ -98,6 +99,7 @@ class CodeGenerator(Role):
                 llm_api=llm_api,
                 rounds_getter=lambda: [],
                 logger=lambda msg: self.logger.debug(msg),
+                llm_alias=self.config.compaction_llm_alias,
             )
 
         if self.config.enable_auto_plugin_selection:
@@ -361,19 +363,19 @@ class CodeGenerator(Role):
     ) -> Post:
         assert post_proxy is not None, "Post proxy is not provided."
 
-        # Register compactor with memory on first call (if enabled)
-        if self.compactor and self.alias not in memory._compaction_providers:
-            self.compactor.rounds_getter = lambda: memory.conversation.rounds
-            memory.register_compaction_provider(self.alias, self.compactor)
+        if self.compactor:
+            memory.register_compaction_provider(
+                self.alias,
+                self.compactor,
+                rounds_getter=lambda: memory.get_role_rounds(role=self.alias),
+            )
             self.compactor.start()
 
-        # Extract rounds and compaction from memory
         rounds, compaction = memory.get_role_rounds_with_compaction(
             role=self.alias,
             include_failure_rounds=False,
         )
 
-        # obtain the query from the last round
         query = rounds[-1].post_list[-1].message
 
         self.tracing.set_span_attribute("query", query)

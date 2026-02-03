@@ -55,7 +55,7 @@ class CompactorConfig:
     """Configuration for ContextCompactor.
 
     Attributes:
-        threshold: Trigger compaction when uncompacted rounds exceed this
+        threshold: Trigger compaction when uncompacted rounds reach this count
         retain_recent: Keep last N rounds uncompacted
         prompt_template_path: Path to YAML file with compaction prompt
         enabled: Whether compaction is enabled
@@ -68,16 +68,16 @@ class CompactorConfig:
 
 
 class ContextCompactor:
-    """Background compactor - maintains one compacted message per agent.
+    """Background compactor using a simple worker thread model.
 
-    This compactor runs in a daemon thread, triggered when round count exceeds
-    threshold. It incrementally compacts conversation history by combining
-    the previous compaction with new rounds.
+    Design:
+        - Single daemon thread processes compaction requests
+        - notify_rounds_changed() is non-blocking, just signals the worker
+        - Worker thread checks if compaction is needed and performs it
+        - No lock needed: worker writes complete immutable objects, main thread reads
 
-    Thread safety:
-        - Only one thread is ever created (singleton pattern for thread)
-        - Triggers during active compaction are queued via _pending_trigger flag
-        - All shared state access is protected by _lock
+    The compactor only considers role-specific rounds (via rounds_getter),
+    not the entire conversation history.
     """
 
     def __init__(
@@ -86,20 +86,20 @@ class ContextCompactor:
         llm_api: "LLMApi",
         rounds_getter: Callable[[], List["Round"]],
         logger: Optional[Callable[[str], None]] = None,
+        llm_alias: str = "",
     ):
         self.config = config
         self.llm_api = llm_api
         self.rounds_getter = rounds_getter
         self.logger = logger or (lambda msg: None)
+        self.llm_alias = llm_alias
 
-        self._compacted: Optional[CompactedMessage] = None
-        self._lock = threading.Lock()
-        self._compacting = False
-        self._pending_trigger = False
-        self._started = False
-        self._stop_event = threading.Event()
-        self._trigger_event = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._compacted_queue: List[CompactedMessage] = []
+
+        self._worker: Optional[threading.Thread] = None
+        self._shutdown = threading.Event()
+        self._work_available = threading.Event()
+
         self._prompt_template = self._load_prompt_template()
 
     def _load_prompt_template(self) -> str:
@@ -126,103 +126,77 @@ Preserve any critical details that would be needed to continue the conversation.
 Provide a clear, structured summary:"""
 
     def start(self) -> None:
-        """Start background compaction thread. Safe to call multiple times."""
+        """Start the background worker thread. Safe to call multiple times."""
         if not self.config.enabled:
             return
 
-        with self._lock:
-            if self._started:
-                return
-            self._started = True
-
-        self._thread = threading.Thread(target=self._run, daemon=True)
-        self._thread.start()
-        self.logger("ContextCompactor: Background thread started")
+        if self._worker is not None:
+            return
+        self._shutdown.clear()
+        self._worker = threading.Thread(target=self._worker_loop, daemon=True)
+        self._worker.start()
+        self.logger("ContextCompactor: Worker thread started")
 
     def stop(self) -> None:
-        """Stop background thread gracefully."""
-        self._stop_event.set()
-        self._trigger_event.set()
-        if self._thread and self._thread.is_alive():
-            self._thread.join(timeout=5)
-        self.logger("ContextCompactor: Background thread stopped")
+        """Stop the background worker thread gracefully."""
+        self._shutdown.set()
+        self._work_available.set()
+        if self._worker is not None:
+            self._worker.join(timeout=5)
+            self._worker = None
+        self.logger("ContextCompactor: Worker thread stopped")
 
     def get_compaction(self) -> Optional[CompactedMessage]:
-        """Get current compaction (thread-safe)."""
-        with self._lock:
-            return self._compacted
+        return self._compacted_queue[-1] if self._compacted_queue else None
 
     def notify_rounds_changed(self) -> None:
-        """Called by Memory when rounds change."""
+        """Signal that rounds have changed. Non-blocking."""
         if not self.config.enabled:
             return
+        self._work_available.set()
 
-        with self._lock:
-            role_rounds = len(self.rounds_getter())
-            compacted_end = self._compacted.end_index if self._compacted else 0
-            uncompacted_count = role_rounds - compacted_end
+    def _worker_loop(self) -> None:
+        while not self._shutdown.is_set():
+            self._work_available.wait()
+            self._work_available.clear()
+
+            if self._shutdown.is_set():
+                break
+
+            self._try_compact()
+
+    def _try_compact(self) -> None:
+        try:
+            rounds = self.rounds_getter()
+            total = len(rounds)
+
+            if total == 0:
+                return
+
+            compacted = self.get_compaction()
+            compacted_end = compacted.end_index if compacted else 0
+
+            uncompacted_count = total - compacted_end
 
             if uncompacted_count < self.config.threshold:
                 return
 
-            if self._compacting:
-                self._pending_trigger = True
-                self.logger("ContextCompactor: Compaction in progress, queued trigger")
+            new_end = total - self.config.retain_recent
+            if new_end <= 0 or compacted_end >= new_end:
                 return
 
             self.logger(
-                f"ContextCompactor: Triggering compaction "
+                f"ContextCompactor: Compacting rounds 1-{new_end} "
                 f"(uncompacted={uncompacted_count}, threshold={self.config.threshold})",
             )
-            self._trigger_event.set()
 
-    def _run(self) -> None:
-        """Background thread loop."""
-        while not self._stop_event.is_set():
-            self._trigger_event.wait()
-            self._trigger_event.clear()
+            self._do_compaction(rounds, new_end)
 
-            if self._stop_event.is_set():
-                break
-
-            self._process_compaction()
-
-    def _process_compaction(self) -> None:
-        """Process compaction with pending trigger handling."""
-        with self._lock:
-            if self._compacting:
-                return
-            self._compacting = True
-            self._pending_trigger = False
-
-        try:
-            self._do_compaction()
         except Exception as e:
             self.logger(f"ContextCompactor: Compaction failed: {e}")
-        finally:
-            with self._lock:
-                self._compacting = False
-                if self._pending_trigger:
-                    self._pending_trigger = False
-                    self._trigger_event.set()
 
-    def _do_compaction(self) -> None:
-        """Perform the actual compaction."""
-        rounds = self.rounds_getter()
-        total = len(rounds)
-
-        if total == 0:
-            return
-
-        new_end = total - self.config.retain_recent
-        if new_end <= 0:
-            return
-
-        with self._lock:
-            prev_compacted = self._compacted
-
-        if prev_compacted and prev_compacted.end_index >= new_end:
-            return
+    def _do_compaction(self, rounds: List["Round"], new_end: int) -> None:
+        prev_compacted = self.get_compaction()
 
         previous_summary = "None"
         start_from = 0
@@ -230,7 +204,7 @@ Provide a clear, structured summary:"""
             previous_summary = prev_compacted.summary
             start_from = prev_compacted.end_index
 
-        content_parts = []
+        content_parts: List[str] = []
         for i in range(start_from, new_end):
             round_obj = rounds[i]
             round_num = i + 1
@@ -238,11 +212,10 @@ Provide a clear, structured summary:"""
             content_parts.append(f"User Query: {round_obj.user_query}")
 
             for post in round_obj.post_list:
-                msg_preview = post.message[:500] + "..." if len(post.message) > 500 else post.message
+                msg_preview = post.message[:1024] + "..." if len(post.message) > 1024 else post.message
                 content_parts.append(f"  {post.send_from} -> {post.send_to}: {msg_preview}")
 
         content = "\n".join(content_parts)
-        self.logger(f"ContextCompactor: Compacting rounds 1-{new_end}")
 
         summary = self._call_llm_for_summary(content, previous_summary)
 
@@ -255,13 +228,11 @@ Provide a clear, structured summary:"""
             summary=summary,
         )
 
-        with self._lock:
-            self._compacted = new_compacted
+        self._compacted_queue.append(new_compacted)
 
         self.logger(f"ContextCompactor: Compaction complete (rounds 1-{new_end})")
 
     def _call_llm_for_summary(self, content: str, previous_summary: str) -> str:
-        """Call LLM to generate summary."""
         prompt = self._prompt_template.format(content=content, PREVIOUS_SUMMARY=previous_summary)
 
         messages: List[ChatMessageType] = [
@@ -273,6 +244,7 @@ Provide a clear, structured summary:"""
             messages=messages,
             stream=False,
             temperature=0.3,
+            llm_alias=self.llm_alias if self.llm_alias else None,
         )
 
         raw_content = response.get("content", "")
