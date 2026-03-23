@@ -28,7 +28,7 @@ class CodeInterpreterConfig(RoleConfig):
         self.max_retry_count = self._get_int("max_retry_count", 3)
 
         # for verification
-        self.code_verification_on = self._get_bool("code_verification_on", False)
+        self.code_verification_on = self._get_bool("code_verification_on", True)
         self.allowed_modules = self._get_list(
             "allowed_modules",
             [
@@ -109,17 +109,17 @@ class CodeInterpreter(Role, Interpreter):
         self.generator.set_alias(self.alias)
 
         # Determine if code verification should be enabled
-        # Enable by default for local mode for security reasons
+        # Enable by default for all kernel modes for security reasons
         code_verification_on = self.config.code_verification_on
         kernel_mode = executor.exec_mgr.get_kernel_mode()
-        if kernel_mode == "local" and not self.config.code_verification_on:
-            code_verification_on = True
+        if not code_verification_on:
             logger.warning(
-                "Code verification is automatically enabled for local mode. "
-                "Running in local mode without code verification poses security risks. "
-                "To disable, explicitly set code_verification_on=False in config, but this is not recommended. "
-                "For better security, consider using container mode.",
+                f"Code verification is disabled for {kernel_mode} mode. "
+                "Running without code verification poses security risks as it allows "
+                "arbitrary code execution. It is strongly recommended to enable "
+                "code_verification_on in the configuration.",
             )
+        self.code_verification_on = code_verification_on
 
         self.generator.configure_verification(
             code_verification_on=code_verification_on,
@@ -208,13 +208,13 @@ class CodeInterpreter(Role, Interpreter):
         self.tracing.set_span_attribute("code", code.content)
         post_proxy.update_status("verifying code")
 
-        self.tracing.set_span_attribute("code_verification_on", self.config.code_verification_on)
+        self.tracing.set_span_attribute("code_verification_on", self.code_verification_on)
         self.logger.info(f"Code to be verified: {code.content}")
         with get_tracer().start_as_current_span("CodeInterpreter.verify_code") as span:
             span.set_attribute("code", code.content)
             code_verify_errors = code_snippet_verification(
                 code.content,
-                self.config.code_verification_on,
+                self.code_verification_on,
                 allowed_modules=self.config.allowed_modules,
                 blocked_functions=self.config.blocked_functions,
             )
